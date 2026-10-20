@@ -8,3 +8,7 @@ dev-dist/
 .env.local
 .DS_Store
 npm-debug.log*
+
+# Áudios gerados pelo conteudo/gerar_audio.py (vão para o R2, não para o git)
+audio/
+__pycache__/
