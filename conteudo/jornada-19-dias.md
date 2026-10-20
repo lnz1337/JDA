@@ -12,7 +12,7 @@ Conteúdo da jornada liberada com o front. Este arquivo é a **fonte da verdade*
 5. **Canto de São Miguel**: a mesma faixa todos os dias (~3 min).
 6. Prática do dia + gancho para o dia seguinte + encerramento.
 
-**Narração:** Voice Studio (voicestudio.sh), rodando local. Voz masculina madura e calma, em português do Brasil, de preferência **clonada** de uma gravação de referência (o recurso de "voice design" só tem sotaques de inglês e chinês). Só clone voz com autorização do dono.
+**Narração:** modelo OmniVoice (o mesmo do Voice Studio), rodando no Google Colab pelo notebook `notebooks/gerar_audio_colab.ipynb`, sem instalar nada no computador. Alternativa: o app Voice Studio local, com `--motor api`. Voz masculina madura e calma, em português do Brasil, de preferência **clonada** de uma gravação de referência (o recurso de "voice design" só tem sotaques de inglês e chinês). Só clone voz com autorização do dono.
 - O Voice Studio não tem tag de pausa documentada. Por isso o roteiro **não vai inteiro** para o TTS: o script `gerar_audio.py` corta o texto em trechos (um por parágrafo), gera cada um separado e monta o áudio final inserindo os silêncios com ffmpeg.
 - `[pausa Ns]` é um silêncio de N segundos, inserido na montagem.
 - `[CANTO DE SÃO MIGUEL]` é o ponto em que o script encaixa a faixa do canto.
