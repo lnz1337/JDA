@@ -39,7 +39,7 @@ name = "jda-pwa-staging"
 # ENV=development em staging para que postbacks com test=true sejam processados
 # (ver CLAUDE.md §7, passo 2).
 ENV = "development"
-APP_URL = "https://jda-pwa-staging.workers.dev"
+APP_URL = "https://jda-pwa-staging.leonardovcs2022.workers.dev"
 
 [env.staging.observability]
 enabled = true
@@ -47,7 +47,7 @@ enabled = true
 [[env.staging.d1_databases]]
 binding = "DB"
 database_name = "jda-pwa-staging"
-database_id = "TROCAR_PELO_ID_DO_D1_STAGING"
+database_id = "53e3ee12-94d7-4c03-b2c8-06758d153b34"
 migrations_dir = "migrations"
 
 [[env.staging.r2_buckets]]

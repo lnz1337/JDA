@@ -57,16 +57,23 @@ O ambiente é escolhido **no build** (`CLOUDFLARE_ENV`), não no `wrangler deplo
 o `@cloudflare/vite-plugin` gera `dist/jda_pwa/wrangler.json` já resolvido e o
 `wrangler deploy` usa esse arquivo.
 
-Uma vez por conta, antes do primeiro deploy:
+Staging já está provisionado e no ar:
+**https://jda-pwa-staging.leonardovcs2022.workers.dev** (D1 `jda-pwa-staging`,
+bucket R2 `jda-pwa-media-staging`).
+
+Para **produção**, uma vez por conta:
 
 ```bash
-npx wrangler login
-npx wrangler d1 create jda-pwa-staging          # copie o database_id
-npx wrangler r2 bucket create jda-pwa-media-staging
+npx wrangler d1 create jda-pwa-prod          # copie o database_id
+npx wrangler r2 bucket create jda-pwa-media
 ```
 
-Preencha `database_id` em `[[env.staging.d1_databases]]` no `wrangler.toml`
-(o valor hoje é `TROCAR_PELO_ID_DO_D1_STAGING`) e rode `npm run cf-typegen`.
+Preencha `database_id` em `[[env.production.d1_databases]]` no `wrangler.toml`
+(hoje `TROCAR_PELO_ID_DO_D1_PROD`), ajuste o `APP_URL` de produção e rode
+`npm run cf-typegen`.
+
+A autenticação do wrangler sai de `CLOUDFLARE_API_TOKEN` e
+`CLOUDFLARE_ACCOUNT_ID` no ambiente (ou de `npx wrangler login`).
 
 Secrets (CLAUDE.md §15), um a um:
 
@@ -104,5 +111,8 @@ test/           Vitest no runtime do Workers
 
 - Nome e identidade visual do app: `APP_NAME` em `src/shared/constants.ts` e os
   ícones em `public/icons/` são placeholder (CLAUDE.md §17).
-- `database_id` de staging e produção no `wrangler.toml`.
-- Domínio final (`APP_URL` de produção).
+- `database_id` e `APP_URL` de **produção** no `wrangler.toml` (staging já está
+  preenchido).
+- Secrets ainda não cadastrados em staging (`PAYT_INTEGRATION_KEY`,
+  `RESEND_API_KEY`, VAPID): só passam a ser necessários nas fases 3, 4 e 8.
+- Domínio final do app.
