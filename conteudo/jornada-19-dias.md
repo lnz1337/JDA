@@ -507,7 +507,55 @@ Fique com Deus. Em nome do Pai, do Filho e do Espírito Santo. Amém.
 
 ### Roteiro do áudio
 
-_(pendente)_
+Em nome do Pai, do Filho e do Espírito Santo. Amém.
+
+[pausa 2s]
+
+Oitavo dia. Hoje começa a segunda semana da nossa jornada, a semana da libertação. Respire fundo...
+
+[pausa 3s]
+
+...e solte.
+
+[pausa 3s]
+
+No Evangelho de Mateus, Pedro se aproxima de Jesus e pergunta: Senhor, quantas vezes eu devo perdoar o meu irmão? Até sete vezes? E Jesus responde: não sete, mas setenta vezes sete. Ou seja: sempre.
+
+[pausa 2s]
+
+Perdoar é uma das coisas mais difíceis que existem. Porque a ferida é real. O que fizeram com você aconteceu, doeu, e talvez ainda doa.
+
+Mas existe uma verdade que pouca gente percebe. A mágoa guardada não prende quem nos feriu. Ela prende a gente. É como carregar uma corrente amarrada no tornozelo e, do outro lado, uma pessoa que muitas vezes nem lembra mais do que fez.
+
+Perdoar não é dizer que estava tudo bem. Não é esquecer, nem voltar a conviver com quem te faz mal. Perdoar é soltar a corrente. É devolver a Deus o direito de fazer justiça, e ficar livre para seguir em frente.
+
+[pausa 2s]
+
+Pense agora em uma pessoa que te feriu. Não precisa ser a ferida mais profunda. Comece por uma que você consiga olhar hoje.
+
+[pausa 5s]
+
+Diga o nome dela no seu coração.
+
+[pausa 3s]
+
+Vamos rezar juntos.
+
+Senhor, Tu conheces essa ferida melhor do que eu. Eu não consigo apagar o que aconteceu, mas hoje eu escolho não carregar mais essa corrente. Eu entrego a Ti esta pessoa e tudo o que ela me fez. Abençoa a vida dela. Cura o meu coração. São Miguel Arcanjo, corta com a tua espada os laços de mágoa que me prendem, e deixa-me livre. Amém.
+
+[pausa 3s]
+
+Agora, ouça o Canto de São Miguel, como quem acabou de soltar um peso.
+
+[CANTO DE SÃO MIGUEL]
+
+[pausa 2s]
+
+A prática de hoje: reze mais uma vez pela pessoa em quem você pensou, dizendo o nome dela. Se a raiva voltar durante o dia, não se culpe. Perdoar às vezes é uma decisão que a gente renova muitas vezes.
+
+Amanhã vamos olhar de frente para outra corrente que nos prende: o medo.
+
+Fique com Deus. Em nome do Pai, do Filho e do Espírito Santo. Amém.
 
 ---
 
@@ -520,7 +568,61 @@ _(pendente)_
 
 ### Roteiro do áudio
 
-_(pendente)_
+Em nome do Pai, do Filho e do Espírito Santo. Amém.
+
+[pausa 2s]
+
+Nono dia da nossa jornada. Acomode-se e respire fundo...
+
+[pausa 3s]
+
+...e solte.
+
+[pausa 3s]
+
+No livro do profeta Isaías, Deus diz ao seu povo: não tenha medo, porque eu estou com você. Não se assuste, porque eu sou o seu Deus. Eu te fortaleço, eu te ajudo, eu te sustento com a minha mão.
+
+[pausa 2s]
+
+O medo é uma das coisas mais humanas que existem. Medo de faltar dinheiro. Medo de uma doença. Medo de perder alguém. Medo do futuro. E o medo tem um jeito estranho de crescer quando fica escondido. Quanto menos a gente olha para ele, maior ele parece.
+
+Por isso, hoje nós vamos fazer o contrário. Vamos dar nome ao medo.
+
+[pausa 2s]
+
+Pense agora: qual é o seu maior medo neste momento? Não precisa ter vergonha. Deus já sabe.
+
+[pausa 5s]
+
+Agora, diga esse medo em silêncio, com todas as letras. Eu tenho medo de...
+
+[pausa 5s]
+
+Perceba: ele continua lá, mas agora tem um nome. E aquilo que tem nome pode ser entregue.
+
+[pausa 2s]
+
+Lembre-se do segundo dia. Quem é como Deus? Ninguém. Nenhum medo é maior do que Ele.
+
+[pausa 3s]
+
+Vamos rezar juntos.
+
+São Miguel Arcanjo, tu que não temeste o dragão, fica ao meu lado diante deste medo. Eu o coloco nas tuas mãos. Dá-me coragem para fazer o que precisa ser feito, e paz para deixar com Deus o que não depende de mim. Quando o medo voltar, lembra-me de que eu não estou sozinho. Amém.
+
+[pausa 3s]
+
+Ouça agora o Canto de São Miguel. Deixe que ele seja a sua coragem.
+
+[CANTO DE SÃO MIGUEL]
+
+[pausa 2s]
+
+A prática de hoje: escreva o seu medo num papel e reze sobre ele a oração a São Miguel, aquela que você aprendeu no sexto dia. Depois guarde o papel junto com os outros.
+
+Amanhã vamos aprender a acalmar a mente quando os pensamentos não param.
+
+Fique com Deus. Em nome do Pai, do Filho e do Espírito Santo. Amém.
 
 ---
 
@@ -533,7 +635,65 @@ _(pendente)_
 
 ### Roteiro do áudio
 
-_(pendente)_
+Em nome do Pai, do Filho e do Espírito Santo. Amém.
+
+[pausa 2s]
+
+Décimo dia. Hoje o nosso encontro vai ser um pouco diferente. Mais lento. Mais silencioso. Então, se puder, deixe o celular de lado e apenas ouça.
+
+[pausa 3s]
+
+Na carta aos Filipenses, São Paulo diz: não fiquem ansiosos por nada. Em tudo, apresentem a Deus os seus pedidos, em oração e com ação de graças. E a paz de Deus, que ultrapassa todo entendimento, vai guardar o coração e a mente de vocês.
+
+[pausa 2s]
+
+Repare nessa palavra: guardar. A paz de Deus guarda a mente, como um soldado guarda uma porta. E é isso que São Miguel faz por nós.
+
+A ansiedade é a mente correndo para um futuro que ainda não chegou. Ela imagina tudo o que pode dar errado, e o corpo sente como se já estivesse acontecendo. A oração traz a mente de volta para o único lugar onde Deus está com a gente: agora.
+
+[pausa 2s]
+
+Vamos fazer isso juntos. Feche os olhos. Respire fundo, bem devagar...
+
+[pausa 3s]
+
+...e, ao soltar o ar, diga em silêncio: São Miguel, guarda a minha mente.
+
+[pausa 5s]
+
+Mais uma vez. Respire...
+
+[pausa 3s]
+
+...São Miguel, guarda a minha mente.
+
+[pausa 5s]
+
+Mais uma. Respire...
+
+[pausa 3s]
+
+...São Miguel, guarda a minha mente.
+
+[pausa 6s]
+
+Vamos rezar juntos.
+
+Senhor, eu te entrego os pensamentos que não me deixam descansar. Os de ontem, que eu não posso mudar, e os de amanhã, que ainda não chegaram. Dá-me a tua paz, a paz que eu não sei explicar. São Miguel Arcanjo, guarda a porta da minha mente. Amém.
+
+[pausa 3s]
+
+Agora, apenas ouça o Canto de São Miguel, sem pensar em nada.
+
+[CANTO DE SÃO MIGUEL]
+
+[pausa 2s]
+
+A prática de hoje: em algum momento do dia, fique cinco minutos sem celular e repita esta respiração. A cada vez que soltar o ar: São Miguel, guarda a minha mente.
+
+Amanhã a oração vai ser por quem mora com você.
+
+Fique com Deus. Em nome do Pai, do Filho e do Espírito Santo. Amém.
 
 ---
 
@@ -546,7 +706,55 @@ _(pendente)_
 
 ### Roteiro do áudio
 
-_(pendente)_
+Em nome do Pai, do Filho e do Espírito Santo. Amém.
+
+[pausa 2s]
+
+Décimo primeiro dia. Respire fundo...
+
+[pausa 3s]
+
+...e solte.
+
+[pausa 3s]
+
+No livro de Josué, depois de conduzir o povo até a terra prometida, Josué faz uma escolha diante de todos. Ele diz: quanto a mim e à minha casa, nós serviremos ao Senhor.
+
+[pausa 2s]
+
+Perceba que ele não diz só eu. Ele diz eu e a minha casa. A fé de Josué não era só dele. Ela cobria a família inteira.
+
+A família é o primeiro lugar onde as batalhas acontecem. A discussão que não termina. O filho que se afastou. O casamento que esfriou. A preocupação com os pais que estão envelhecendo. E também é o primeiro lugar onde São Miguel é chamado a defender a paz.
+
+[pausa 2s]
+
+Hoje, você vai fazer o que Josué fez. Vai colocar a sua casa diante de Deus.
+
+Pense agora em cada pessoa da sua família, uma por uma. Quem mora com você, e quem está longe. Diga o nome de cada uma no seu coração.
+
+[pausa 10s]
+
+Se existe alguém da família com quem a relação está difícil, pense nessa pessoa também. Talvez principalmente nela.
+
+[pausa 5s]
+
+Vamos rezar juntos.
+
+São Miguel Arcanjo, eu coloco debaixo da tua proteção a minha família. Cada pessoa que eu acabei de lembrar. Afasta da nossa casa a discórdia, a mágoa e tudo aquilo que nos divide. Traz de volta quem se afastou. Dá saúde aos que estão fracos e paciência a todos nós. Que na minha casa, como na casa de Josué, se sirva ao Senhor. Amém.
+
+[pausa 3s]
+
+Ouça agora o Canto de São Miguel, pela sua família.
+
+[CANTO DE SÃO MIGUEL]
+
+[pausa 2s]
+
+A prática de hoje: reze de novo, em voz baixa, por cada pessoa da sua família pelo nome. Se puder, passe por cada cômodo da casa e faça o sinal da cruz, pedindo paz para quem vive ali.
+
+Amanhã vamos levar a Deus uma preocupação que muita gente carrega em silêncio: as contas do mês.
+
+Fique com Deus. Em nome do Pai, do Filho e do Espírito Santo. Amém.
 
 ---
 
@@ -559,7 +767,55 @@ _(pendente)_
 
 ### Roteiro do áudio
 
-_(pendente)_
+Em nome do Pai, do Filho e do Espírito Santo. Amém.
+
+[pausa 2s]
+
+Décimo segundo dia. Respire fundo...
+
+[pausa 3s]
+
+...e solte.
+
+[pausa 3s]
+
+No Evangelho de Mateus, Jesus fala para uma multidão de gente simples, que vivia preocupada com o que comer e o que vestir. E ele diz: olhem os pássaros do céu. Eles não plantam nem colhem, e o Pai do céu os alimenta. Olhem os lírios do campo. Eles não trabalham, e nem o rei Salomão, com toda a sua riqueza, se vestiu como um deles.
+
+E termina dizendo: busquem primeiro o Reino de Deus, e todas essas coisas serão dadas a vocês por acréscimo.
+
+[pausa 2s]
+
+Jesus não está dizendo que dinheiro não importa. Ele sabe que as contas chegam. Ele mesmo nos ensinou a pedir: o pão nosso de cada dia nos dai hoje.
+
+O que Ele está dizendo é que a preocupação, sozinha, não paga nenhuma conta. Ela só tira o sono. Pedir o pão de cada dia é fazer duas coisas ao mesmo tempo: confiar a Deus as nossas necessidades, e cuidar com sabedoria daquilo que Ele já colocou nas nossas mãos.
+
+[pausa 2s]
+
+Pense agora na sua situação financeira, do jeito que ela está. Sem esconder nada de Deus.
+
+[pausa 5s]
+
+Pense na conta que mais te preocupa.
+
+[pausa 5s]
+
+Vamos rezar juntos.
+
+Senhor, Tu sabes de tudo o que eu preciso, antes mesmo que eu peça. Eu te entrego as minhas contas, as minhas dívidas e o meu medo de que falte. Dá-me o pão de cada dia. Dá-me sabedoria para cuidar do que eu tenho, coragem para buscar o que preciso, e um coração que não se desespera. São Miguel Arcanjo, guarda a minha casa da falta e da aflição. Amém.
+
+[pausa 3s]
+
+Ouça agora o Canto de São Miguel.
+
+[CANTO DE SÃO MIGUEL]
+
+[pausa 2s]
+
+A prática de hoje pede um momento calmo. Pegue um papel e escreva o que entra e o que sai no seu mês. Sem medo, sem julgamento. Depois coloque a mão sobre o papel e entregue tudo a Deus em oração. Muitas vezes, só de olhar com calma, a gente já enxerga um primeiro passo.
+
+Amanhã vamos pedir a bênção sobre o trabalho das suas mãos.
+
+Fique com Deus. Em nome do Pai, do Filho e do Espírito Santo. Amém.
 
 ---
 
@@ -572,7 +828,53 @@ _(pendente)_
 
 ### Roteiro do áudio
 
-_(pendente)_
+Em nome do Pai, do Filho e do Espírito Santo. Amém.
+
+[pausa 2s]
+
+Décimo terceiro dia. Respire fundo...
+
+[pausa 3s]
+
+...e solte.
+
+[pausa 3s]
+
+No final de um dos salmos, o salmista faz um pedido muito simples: que a bondade do Senhor esteja sobre nós, e que Ele confirme a obra das nossas mãos. E São Paulo, na carta aos Colossenses, diz: tudo o que vocês fizerem, façam de coração, como para o Senhor.
+
+[pausa 2s]
+
+O trabalho ocupa a maior parte da nossa vida. E muitas vezes ele pesa. O chefe difícil, o salário que não acompanha as contas, o cansaço, o serviço que ninguém reconhece. Ou, para quem está sem trabalho, a angústia de procurar e não encontrar.
+
+Quando a gente oferece o trabalho a Deus, alguma coisa muda. O esforço deixa de ser só uma obrigação. Ele vira oferta. E aquilo que é oferecido a Deus nunca é desperdiçado.
+
+[pausa 2s]
+
+Pense agora no seu trabalho. Ou, se você está procurando, na vaga que você deseja.
+
+[pausa 5s]
+
+Pense em uma coisa concreta que você pode fazer hoje para dar um passo. Uma ligação, um currículo, uma tarefa que você vem adiando.
+
+[pausa 5s]
+
+Vamos rezar juntos.
+
+Senhor, eu te ofereço o trabalho das minhas mãos. As tarefas de hoje, as pessoas com quem vou conviver, o cansaço e o esforço. Abençoa o que eu faço e abre as portas que precisam ser abertas. Se eu estou procurando trabalho, guia os meus passos até o lugar certo. São Miguel Arcanjo, vai à minha frente nos meus caminhos. Amém.
+
+[pausa 3s]
+
+Ouça agora o Canto de São Miguel.
+
+[CANTO DE SÃO MIGUEL]
+
+[pausa 2s]
+
+A prática de hoje tem duas partes. Logo cedo, ofereça o seu dia a Deus com uma frase simples: Senhor, este trabalho é para Ti. E depois, dê aquele passo concreto em que você pensou. Só um. Hoje.
+
+Amanhã vamos rezar por quem está sofrendo na saúde.
+
+Fique com Deus. Em nome do Pai, do Filho e do Espírito Santo. Amém.
 
 ---
 
@@ -585,7 +887,57 @@ _(pendente)_
 
 ### Roteiro do áudio
 
-_(pendente)_
+Em nome do Pai, do Filho e do Espírito Santo. Amém.
+
+[pausa 2s]
+
+Décimo quarto dia. Hoje a oração é por quem está sofrendo. Respire fundo...
+
+[pausa 3s]
+
+...e solte.
+
+[pausa 3s]
+
+Na carta de São Tiago, ele pergunta: alguém entre vocês está doente? E ensina: chame os anciãos da comunidade para rezarem por ele. E diz ainda: rezem uns pelos outros. A oração feita com fé sustenta quem está sofrendo.
+
+[pausa 2s]
+
+Perceba que São Tiago não manda o doente rezar sozinho. Ele chama a comunidade. A doença isola, e a oração aproxima. Rezar por quem está doente é também cuidar: estar perto, acompanhar, segurar a mão, ajudar no tratamento.
+
+A Igreja sempre rezou pelos doentes, e sempre caminhou junto com quem cuida deles. A oração e o cuidado não competem. Eles andam juntos.
+
+[pausa 2s]
+
+Pense agora em alguém que está doente. Pode ser você mesmo, alguém da sua família, um amigo.
+
+[pausa 5s]
+
+Diga o nome dessa pessoa no seu coração.
+
+[pausa 3s]
+
+Pense também nos médicos, enfermeiros e cuidadores que estão perto dela.
+
+[pausa 5s]
+
+Vamos rezar juntos.
+
+Senhor, eu te apresento esta pessoa que eu amo e que está sofrendo. Tu conheces cada dor que ela sente. Dá a ela força para atravessar este tempo, alívio nas dores e consolo no coração. Ilumina os médicos e todos que cuidam dela. E se for a tua vontade, devolve a ela a saúde. São Miguel Arcanjo, protege quem está fraco e dá ânimo a quem está cansado de lutar. Amém.
+
+[pausa 3s]
+
+Ouça agora o Canto de São Miguel, por quem está sofrendo.
+
+[CANTO DE SÃO MIGUEL]
+
+[pausa 2s]
+
+A prática de hoje: reze mais uma vez pela pessoa doente, pelo nome. E, se puder, faça mais do que rezar. Ligue, mande uma mensagem, faça uma visita. Às vezes a resposta de Deus chega pelas nossas mãos.
+
+Amanhã vamos aprender que as bênçãos que recebemos foram feitas para circular.
+
+Fique com Deus. Em nome do Pai, do Filho e do Espírito Santo. Amém.
 
 ---
 
@@ -598,7 +950,53 @@ _(pendente)_
 
 ### Roteiro do áudio
 
-_(pendente)_
+Em nome do Pai, do Filho e do Espírito Santo. Amém.
+
+[pausa 2s]
+
+Décimo quinto dia. Estamos entrando na reta final da jornada. Respire fundo...
+
+[pausa 3s]
+
+...e solte.
+
+[pausa 3s]
+
+Na segunda carta aos Coríntios, São Paulo usa uma imagem do campo. Ele diz: quem semeia pouco, colhe pouco. E quem semeia com generosidade, colhe com generosidade. E completa: Deus ama quem dá com alegria.
+
+[pausa 2s]
+
+Existe uma coisa curiosa nas mãos. Uma mão fechada protege o que tem. Mas também não consegue receber nada novo. Só uma mão aberta pode receber.
+
+A generosidade não é só para quem tem sobrando. A viúva do Evangelho deu duas moedinhas, e Jesus disse que ela deu mais do que todos. Generosidade é tempo dado a alguém. É uma visita. É ouvir sem pressa. É uma ajuda pequena para quem precisa mais do que a gente.
+
+[pausa 2s]
+
+Talvez, ao longo desta jornada, você tenha pedido muito. E isso é bom: Deus quer ouvir os nossos pedidos. Hoje, eu te convido a fazer a pergunta ao contrário. O que eu posso dar?
+
+[pausa 3s]
+
+Pense em uma pessoa que precisa de alguma coisa que você pode oferecer. Não precisa ser dinheiro.
+
+[pausa 5s]
+
+Vamos rezar juntos.
+
+Senhor, obrigado por tudo o que eu recebi, até aquilo que eu não percebi. Abre as minhas mãos. Tira de mim o medo de que falte, que me faz guardar tudo. Mostra-me hoje a quem eu posso ajudar, e dá-me alegria em fazer isso. São Miguel Arcanjo, que a bênção que chega até mim passe também pelas minhas mãos. Amém.
+
+[pausa 3s]
+
+Ouça agora o Canto de São Miguel, com as mãos abertas.
+
+[CANTO DE SÃO MIGUEL]
+
+[pausa 2s]
+
+A prática de hoje: faça um gesto de generosidade. Uma ajuda, uma doação, um tempo dado a alguém. Pode ser pequeno. Só faça com alegria.
+
+Amanhã vamos falar sobre esperar. E sobre o tempo de Deus, que nem sempre é o nosso.
+
+Fique com Deus. Em nome do Pai, do Filho e do Espírito Santo. Amém.
 
 ---
 
@@ -611,7 +1009,59 @@ _(pendente)_
 
 ### Roteiro do áudio
 
-_(pendente)_
+Em nome do Pai, do Filho e do Espírito Santo. Amém.
+
+[pausa 2s]
+
+Décimo sexto dia. Respire fundo...
+
+[pausa 3s]
+
+...e solte.
+
+[pausa 3s]
+
+No livro do Eclesiastes, está escrito que há um tempo para tudo debaixo do céu. Tempo de plantar e tempo de colher. Tempo de chorar e tempo de rir. Tempo de esperar e tempo de receber.
+
+E o profeta Habacuc, que vivia uma época muito difícil, ouviu de Deus esta resposta: a visão ainda vai se cumprir no tempo certo. Se parecer demorar, espere, porque ela virá.
+
+[pausa 2s]
+
+Esperar é difícil. A gente reza, entrega, faz a nossa parte, e a resposta não chega na hora que a gente queria. E aí vem a tentação de achar que Deus não ouviu.
+
+Mas pense numa semente. Depois que ela é plantada, durante muitos dias parece que nada acontece. A terra continua igual. E, no entanto, lá embaixo, onde ninguém vê, a raiz está crescendo. A espera não é abandono. É o tempo em que Deus trabalha naquilo que a gente ainda não consegue ver.
+
+[pausa 2s]
+
+Hoje eu te peço para fazer uma coisa. Pegue o papel que você escreveu no primeiro dia, com o seu pedido mais importante.
+
+[pausa 5s]
+
+Leia de novo, com calma.
+
+[pausa 6s]
+
+Perceba como você está diferente de dezesseis dias atrás. Talvez o pedido ainda não tenha sido respondido do jeito que você imaginava. Mas alguma coisa em você já mudou.
+
+[pausa 3s]
+
+Vamos rezar juntos.
+
+Senhor, eu confio no teu tempo. Eu não entendo todos os teus caminhos, mas sei que Tu não te esqueces de mim. Dá-me paciência para esperar sem desanimar, e olhos para ver as respostas que já chegaram. São Miguel Arcanjo, sustenta a minha fé nos dias de espera. Amém.
+
+[pausa 3s]
+
+Ouça agora o Canto de São Miguel.
+
+[CANTO DE SÃO MIGUEL]
+
+[pausa 2s]
+
+A prática de hoje: sempre que a ansiedade pela resposta apertar, diga baixinho: Senhor, eu confio no teu tempo.
+
+Amanhã vamos aprender a ouvir a voz de Deus no silêncio.
+
+Fique com Deus. Em nome do Pai, do Filho e do Espírito Santo. Amém.
 
 ---
 
@@ -624,7 +1074,51 @@ _(pendente)_
 
 ### Roteiro do áudio
 
-_(pendente)_
+Em nome do Pai, do Filho e do Espírito Santo. Amém.
+
+[pausa 2s]
+
+Décimo sétimo dia. Hoje o nosso encontro é sobre o silêncio. Então, se puder, vá para um lugar quieto. Respire fundo...
+
+[pausa 3s]
+
+...e solte.
+
+[pausa 3s]
+
+No primeiro livro dos Reis, o profeta Elias está cansado, com medo, escondido numa caverna. E Deus diz a ele: saia e fique no monte, porque eu vou passar.
+
+Primeiro veio um vento fortíssimo, que rachava as pedras. Mas Deus não estava no vento. Depois veio um terremoto. Mas Deus não estava no terremoto. Depois veio um fogo. Mas Deus não estava no fogo. E depois do fogo, veio o murmúrio de uma brisa suave. E quando Elias ouviu, cobriu o rosto, porque sabia: era Deus.
+
+[pausa 2s]
+
+A gente espera que Deus fale com barulho. Com um grande sinal, um acontecimento extraordinário. Mas, na maior parte das vezes, Ele fala baixinho. Num pensamento que volta. Numa paz que chega sem explicação. Numa pessoa que diz a coisa certa na hora certa.
+
+O problema é que a nossa vida é muito barulhenta. Celular, televisão, preocupação. E a brisa suave se perde no meio do vento.
+
+[pausa 2s]
+
+Vamos fazer silêncio agora, juntos. Só um minuto. Sem pedir nada. Apenas esteja com Deus.
+
+[pausa 60s]
+
+Vamos rezar juntos.
+
+Fala, Senhor, que o teu servo escuta. Silencia em mim o barulho das preocupações. Que eu saiba reconhecer a tua voz na brisa suave do meu dia. São Miguel Arcanjo, afasta de mim tudo o que me distrai de Deus. Amém.
+
+[pausa 3s]
+
+Ouça agora o Canto de São Miguel, ainda em silêncio.
+
+[CANTO DE SÃO MIGUEL]
+
+[pausa 2s]
+
+A prática de hoje: fique dez minutos em silêncio, sem celular e sem barulho. Depois anote o que veio ao seu coração. Pode ser uma frase, um nome, uma lembrança. Guarde junto com os outros papéis.
+
+Amanhã São Paulo vai nos mostrar as armas que São Miguel usa, e que nós também podemos usar.
+
+Fique com Deus. Em nome do Pai, do Filho e do Espírito Santo. Amém.
 
 ---
 
@@ -637,17 +1131,131 @@ _(pendente)_
 
 ### Roteiro do áudio
 
-_(pendente)_
+Em nome do Pai, do Filho e do Espírito Santo. Amém.
+
+[pausa 2s]
+
+Décimo oitavo dia. Falta só um dia para o fim da nossa jornada. Respire fundo...
+
+[pausa 3s]
+
+...e solte.
+
+[pausa 3s]
+
+No sexto dia, nós lemos que a nossa luta não é contra carne e sangue. Hoje, vamos continuar essa leitura. Na carta aos Efésios, São Paulo diz: vistam a armadura de Deus, para que possam resistir no dia mau.
+
+E ele descreve cada peça. O cinto da verdade. A couraça da justiça. Os pés calçados com a disposição de levar a paz. O escudo da fé, que apaga as flechas do inimigo. O capacete da salvação. E a espada do Espírito, que é a Palavra de Deus. E por fim, a oração, em todo tempo.
+
+[pausa 2s]
+
+Perceba que nenhuma dessas armas é feita de ferro. A verdade, a justiça, a fé, a Palavra, a oração. São essas as armas de São Miguel. Ele não venceu o dragão com força própria. Venceu porque estava do lado de Deus.
+
+E existe uma parte dessa batalha que é nossa. Não basta pedir proteção e continuar abrindo a porta para aquilo que nos destrói. Às vezes, vestir a armadura de Deus é ter a coragem de cortar um hábito. Uma conversa que só faz mal. Um vício. Uma mentira que a gente vem contando para si mesmo.
+
+[pausa 2s]
+
+Pense agora em um hábito que te afasta de Deus, ou que te faz mal.
+
+[pausa 5s]
+
+Você já sabe qual é. Só precisa decidir.
+
+[pausa 5s]
+
+Vamos rezar juntos.
+
+Senhor, reveste-me com a tua armadura. Dá-me a verdade para não me enganar, a fé para não desanimar e a oração para não lutar sozinho. Dá-me coragem para cortar hoje aquilo que me prende. São Miguel Arcanjo, defende-me no combate, e ensina-me a lutar com as armas de Deus. Amém.
+
+[pausa 3s]
+
+Ouça agora o Canto de São Miguel, como quem se prepara para a batalha.
+
+[CANTO DE SÃO MIGUEL]
+
+[pausa 2s]
+
+A prática de hoje: escolha esse hábito e decida cortá-lo, começando agora. Se precisar de ajuda, peça. A alguém de confiança, e a Deus.
+
+Amanhã é o último dia da jornada. E eu tenho um convite especial para você. Prepare os papéis que você guardou desde o primeiro dia.
+
+Fique com Deus. Em nome do Pai, do Filho e do Espírito Santo. Amém.
 
 ---
 
 ## Dia 19 — Consagração a São Miguel
 - **Leitura:** Apocalipse 12,7-11 e Judas 9
 - **Reflexão:** Ao fim da jornada, você se consagra a São Miguel: escolhe tê-lo como protetor para a vida inteira. A jornada termina, mas a caminhada continua.
-- **Prática:** Reze a consagração a São Miguel. Releia todos os papéis guardados desde o dia 1 e escreva o que mudou em você.
+- **Prática:** Reze a consagração a São Miguel. Releia todos os papéis guardados desde o dia 1 e escreva o que mudou em você. Presente de conclusão: o Hino de São Miguel, para rezar cantando.
 - **Intenção:** Consagrar minha vida à proteção de São Miguel.
 - **Push:** Último dia: sua consagração a São Miguel.
 
 ### Roteiro do áudio
 
-_(pendente)_
+Em nome do Pai, do Filho e do Espírito Santo. Amém.
+
+[pausa 2s]
+
+Décimo nono dia. Você chegou ao fim da jornada. Dezenove dias, um de cada vez. Isso diz muito sobre a sua fé. Respire fundo...
+
+[pausa 3s]
+
+...e solte.
+
+[pausa 3s]
+
+No livro do Apocalipse, depois de narrar a batalha no céu, o texto diz que os fiéis venceram o acusador pelo sangue do Cordeiro e pela palavra do seu testemunho. E na carta de Judas, lemos que até o arcanjo Miguel, numa disputa com o diabo, não ousou acusá-lo por conta própria, mas disse apenas: que o Senhor te repreenda.
+
+[pausa 2s]
+
+É assim que São Miguel vence: não pela própria força, mas entregando tudo a Deus. E foi isso que você aprendeu nestes dias. Entregar o peso, perdoar, vencer o medo, cuidar da família, confiar no tempo de Deus.
+
+[pausa 2s]
+
+Agora, pegue os papéis que você guardou desde o primeiro dia. O seu pedido. As preocupações. A lista de gratidão. O medo. O que veio ao seu coração no silêncio.
+
+[pausa 5s]
+
+Leia com calma. Veja o caminho que você percorreu.
+
+[pausa 12s]
+
+Hoje, eu te convido a fazer uma consagração. Consagrar-se a São Miguel é escolher tê-lo como protetor para toda a vida. Não por dezenove dias. Para sempre.
+
+Se você quiser fazer essa escolha, reze comigo.
+
+[pausa 3s]
+
+São Miguel Arcanjo, príncipe da milícia celeste. Hoje, depois desta caminhada, eu me consagro a ti.
+
+[pausa 2s]
+
+Eu coloco debaixo da tua proteção a minha vida, a minha casa, a minha família e o meu trabalho.
+
+[pausa 2s]
+
+Defende-me nos combates de cada dia. Guarda-me do medo, da mágoa e do desânimo.
+
+[pausa 2s]
+
+Ensina-me a dizer sempre, como tu: quem é como Deus? Ninguém é como Deus.
+
+[pausa 2s]
+
+E quando chegar a minha última hora, recebe-me e leva-me até a presença do Senhor. Amém.
+
+[pausa 3s]
+
+Ouça agora, pela última vez nesta jornada, o Canto de São Miguel.
+
+[CANTO DE SÃO MIGUEL]
+
+[pausa 2s]
+
+A prática de hoje: escreva num papel o que mudou em você nestes dezenove dias, e guarde junto com os outros. Eles são o testemunho da sua caminhada.
+
+E aqui na tela de hoje deixei um presente para você: o Hino de São Miguel, para você rezar cantando.
+
+A jornada termina hoje. Mas a caminhada com São Miguel continua, todos os dias. Que ele vá sempre à sua frente.
+
+Fique com Deus. Em nome do Pai, do Filho e do Espírito Santo. Amém.
