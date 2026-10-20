@@ -29,6 +29,8 @@ Variáveis de ambiente (sintetizar --motor omnivoice; requer `pip install omnivo
   OMNIVOICE_REF_TEXT   transcrição exata do áudio de referência (recomendado;
                        sem ela o Whisper transcreve automaticamente).
   OMNIVOICE_SPEED      velocidade da fala (padrão: modelo decide; 0.9 = mais calmo).
+  OMNIVOICE_RITMO      palavras por segundo fixas em todos os trechos (ex.: 2.3).
+                       Tem prioridade sobre OMNIVOICE_SPEED.
   OMNIVOICE_STEPS      passos de geração (padrão 32; 16 = mais rápido).
 
 Outras:
@@ -170,6 +172,8 @@ def _omnivoice():
     _OMNI["prompt"] = modelo.create_voice_clone_prompt(ref_audio=ref_audio, ref_text=ref_text)
     velocidade = os.environ.get("OMNIVOICE_SPEED")
     _OMNI["speed"] = float(velocidade) if velocidade else None
+    ritmo = os.environ.get("OMNIVOICE_RITMO")
+    _OMNI["ritmo"] = float(ritmo) if ritmo else None
     _OMNI["num_step"] = int(os.environ.get("OMNIVOICE_STEPS", "32"))
     print(f"OmniVoice carregado ({'GPU' if cuda else 'CPU'}).")
     return _OMNI
@@ -181,11 +185,17 @@ def sintetizar_omnivoice(texto: str, destino: Path) -> None:
 
     omni = _omnivoice()
     modelo = omni["modelo"]
+    # Com OMNIVOICE_RITMO, cada trecho recebe uma duração fixa calculada pelas palavras:
+    # o ritmo fica igual em todos os trechos (o speed sozinho varia bastante de um para outro).
+    duracao_alvo = None
+    if omni["ritmo"]:
+        duracao_alvo = max(1.5, len(texto.split()) / omni["ritmo"])
     audio = modelo.generate(
         text=texto,
         language="pt",
         voice_clone_prompt=omni["prompt"],
-        speed=omni["speed"],
+        speed=None if duracao_alvo else omni["speed"],
+        duration=duracao_alvo,
         num_step=omni["num_step"],
     )[0]
     pcm = (np.clip(audio, -1.0, 1.0) * 32767).astype("<i2")
