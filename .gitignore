@@ -1,0 +1,10 @@
+node_modules/
+dist/
+dev-dist/
+.wrangler/
+*.tsbuildinfo
+.dev.vars
+.env
+.env.local
+.DS_Store
+npm-debug.log*

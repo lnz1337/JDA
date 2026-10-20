@@ -1,0 +1,29 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-noite-50: #eef0fb;
+  --color-noite-100: #dcdff5;
+  --color-noite-300: #a8abdc;
+  --color-noite-700: #2f2c73;
+  --color-noite-900: #1e1b4b;
+  --color-noite-950: #141233;
+
+  --color-ouro-300: #ecd68f;
+  --color-ouro-400: #e2bf5a;
+  --color-ouro-500: #d4af37;
+
+  --color-papel: #faf7f2;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-papel text-noite-950 antialiased;
+    /* iOS em standalone: respeita notch e barra inferior. */
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
+      env(safe-area-inset-left);
+  }
+}

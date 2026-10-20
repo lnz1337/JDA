@@ -1,0 +1,8 @@
+# Copie para .dev.vars (fora do git) para desenvolvimento local.
+# Em staging/produção use: wrangler secret put <NOME> --env <staging|production>
+PAYT_INTEGRATION_KEY=""
+RESEND_API_KEY=""
+MAIL_FROM="Devocional <nao-responda@exemplo.com.br>"
+VAPID_PUBLIC_KEY=""
+VAPID_PRIVATE_KEY=""
+VAPID_SUBJECT="mailto:suporte@exemplo.com.br"

@@ -1,0 +1,76 @@
+# Worker único: serve a API (Hono) e os assets estáticos do PWA.
+# A pasta de assets NÃO é declarada aqui: quem define é o @cloudflare/vite-plugin,
+# usando a saída do build do client.
+
+name = "jda-pwa"
+main = "./src/worker/index.ts"
+compatibility_date = "2026-10-12"
+compatibility_flags = ["nodejs_compat"]
+
+[observability]
+enabled = true
+
+[assets]
+# SPA: qualquer rota desconhecida devolve o index.html do PWA.
+not_found_handling = "single-page-application"
+# API e mídia passam pelo Worker antes de qualquer asset.
+run_worker_first = ["/api/*", "/media/*"]
+
+# ---------------------------------------------------------------- development
+[vars]
+ENV = "development"
+APP_URL = "http://localhost:5173"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "jda-pwa-dev"
+database_id = "local-dev-placeholder" # local: o id não é usado
+migrations_dir = "migrations"
+
+[[r2_buckets]]
+binding = "MEDIA"
+bucket_name = "jda-pwa-media-dev"
+
+# -------------------------------------------------------------------- staging
+[env.staging]
+name = "jda-pwa-staging"
+
+[env.staging.vars]
+# ENV=development em staging para que postbacks com test=true sejam processados
+# (ver CLAUDE.md §7, passo 2).
+ENV = "development"
+APP_URL = "https://jda-pwa-staging.workers.dev"
+
+[env.staging.observability]
+enabled = true
+
+[[env.staging.d1_databases]]
+binding = "DB"
+database_name = "jda-pwa-staging"
+database_id = "TROCAR_PELO_ID_DO_D1_STAGING"
+migrations_dir = "migrations"
+
+[[env.staging.r2_buckets]]
+binding = "MEDIA"
+bucket_name = "jda-pwa-media-staging"
+
+# ----------------------------------------------------------------- production
+[env.production]
+name = "jda-pwa"
+
+[env.production.vars]
+ENV = "production"
+APP_URL = "https://TROCAR_PELO_DOMINIO_FINAL"
+
+[env.production.observability]
+enabled = true
+
+[[env.production.d1_databases]]
+binding = "DB"
+database_name = "jda-pwa-prod"
+database_id = "TROCAR_PELO_ID_DO_D1_PROD"
+migrations_dir = "migrations"
+
+[[env.production.r2_buckets]]
+binding = "MEDIA"
+bucket_name = "jda-pwa-media"
