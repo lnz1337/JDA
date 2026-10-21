@@ -1,0 +1,101 @@
+{
+  "_comentario": [
+    "Dados COMERCIAIS do funil, mantidos à mão. Os 'id' são os SKU cadastrados na Payt.",
+    "Uma fonte por campo (CLAUDE.md §3):",
+    "  - nome, descrição, aviso e lições dos itens de bundle vêm de seed/produtos.json (gerado);",
+    "  - a jornada vem de seed/jornada-19-dias.json (gerado);",
+    "  - preço, checkout, ordem e assinatura vêm daqui.",
+    "Por isso os produtos que já têm conteúdo (jornada-meu-anjo e os 5 itens) NÃO repetem",
+    "name/kind/listed/description_md aqui — o seed falha se repetirem.",
+    "Bundles e assinaturas não têm arquivo de conteúdo, então o nome deles mora aqui.",
+    "Preços em centavos. checkout_url fica null até os links da Payt (CLAUDE.md §17)."
+  ],
+  "products": [
+    {
+      "id": "jornada-meu-anjo",
+      "price_cents": 9700,
+      "checkout_url": null,
+      "requires_subscription": 0,
+      "sort": 10
+    },
+    {
+      "id": "oracao-sao-miguel",
+      "name": "Oração de São Miguel — pacote completo",
+      "kind": "bundle",
+      "description_md": "A Oração de São Miguel do Monte Gargano, o Manual de Purificação e Autocuidado e o Mapa da Prosperidade Divina, juntos.",
+      "price_cents": 19700,
+      "checkout_url": null,
+      "requires_subscription": 0,
+      "listed": 1,
+      "sort": 20
+    },
+    {
+      "id": "jornada-cura-padre-pio",
+      "name": "Jornada de Cura com Padre Pio — pacote completo",
+      "kind": "bundle",
+      "description_md": "A Jornada de Cura com Padre Pio e a Limpeza com os Anjos, juntas.",
+      "price_cents": 9700,
+      "checkout_url": null,
+      "requires_subscription": 0,
+      "listed": 1,
+      "sort": 30
+    },
+    {
+      "id": "circulo-mensal",
+      "name": "Círculo de São Miguel — mensal",
+      "kind": "subscription",
+      "description_md": "Devocional diário, a novena do mês e o mural de intenções. Preço placeholder (CLAUDE.md §17).",
+      "price_cents": 2990,
+      "checkout_url": null,
+      "requires_subscription": 0,
+      "listed": 1,
+      "sort": 40
+    },
+    {
+      "id": "circulo-anual",
+      "name": "Círculo de São Miguel — anual",
+      "kind": "subscription",
+      "description_md": "O Círculo de São Miguel por um ano. Preço placeholder (CLAUDE.md §17).",
+      "price_cents": 14700,
+      "checkout_url": null,
+      "requires_subscription": 0,
+      "listed": 1,
+      "sort": 50
+    },
+    {
+      "id": "oracao-gargano",
+      "price_cents": null,
+      "checkout_url": null,
+      "requires_subscription": 0,
+      "sort": 90
+    },
+    {
+      "id": "manual-purificacao",
+      "price_cents": null,
+      "checkout_url": null,
+      "requires_subscription": 0,
+      "sort": 91
+    },
+    {
+      "id": "mapa-prosperidade",
+      "price_cents": null,
+      "checkout_url": null,
+      "requires_subscription": 0,
+      "sort": 92
+    },
+    {
+      "id": "jornada-cura",
+      "price_cents": null,
+      "checkout_url": null,
+      "requires_subscription": 0,
+      "sort": 93
+    },
+    {
+      "id": "limpeza-anjos",
+      "price_cents": null,
+      "checkout_url": null,
+      "requires_subscription": 0,
+      "sort": 94
+    }
+  ]
+}

@@ -20,6 +20,8 @@ Toda a monetização roda pela **Payt** (checkout + postback). O app nunca proce
 | Runtime | Um único Cloudflare Worker servindo API + assets estáticos (Workers Static Assets) |
 | API | Hono + TypeScript |
 | Front | Vite + React + TypeScript + `vite-plugin-pwa` (manifest + service worker) |
+| Build/dev | `@cloudflare/vite-plugin`: o Worker roda dentro do `vite dev` (mesma origem para API e client) e o build gera `dist/client` + `dist/jda_pwa` |
+| Testes | Vitest + `@cloudflare/vitest-plugin` (sucessor do `@cloudflare/vitest-pool-workers`, que foi descontinuado) |
 | Estilo | Tailwind |
 | Banco | Cloudflare D1 (migrations em `migrations/`) |
 | Arquivos | Cloudflare R2 (áudios MP3, PDFs, capas) servidos via Worker com checagem de acesso |
@@ -29,6 +31,13 @@ Toda a monetização roda pela **Payt** (checkout + postback). O app nunca proce
 | Admin | Rotas `/admin/*` protegidas por Cloudflare Access |
 
 Sem Supabase, sem Next.js, sem servidor fora da Cloudflare.
+
+### Ambientes e deploy
+
+O ambiente é escolhido **no build**, não no deploy. `CLOUDFLARE_ENV=staging vite build`
+resolve o `wrangler.toml` e grava `dist/jda_pwa/wrangler.json`; o `wrangler deploy`
+publica esse arquivo. Passar `--env` no `wrangler deploy` é **ignorado** — quem manda
+é a variável no build. Use sempre `npm run deploy:staging` / `npm run deploy:production`.
 
 ## 3. Estrutura de pastas
 
@@ -45,11 +54,54 @@ Sem Supabase, sem Next.js, sem servidor fora da Cloudflare.
 │  │  └─ sw/             # service worker custom (push + cache)
 │  └─ shared/            # tipos e constantes usados nos dois lados
 ├─ migrations/           # SQL D1 numerado
-├─ seed/                 # seed de produtos/programas/lições
+├─ seed/                 # produtos.json (à mão) + jornada-19-dias.json (gerado)
+├─ conteudo/             # fonte da verdade do conteúdo + pipeline de áudio
+├─ notebooks/            # geração dos MP3 no Google Colab
+├─ scripts/              # seed → SQL, upload de mídia, ícones
+├─ audio/                # MP3 gerados — fora do git
 ├─ fixtures/payt/        # payloads de postback reais/anonimizados para testes
 ├─ test/
 └─ wrangler.toml
 ```
+
+### Conteúdo, seed e áudio
+
+O conteúdo mora em markdown e os JSON de seed são **gerados**. Nunca editar um
+JSON gerado à mão: a próxima geração sobrescreve.
+
+| Fonte da verdade | Gera | Com |
+|---|---|---|
+| `conteudo/jornada-19-dias.md` | `seed/jornada-19-dias.json` | `python3 conteudo/gerar_seed.py` |
+| `conteudo/produtos/*.md` | `seed/produtos.json` | `python3 conteudo/gerar_seed_produtos.py` |
+| `conteudo/*.md` + `conteudo/gerar_audio.py` | os MP3 em `audio/` | `notebooks/gerar_audio_colab.ipynb` (Colab) |
+
+`seed/catalogo.json` é a exceção: mantido **à mão**, só com dado comercial
+(`price_cents`, `checkout_url`, `listed`, `sort`, `requires_subscription`). Os `id`
+são os **SKU cadastrados na Payt**.
+
+**Uma fonte por campo** — `scripts/seed-sql.ts` falha se um campo aparecer em duas:
+
+- nome, descrição, aviso, lições e `bundle_id` dos itens de bundle → `seed/produtos.json`;
+- produto, programa e as 19 lições da jornada → `seed/jornada-19-dias.json`;
+- preço, checkout, ordem e assinatura → `seed/catalogo.json`;
+- o nome dos bundles e das assinaturas também vem do catálogo, porque esses
+  produtos não têm arquivo de conteúdo.
+
+Os MP3 ficam em `audio/` (`audio/saida/dNN.mp3` e `audio/hino-sao-miguel.mp3`) e
+**não entram no git**: o destino é o R2, via `npm run media:upload:staging`. A
+duração de cada lição é lida do MP3 local na hora de gerar o SQL.
+
+### Quem mexe em quê
+
+O pipeline de conteúdo é tocado por outra sessão. Para não haver colisão:
+
+| Caminho | Dono |
+|---|---|
+| `conteudo/`, `notebooks/`, `seed/jornada-19-dias.json`, `seed/produtos.json` | pipeline de conteúdo |
+| `seed/catalogo.json`, `scripts/`, `migrations/`, `src/`, `test/` | aplicação |
+
+Quem trabalha na aplicação **não edita** os caminhos do pipeline — se precisar de
+mudança lá (um campo novo no JSON, por exemplo), pede em vez de editar.
 
 ## 4. Navegação (telas)
 
@@ -106,6 +158,7 @@ CREATE TABLE products (
   price_cents INTEGER,
   checkout_url TEXT,                 -- link de checkout Payt
   cover_key TEXT,                    -- R2
+  notice TEXT,                       -- aviso obrigatório na tela (ex.: saúde, seção 14)
   requires_subscription INTEGER NOT NULL DEFAULT 0,  -- conteúdo incluso no Círculo
   listed INTEGER NOT NULL DEFAULT 1, -- aparece na loja
   sort INTEGER NOT NULL DEFAULT 0
@@ -136,10 +189,14 @@ CREATE TABLE lessons (
   program_id TEXT NOT NULL REFERENCES programs(id),
   day INTEGER NOT NULL,
   title TEXT NOT NULL,
+  summary TEXT,                      -- frase curta usada na lista de dias
   body_md TEXT,
   audio_key TEXT,
   pdf_key TEXT,
   duration_s INTEGER,
+  push_text TEXT,                    -- texto do push daquele dia (seção 11)
+  bonus_audio_key TEXT,              -- faixa extra; ex.: hino no dia 19
+  bonus_title TEXT,
   UNIQUE (program_id, day)
 );
 
@@ -281,7 +338,7 @@ Endpoint: `POST /api/payt/postback`. Cadastrar na Payt em Ferramentas → Integr
 
 ### Testes obrigatórios
 
-Usar `fixtures/payt/*.json`: pedido pago, pedido com order bump, upsell, reembolso, chargeback, ativação, renovação, atraso e cancelamento de assinatura, `fake_email`, postback duplicado, `integration_key` inválida. Rodar com Vitest + `@cloudflare/vitest-pool-workers`.
+Usar `fixtures/payt/*.json`: pedido pago, pedido com order bump, upsell, reembolso, chargeback, ativação, renovação, atraso e cancelamento de assinatura, `fake_email`, postback duplicado, `integration_key` inválida. Rodar com Vitest + `@cloudflare/vitest-plugin`.
 
 ### Compra dentro do app
 

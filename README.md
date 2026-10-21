@@ -4,8 +4,8 @@ PWA de conteúdo devocional católico servido por um único Cloudflare Worker
 (API em Hono + assets estáticos do client React). A spec completa está em
 [CLAUDE.md](CLAUDE.md); este README cobre só como rodar e publicar.
 
-> Fase atual: **1 — scaffold** (CLAUDE.md §16). Banco, postback da Payt, auth e
-> telas entram nas fases seguintes.
+> Fase atual: **2 — banco** (CLAUDE.md §16). Schema do D1, seed da jornada e do
+> funil, áudios no R2. Postback da Payt, auth e telas entram nas fases seguintes.
 
 ## Pré-requisitos
 
@@ -44,12 +44,49 @@ Checagem rápida: `GET http://localhost:5173/api/health` devolve
 | `npm run build` | Build do client e do Worker em `dist/` |
 | `npm run typecheck` | `tsc -b` nos quatro projetos (client, sw, worker, node) |
 | `npm test` | Vitest dentro do runtime do Workers |
+| `npm run db:migrate:local` / `:staging` | Aplica as migrations do D1 |
+| `npm run seed:build` | Gera `seed/seed.sql` a partir dos JSON de seed |
+| `npm run seed:local` / `:staging` | Gera e aplica o seed (idempotente) |
+| `npm run media:upload:staging` | Sobe os MP3 de `audio/` para o R2 de staging |
 | `npm run cf-typegen` | Regenera `worker-configuration.d.ts` a partir do wrangler.toml |
 | `npm run icons` | Regenera os ícones placeholder do PWA |
 | `npm run deploy:staging` | Build com `CLOUDFLARE_ENV=staging` + `wrangler deploy` |
 | `npm run deploy:production` | Idem para produção |
 
 Antes de dar uma fase por concluída: `npm run typecheck && npm test`.
+
+## Banco, seed e mídia
+
+O conteúdo mora em markdown e os JSON de seed são gerados (**não editar à mão**):
+
+```bash
+python3 conteudo/gerar_seed.py           # jornada-19-dias.md  -> seed/jornada-19-dias.json
+python3 conteudo/gerar_seed_produtos.py  # conteudo/produtos/* -> seed/produtos.json
+npm run db:migrate:local                 # cria o schema
+npm run seed:local                       # seed/*.json -> seed/seed.sql -> D1
+```
+
+`seed/catalogo.json` é a exceção: mantido à mão, só com dado comercial (preço,
+checkout, ordem), e os `id` são os **SKU cadastrados na Payt**. Cada campo tem uma
+fonte só — o seed falha se o mesmo campo aparecer em duas (CLAUDE.md §3).
+O SQL gerado é idempotente
+(`INSERT ... ON CONFLICT DO UPDATE`), então rodar o seed de novo atualiza em vez de
+duplicar. Duas colunas são preservadas no conflito (`checkout_url` e `duration_s`):
+um valor que já exista no banco não é sobrescrito por `NULL`.
+
+A duração de cada lição é lida do MP3 local em `audio/saida/dNN.mp3` na hora de
+gerar o SQL. Sem a pasta `audio/`, o seed roda igual e mantém as durações que já
+estiverem no banco.
+
+Os áudios ficam fora do git. Para publicá-los no R2 de staging:
+
+```bash
+npm run media:upload:staging       # audio/saida/dNN.mp3 -> jornada/dNN.mp3
+```
+
+O script lista o bucket antes e pula o que já está lá com o mesmo tamanho; regerou
+um dia só, ele sobe só aquele. Precisa de `CLOUDFLARE_API_TOKEN` e
+`CLOUDFLARE_ACCOUNT_ID` no ambiente.
 
 ## Deploy de staging
 
@@ -101,14 +138,22 @@ Para conferir o que seria enviado sem publicar:
 src/worker/     API Hono (routes/, services/, lib/)
 src/client/     PWA React (screens/, components/, sw/)
 src/shared/     tipos e constantes usados pelos dois lados
-migrations/     SQL do D1 (fase 2)
-seed/           seed de produtos/programas/lições (fase 2)
+migrations/     SQL do D1
+seed/           produtos.json (à mão) + jornada-19-dias.json (gerado)
+conteudo/       fonte da verdade do conteúdo + pipeline de áudio
+notebooks/      geração dos MP3 no Google Colab
+scripts/        seed -> SQL, upload de mídia, ícones
+audio/          MP3 gerados — fora do git
 fixtures/payt/  payloads de postback para teste (fase 3)
 test/           Vitest no runtime do Workers
 ```
 
 ## Pendências desta fase
 
+- `checkout_url` dos produtos está `NULL`: depende dos links da Payt (CLAUDE.md §17).
+  A coluna é preservada no seed, então pode ser preenchida pelo admin sem medo.
+- Preços do Círculo (`circulo-mensal`, `circulo-anual`) são placeholder.
+- Lições dos itens de bundle são placeholder (`_Conteúdo em produção._`).
 - Nome e identidade visual do app: `APP_NAME` em `src/shared/constants.ts` e os
   ícones em `public/icons/` são placeholder (CLAUDE.md §17).
 - `database_id` e `APP_URL` de **produção** no `wrangler.toml` (staging já está

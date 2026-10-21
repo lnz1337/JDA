@@ -12,3 +12,6 @@ npm-debug.log*
 # Áudios gerados pelo conteudo/gerar_audio.py (vão para o R2, não para o git)
 audio/
 __pycache__/
+
+# SQL gerado por scripts/seed-sql.ts
+seed/seed.sql
