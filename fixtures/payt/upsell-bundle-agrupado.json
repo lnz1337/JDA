@@ -1,0 +1,45 @@
+{
+  "_nota": "SINTETICO: montado a partir do formato descrito no CLAUDE.md §7, nao e um payload real da Payt. Substituir por um postback de verdade quando houver compra de teste.",
+  "integration_key": "chave-de-teste-sintetica",
+  "test": true,
+  "updated_at": "2026-10-21T18:00:00Z",
+  "type": "upsell",
+  "status": "paid",
+  "transaction": {
+    "id": "TRX-1003",
+    "payment_status": "paid",
+    "amount": 19700,
+    "payment_method": "credit_card"
+  },
+  "customer": {
+    "name": "Maria Souza",
+    "email": "maria.souza@exemplo.com.br",
+    "phone": "+55 (11) 98888-7777",
+    "fake_email": false,
+    "code": "CUS-0001"
+  },
+  "product": {
+    "sku": "oracao-sao-miguel",
+    "code": "PAYT-UP1",
+    "name": "Oração de São Miguel — pacote completo",
+    "items": [
+      {
+        "sku": "oracao-gargano",
+        "code": "PAYT-UP1-A",
+        "name": "Oração de São Miguel do Monte Gargano"
+      },
+      {
+        "sku": "manual-purificacao",
+        "code": "PAYT-UP1-B",
+        "name": "Manual de Purificação e Autocuidado"
+      },
+      {
+        "sku": "mapa-prosperidade",
+        "code": "PAYT-UP1-C",
+        "name": "Mapa da Prosperidade Divina"
+      }
+    ]
+  },
+  "order_bumps": [],
+  "subscription": null
+}

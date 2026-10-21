@@ -1,0 +1,25 @@
+{
+  "_nota": "SINTETICO: montado a partir do formato descrito no CLAUDE.md §7, nao e um payload real da Payt. Substituir por um postback de verdade quando houver compra de teste.",
+  "integration_key": "chave-de-teste-sintetica",
+  "test": true,
+  "updated_at": "2026-10-21T18:00:00Z",
+  "type": "order",
+  "status": "chargeback",
+  "transaction": {
+    "id": "TRX-1002",
+    "payment_status": "chargeback",
+    "amount": 9700,
+    "payment_method": "credit_card"
+  },
+  "customer": {
+    "name": "Maria Souza",
+    "email": "joao.pereira@exemplo.com.br",
+    "phone": "+55 (11) 98888-7777",
+    "fake_email": false,
+    "code": "CUS-0001"
+  },
+  "product": {
+    "sku": "jornada-meu-anjo",
+    "code": "PAYT-FRONT"
+  }
+}

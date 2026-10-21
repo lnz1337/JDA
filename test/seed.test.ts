@@ -1,26 +1,7 @@
 import { env } from 'cloudflare:workers';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { aplicarSeed, comandosDoSeed, limparBanco } from './ajuda';
 import { envTeste } from './env-de-teste';
-
-/** O gerador separa os comandos com `-- @stmt`; aqui só limpamos os comentários. */
-function comandos(sql: string): string[] {
-  return sql
-    .split(/^-- @stmt$/m)
-    .map((bloco) =>
-      bloco
-        .split('\n')
-        .filter((linha) => !linha.trimStart().startsWith('--'))
-        .join('\n')
-        .trim(),
-    )
-    .filter((bloco) => bloco.length > 0);
-}
-
-async function aplicarSeed(): Promise<void> {
-  const stmts = comandos(envTeste.TEST_SEED_SQL);
-  expect(stmts.length).toBe(6); // products, programs, limpa+insere lessons, limpa+insere bundle_items
-  await env.DB.batch(stmts.map((sql) => env.DB.prepare(sql)));
-}
 
 async function contagens(): Promise<Record<string, number>> {
   const r = await env.DB.prepare(
@@ -33,7 +14,13 @@ async function contagens(): Promise<Record<string, number>> {
   return r ?? {};
 }
 
+beforeEach(limparBanco);
+
 describe('seed', () => {
+  it('gera seis comandos: products, programs, limpa+insere lessons, limpa+insere bundle_items', () => {
+    expect(comandosDoSeed(envTeste.TEST_SEED_SQL)).toHaveLength(6);
+  });
+
   it('rodado duas vezes não duplica nada', async () => {
     await aplicarSeed();
     const primeira = await contagens();

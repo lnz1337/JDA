@@ -26,6 +26,9 @@ export default defineConfig({
               bindings: {
                 TEST_MIGRATIONS: migrations,
                 TEST_SEED_SQL: seedSql,
+                // Valor sintético, igual ao das fixtures. A integration_key real
+                // vive só como secret (wrangler secret put), nunca em arquivo.
+                PAYT_INTEGRATION_KEY: 'chave-de-teste-sintetica',
               },
             },
           }),

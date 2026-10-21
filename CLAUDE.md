@@ -256,7 +256,8 @@ CREATE TABLE payt_events (
   payload_json TEXT NOT NULL,
   received_at TEXT NOT NULL,
   processed_at TEXT,
-  error TEXT
+  error TEXT,
+  needs_review INTEGER NOT NULL DEFAULT 0   -- fila do admin (seção 13)
 );
 
 CREATE TABLE intentions (
@@ -324,9 +325,9 @@ Endpoint: `POST /api/payt/postback`. Cadastrar na Payt em Ferramentas → Integr
 
 ### Processamento
 
-1. Validar `integration_key` contra o secret `PAYT_INTEGRATION_KEY`. Se não bater, responde 401.
-2. Se `test === true` e `ENV=production`, gravar e ignorar.
-3. Gravar em `payt_events` com `dedupe_key`. Se for duplicado, responde 200 e para.
+1. Validar `integration_key` contra o secret `PAYT_INTEGRATION_KEY` (no corpo ou no header `x-integration-key`). Se não bater, responde 401 e **não grava nada**.
+2. Gravar em `payt_events` com `dedupe_key`, **antes de qualquer validação de conteúdo**: o formato V1 real ainda não foi visto, e o primeiro postback de verdade precisa ficar inspecionável mesmo que o processamento quebre. Se for duplicado, responde 200 e para. Payload sem `transaction_id` entra com um ULID no `dedupe_key`, para não ser confundido com outro igualmente ilegível.
+3. Se `test === true` e `ENV=production`, para por aqui (já está gravado).
 4. Responder **200 rápido** e processar via `ctx.waitUntil`. Erro no processamento vai para `payt_events.error`, sem quebrar a resposta.
 5. Encontrar ou criar o usuário:
    - por `customer.email` (lowercase), exceto se `customer.fake_email === true`;
@@ -343,10 +344,13 @@ Endpoint: `POST /api/payt/postback`. Cadastrar na Payt em Ferramentas → Integr
 | `subscription_overdue` | Atualizar status para `overdue` (a carência vale pela regra da seção 6) |
 | `subscription_canceled` | Atualizar status com `subscription.status` (ex.: `canceled_by_customer`) |
 | `waiting_payment`, `lost_cart`, `canceled` | Só registrar (futuro: recuperação) |
+| Qualquer outro status | Registrar e marcar `needs_review`: status que ninguém previu é como um formato diferente do esperado aparece |
 
 `subscription.periodicity`: `1 month` vira `mensal`, `1 year` vira `anual`.
 
 ### Testes obrigatórios
+
+As fixtures em `fixtures/payt/` são **sintéticas**, montadas a partir desta seção — não são payloads reais (ver `fixtures/payt/README.md`). `npm run payt:last:staging` mostra os últimos postbacks gravados, para substituí-las pelo formato real depois da primeira compra de teste.
 
 Usar `fixtures/payt/*.json`: pedido pago, pedido com order bump, upsell, reembolso, chargeback, ativação, renovação, atraso e cancelamento de assinatura, `fake_email`, postback duplicado, `integration_key` inválida. Rodar com Vitest + `@cloudflare/vitest-plugin`.
 

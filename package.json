@@ -21,6 +21,7 @@
     "seed:local": "npm run seed:build && wrangler d1 execute DB --local --file=seed/seed.sql",
     "seed:staging": "npm run seed:build && wrangler d1 execute DB --env staging --remote --file=seed/seed.sql",
     "media:upload:staging": "node scripts/upload-media.ts jda-pwa-media-staging",
+    "payt:last:staging": "node scripts/payt-last.ts staging 5",
     "cf-typegen": "wrangler types",
     "icons": "node scripts/make-icons.mjs",
     "deploy:staging": "npm run build:staging && wrangler deploy",

@@ -4,8 +4,9 @@ PWA de conteúdo devocional católico servido por um único Cloudflare Worker
 (API em Hono + assets estáticos do client React). A spec completa está em
 [CLAUDE.md](CLAUDE.md); este README cobre só como rodar e publicar.
 
-> Fase atual: **2 — banco** (CLAUDE.md §16). Schema do D1, seed da jornada e do
-> funil, áudios no R2. Postback da Payt, auth e telas entram nas fases seguintes.
+> Fase atual: **3 — postback da Payt** (CLAUDE.md §16). Schema do D1, seed, áudios
+> no R2 e o endpoint de postback com `entitlements.ts`. Auth e telas entram nas
+> fases seguintes.
 
 ## Pré-requisitos
 
@@ -48,6 +49,7 @@ Checagem rápida: `GET http://localhost:5173/api/health` devolve
 | `npm run seed:build` | Gera `seed/seed.sql` a partir dos JSON de seed |
 | `npm run seed:local` / `:staging` | Gera e aplica o seed (idempotente) |
 | `npm run media:upload:staging` | Sobe os MP3 de `audio/` para o R2 de staging |
+| `npm run payt:last:staging` | Últimos 5 postbacks da Payt gravados no staging |
 | `npm run cf-typegen` | Regenera `worker-configuration.d.ts` a partir do wrangler.toml |
 | `npm run icons` | Regenera os ícones placeholder do PWA |
 | `npm run deploy:staging` | Build com `CLOUDFLARE_ENV=staging` + `wrangler deploy` |
@@ -97,6 +99,29 @@ divergem. O script lista o bucket antes e pula o que já está lá com o mesmo
 tamanho; regerou um áudio só, ele sobe só aquele. Lição cujo MP3 ainda não existe
 é avisada, não é erro. Precisa de `CLOUDFLARE_API_TOKEN` e `CLOUDFLARE_ACCOUNT_ID`
 no ambiente.
+
+## Postback da Payt
+
+Endpoint: `POST /api/payt/postback`. Cadastrar na Payt em
+Ferramentas → Integrações → Postback, tipo **PayT V1**, todos os eventos.
+
+**Antes de cadastrar**, grave o secret — sem ele o endpoint responde 401 a tudo e
+nada é gravado:
+
+```bash
+npx wrangler secret put PAYT_INTEGRATION_KEY --env staging
+```
+
+Depois da primeira compra de teste:
+
+```bash
+npm run payt:last:staging
+```
+
+O endpoint grava o payload cru **antes** de validar o conteúdo, então o postback
+aparece aí inteiro mesmo que o processamento falhe. As fixtures em
+`fixtures/payt/` são sintéticas até serem substituídas pelo formato real — veja
+`fixtures/payt/README.md`.
 
 ## Deploy de staging
 

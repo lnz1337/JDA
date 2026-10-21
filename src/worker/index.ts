@@ -2,10 +2,12 @@ import { Hono } from 'hono';
 import type { ApiErrorResponse } from '../shared/types';
 import type { AppBindings } from './lib/types';
 import { health } from './routes/health';
+import { payt } from './routes/payt';
 
 const app = new Hono<AppBindings>();
 
 app.route('/api/health', health);
+app.route('/api/payt', payt);
 
 app.notFound((c) => {
   const body: ApiErrorResponse = { error: 'not_found' };

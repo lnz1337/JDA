@@ -11,7 +11,8 @@
  *   <produto>/lNN.mp3            <- audio/saida/<produto>/lNN.mp3
  *
  * Lista o bucket antes de enviar (uma chamada por prefixo) e pula o que já está
- * lá com o mesmo tamanho. Lição sem áudio gravado ainda é só avisada, não é erro.
+ * lá com o mesmo tamanho. Lição sem MP3 local simplesmente não entra na lista:
+ * boa parte das lições é de leitura e não tem áudio por desenho.
  *
  * Precisa de CLOUDFLARE_API_TOKEN e CLOUDFLARE_ACCOUNT_ID no ambiente (a listagem
  * usa a API da Cloudflare; o upload usa `wrangler r2 object put --remote`).
@@ -124,19 +125,12 @@ function enviar(arquivo: Arquivo): void {
 }
 
 const chaves = chavesDoSeed();
+// Lição sem MP3 local é lição de leitura (não tem audio_key) ou áudio ainda não
+// gerado; nos dois casos não há o que enviar e não é problema.
 const encontrados: Arquivo[] = [];
-const semArquivo: string[] = [];
-
 for (const chave of chaves) {
   const local = acharLocal(chave);
   if (local) encontrados.push({ chave, local });
-  else semArquivo.push(chave);
-}
-
-if (semArquivo.length > 0) {
-  console.log(`Sem MP3 local ainda (não serão enviados): ${semArquivo.length}`);
-  for (const c of semArquivo) console.log(`  ${c}`);
-  console.log('');
 }
 
 const prefixos = [...new Set(encontrados.map((a) => `${a.chave.split('/')[0]}/`))].sort();
@@ -164,7 +158,4 @@ for (const arquivo of encontrados) {
   console.log('ok');
 }
 
-console.log(
-  `\n${enviados} enviado(s), ${pulados} pulado(s), ${encontrados.length} no bucket, ` +
-    `${semArquivo.length} ainda sem áudio.`,
-);
+console.log(`\n${enviados} enviado(s), ${pulados} pulado(s), ${encontrados.length} no bucket.`);

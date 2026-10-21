@@ -1,0 +1,32 @@
+{
+  "_nota": "SINTETICO: montado a partir do formato descrito no CLAUDE.md §7, nao e um payload real da Payt. Substituir por um postback de verdade quando houver compra de teste.",
+  "integration_key": "chave-de-teste-sintetica",
+  "test": true,
+  "updated_at": "2026-10-21T18:00:00Z",
+  "type": "subscription",
+  "status": "subscription_overdue",
+  "transaction": {
+    "id": "TRX-2001",
+    "payment_status": "paid",
+    "amount": 2990,
+    "payment_method": "credit_card"
+  },
+  "customer": {
+    "name": "Maria Souza",
+    "email": "maria.souza@exemplo.com.br",
+    "phone": "+55 (11) 98888-7777",
+    "fake_email": false,
+    "code": "CUS-0001"
+  },
+  "product": {
+    "sku": "circulo-mensal",
+    "code": "PAYT-CIRCULO-M"
+  },
+  "subscription": {
+    "code": "SUB-5001",
+    "status": "overdue",
+    "periodicity": "1 month",
+    "started_at": "2026-10-21T18:00:00Z",
+    "next_charge_at": "2026-11-21T18:00:00Z"
+  }
+}
