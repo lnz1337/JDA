@@ -81,12 +81,22 @@ estiverem no banco.
 Os áudios ficam fora do git. Para publicá-los no R2 de staging:
 
 ```bash
-npm run media:upload:staging       # audio/saida/dNN.mp3 -> jornada/dNN.mp3
+npm run media:upload:staging
 ```
 
-O script lista o bucket antes e pula o que já está lá com o mesmo tamanho; regerou
-um dia só, ele sobe só aquele. Precisa de `CLOUDFLARE_API_TOKEN` e
-`CLOUDFLARE_ACCOUNT_ID` no ambiente.
+O caminho local espelha a chave no R2, que é o `audio_key` do banco:
+
+| Local | Chave no R2 |
+|---|---|
+| `audio/saida/dNN.mp3` | `jornada/dNN.mp3` |
+| `audio/hino-sao-miguel.mp3` | `jornada/hino-sao-miguel.mp3` |
+| `audio/saida/<produto>/lNN.mp3` | `<produto>/lNN.mp3` |
+
+A lista sai dos mesmos JSON que o seed lê, então chave no D1 e objeto no R2 não
+divergem. O script lista o bucket antes e pula o que já está lá com o mesmo
+tamanho; regerou um áudio só, ele sobe só aquele. Lição cujo MP3 ainda não existe
+é avisada, não é erro. Precisa de `CLOUDFLARE_API_TOKEN` e `CLOUDFLARE_ACCOUNT_ID`
+no ambiente.
 
 ## Deploy de staging
 

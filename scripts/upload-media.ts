@@ -1,76 +1,101 @@
 /**
- * Envia os áudios da jornada para o bucket R2.
+ * Envia para o R2 os áudios referenciados pelo seed.
  *
  *   node scripts/upload-media.ts [bucket]      (padrão: jda-pwa-media-staging)
  *
- * audio/saida/dNN.mp3      -> jornada/dNN.mp3
- * audio/hino-sao-miguel.mp3 -> jornada/hino-sao-miguel.mp3
+ * A lista sai das MESMAS fontes que o seed usa, então a chave no R2 é sempre o
+ * `audio_key` que foi para o banco — não dá para divergir:
  *
- * Lista o bucket antes de enviar e pula o que já está lá com o mesmo tamanho,
- * então rodar de novo depois de regerar um único dia sobe só aquele arquivo.
+ *   jornada/dNN.mp3              <- audio/saida/dNN.mp3
+ *   jornada/hino-sao-miguel.mp3  <- audio/hino-sao-miguel.mp3
+ *   <produto>/lNN.mp3            <- audio/saida/<produto>/lNN.mp3
+ *
+ * Lista o bucket antes de enviar (uma chamada por prefixo) e pula o que já está
+ * lá com o mesmo tamanho. Lição sem áudio gravado ainda é só avisada, não é erro.
  *
  * Precisa de CLOUDFLARE_API_TOKEN e CLOUDFLARE_ACCOUNT_ID no ambiente (a listagem
  * usa a API da Cloudflare; o upload usa `wrangler r2 object put --remote`).
  */
 import { spawnSync } from 'node:child_process';
-import { existsSync, statSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
+import { existsSync, readFileSync, statSync } from 'node:fs';
+import { basename, dirname, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { BONUS } from './seed-sql.ts';
 
 const RAIZ = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const BUCKET = process.argv[2] ?? 'jda-pwa-media-staging';
-const PREFIXO = 'jornada/';
 const CONTENT_TYPE = 'audio/mpeg';
 
+/** Entrypoint JS do wrangler: chamar o .cmd pelo spawn quebra no Windows. */
+const WRANGLER = resolve(RAIZ, 'node_modules', 'wrangler', 'bin', 'wrangler.js');
+
 interface Arquivo {
-  local: string;
   chave: string;
+  local: string;
 }
 
-function arquivos(): Arquivo[] {
-  const dias = Array.from({ length: 19 }, (_, i) => {
-    const nome = `d${String(i + 1).padStart(2, '0')}.mp3`;
-    return { local: resolve(RAIZ, 'audio', 'saida', nome), chave: `${PREFIXO}${nome}` };
-  });
-  return [
-    ...dias,
-    {
-      local: resolve(RAIZ, 'audio', 'hino-sao-miguel.mp3'),
-      chave: `${PREFIXO}hino-sao-miguel.mp3`,
-    },
+function lerJson<T>(caminho: string): T {
+  return JSON.parse(readFileSync(resolve(RAIZ, caminho), 'utf8')) as T;
+}
+
+/** audio/saida/<chave>, audio/saida/<arquivo> ou audio/<arquivo>, o que existir. */
+function acharLocal(chave: string): string | null {
+  const candidatos = [
+    resolve(RAIZ, 'audio', 'saida', chave),
+    resolve(RAIZ, 'audio', 'saida', basename(chave)),
+    resolve(RAIZ, 'audio', basename(chave)),
   ];
+  return candidatos.find((c) => existsSync(c)) ?? null;
 }
 
-async function listarBucket(): Promise<Map<string, number>> {
+function chavesDoSeed(): string[] {
+  const jornada = lerJson<{ lessons: Array<{ audio_key: string | null }> }>(
+    'seed/jornada-19-dias.json',
+  );
+  const produtos = lerJson<{ lessons: Array<{ audio_key: string | null }> }>('seed/produtos.json');
+
+  const chaves = [
+    ...jornada.lessons.map((l) => l.audio_key),
+    BONUS.audio_key,
+    ...produtos.lessons.map((l) => l.audio_key),
+  ].filter((c): c is string => Boolean(c));
+
+  return [...new Set(chaves)].sort();
+}
+
+async function listarBucket(prefixos: string[]): Promise<Map<string, number>> {
   const token = process.env.CLOUDFLARE_API_TOKEN;
   const conta = process.env.CLOUDFLARE_ACCOUNT_ID;
   if (!token || !conta) {
     throw new Error('defina CLOUDFLARE_API_TOKEN e CLOUDFLARE_ACCOUNT_ID no ambiente');
   }
 
-  const url =
-    `https://api.cloudflare.com/client/v4/accounts/${conta}` +
-    `/r2/buckets/${BUCKET}/objects?prefix=${encodeURIComponent(PREFIXO)}&per_page=1000`;
+  const mapa = new Map<string, number>();
 
-  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-  const corpo = (await res.json()) as {
-    success: boolean;
-    errors?: Array<{ message: string }>;
-    result?: Array<{ key: string; size?: number; content_length?: number }>;
-  };
+  for (const prefixo of prefixos) {
+    const url =
+      `https://api.cloudflare.com/client/v4/accounts/${conta}` +
+      `/r2/buckets/${BUCKET}/objects?prefix=${encodeURIComponent(prefixo)}&per_page=1000`;
 
-  if (!res.ok || !corpo.success) {
-    const motivo = corpo.errors?.map((e) => e.message).join('; ') ?? `HTTP ${res.status}`;
-    throw new Error(`não consegui listar o bucket ${BUCKET}: ${motivo}`);
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+    const corpo = (await res.json()) as {
+      success: boolean;
+      errors?: Array<{ message: string }>;
+      result?: Array<{ key: string; size?: number; content_length?: number }>;
+    };
+
+    if (!res.ok || !corpo.success) {
+      const motivo = corpo.errors?.map((e) => e.message).join('; ') ?? `HTTP ${res.status}`;
+      throw new Error(`não consegui listar ${BUCKET}/${prefixo}: ${motivo}`);
+    }
+
+    for (const o of corpo.result ?? []) {
+      mapa.set(o.key, o.size ?? o.content_length ?? -1);
+    }
   }
 
-  return new Map(
-    (corpo.result ?? []).map((o) => [o.key, o.size ?? o.content_length ?? -1] as const),
-  );
+  return mapa;
 }
-
-/** Entrypoint JS do wrangler: chamar o .cmd pelo spawn quebra no Windows. */
-const WRANGLER = resolve(RAIZ, 'node_modules', 'wrangler', 'bin', 'wrangler.js');
 
 function enviar(arquivo: Arquivo): void {
   const r = spawnSync(
@@ -98,22 +123,30 @@ function enviar(arquivo: Arquivo): void {
   }
 }
 
-const lista = arquivos();
+const chaves = chavesDoSeed();
+const encontrados: Arquivo[] = [];
+const semArquivo: string[] = [];
 
-const faltando = lista.filter((a) => !existsSync(a.local));
-if (faltando.length > 0) {
-  console.error('Arquivos ausentes em audio/ (gere pelo notebook antes):');
-  for (const a of faltando) console.error(`  ${a.local}`);
-  process.exit(1);
+for (const chave of chaves) {
+  const local = acharLocal(chave);
+  if (local) encontrados.push({ chave, local });
+  else semArquivo.push(chave);
 }
 
-const noBucket = await listarBucket();
-console.log(`Bucket ${BUCKET}: ${noBucket.size} objeto(s) em ${PREFIXO}`);
+if (semArquivo.length > 0) {
+  console.log(`Sem MP3 local ainda (não serão enviados): ${semArquivo.length}`);
+  for (const c of semArquivo) console.log(`  ${c}`);
+  console.log('');
+}
+
+const prefixos = [...new Set(encontrados.map((a) => `${a.chave.split('/')[0]}/`))].sort();
+const noBucket = await listarBucket(prefixos);
+console.log(`Bucket ${BUCKET}: ${noBucket.size} objeto(s) em ${prefixos.join(', ')}`);
 
 let enviados = 0;
 let pulados = 0;
 
-for (const arquivo of lista) {
+for (const arquivo of encontrados) {
   const tamanhoLocal = statSync(arquivo.local).size;
   const tamanhoRemoto = noBucket.get(arquivo.chave);
 
@@ -123,11 +156,15 @@ for (const arquivo of lista) {
     continue;
   }
 
-  const motivo = tamanhoRemoto === undefined ? 'novo' : `tamanho mudou: ${tamanhoRemoto} -> ${tamanhoLocal}`;
-  process.stdout.write(`↑ ${arquivo.chave} (${motivo})… `);
+  const motivo =
+    tamanhoRemoto === undefined ? 'novo' : `tamanho mudou: ${tamanhoRemoto} -> ${tamanhoLocal}`;
+  process.stdout.write(`↑ ${arquivo.chave} (${motivo}, de ${relative(RAIZ, arquivo.local)})… `);
   enviar(arquivo);
   enviados += 1;
   console.log('ok');
 }
 
-console.log(`\n${enviados} enviado(s), ${pulados} pulado(s), ${lista.length} no total.`);
+console.log(
+  `\n${enviados} enviado(s), ${pulados} pulado(s), ${encontrados.length} no bucket, ` +
+    `${semArquivo.length} ainda sem áudio.`,
+);

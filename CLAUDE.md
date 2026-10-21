@@ -87,9 +87,19 @@ são os **SKU cadastrados na Payt**.
 - o nome dos bundles e das assinaturas também vem do catálogo, porque esses
   produtos não têm arquivo de conteúdo.
 
-Os MP3 ficam em `audio/` (`audio/saida/dNN.mp3` e `audio/hino-sao-miguel.mp3`) e
-**não entram no git**: o destino é o R2, via `npm run media:upload:staging`. A
-duração de cada lição é lida do MP3 local na hora de gerar o SQL.
+Os MP3 ficam em `audio/` e **não entram no git**: o destino é o R2, via
+`npm run media:upload:staging`. O caminho local espelha o `audio_key` que vai para
+o banco, e é esse `audio_key` que vira a chave no R2:
+
+| Local | Chave no R2 (`audio_key`) |
+|---|---|
+| `audio/saida/dNN.mp3` | `jornada/dNN.mp3` |
+| `audio/hino-sao-miguel.mp3` | `jornada/hino-sao-miguel.mp3` |
+| `audio/saida/<produto>/lNN.mp3` | `<produto>/lNN.mp3` |
+
+O script de upload monta a lista a partir dos mesmos JSON que o seed lê, então
+chave no D1 e objeto no R2 não podem divergir. Lição cujo MP3 ainda não existe é
+só avisada. A duração de cada lição é lida do MP3 local na hora de gerar o SQL.
 
 ### Quem mexe em quê
 

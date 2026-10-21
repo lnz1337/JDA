@@ -28,7 +28,7 @@ import { mp3DurationSeconds } from './lib/mp3.ts';
 const RAIZ = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
 /** Faixa extra do último dia da jornada (CLAUDE.md §5, coluna bonus_audio_key). */
-const BONUS = {
+export const BONUS = {
   day: 19,
   audio_key: 'jornada/hino-sao-miguel.mp3',
   title: 'Hino de São Miguel',
