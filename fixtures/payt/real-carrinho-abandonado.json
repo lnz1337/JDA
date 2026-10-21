@@ -1,0 +1,56 @@
+{
+  "_nota": "REAL E ANONIMIZADO: carrinho abandonado capturado em staging em 2026-10-21. Nome, e-mail, CPF, telefone e IP do cliente foram trocados por valores ficticios; o resto do payload esta como a Payt mandou. integration_key mascarada.",
+  "integration_key": "***",
+  "started_at": "2026-10-21 19:01:12.000000",
+  "updated_at": "2026-10-21 19:08:24.000000",
+  "seller_id": "R36K9M",
+  "test": false,
+  "type": "order",
+  "tangible": false,
+  "cart_id": "KYKKW78",
+  "status": "lost_cart",
+  "customer": {
+    "name": "Cliente de Exemplo",
+    "fake_email": false,
+    "email": "cliente.exemplo@exemplo.com.br",
+    "doc": "00000000191",
+    "phone": "11900000000",
+    "ip": "203.0.113.10",
+    "billing_address": {
+      "zipcode": "",
+      "street": "",
+      "street_number": "",
+      "complement": "",
+      "district": "",
+      "city": "",
+      "state": "",
+      "estate": "",
+      "country": "BR"
+    }
+  },
+  "product": {
+    "name": "Jornada com meu Anjo",
+    "price": 9700,
+    "code": "RVEEJ8",
+    "sku": "853b4781f48478",
+    "type": "digital",
+    "quantity": 1
+  },
+  "link": {
+    "title": "A Jornada Com Meu Anjo",
+    "sources": {
+      "src": "v3_99e747db-239d-4a06-af71-68032ab61179_6a4bc3005c24e3c18d86aeaa_3110_s-1",
+      "utm_term": "AD03::",
+      "utm_medium": "203401737247",
+      "utm_source": "googlejLj6ad92960855be0b046d41b8a",
+      "utm_content": "822712617987::CjwKCAjwxeHWBhBPEiwAiqtQ-eIGbqQnegrbAi_hbmKGDFhQ4oqTSdpO4p-ynsL2byaO99xLj-22ABoCxCYQAvD_BwE::",
+      "utm_campaign": "24189253340"
+    },
+    "url": "https://checkout.payt.com.br/9685d70857a4d0930ab539b3e9c32ca3?cart=KYKKW78",
+    "available_coupons": [],
+    "admin_url": "https://app.payt.com.br/admin/carrinhos/KYKKW78",
+    "query_params": {
+      "gclid": "CjwKCAjwxeHWBhBPEiwAiqtQ-eIGbqQnegrbAi_hbmKGDFhQ4oqTSdpO4p-ynsL2byaO99xLj-22ABoCxCYQAvD_BwE"
+    }
+  }
+}

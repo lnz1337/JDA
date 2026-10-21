@@ -4,7 +4,8 @@
  * Ordem (importa):
  *   1. lê o corpo cru e tenta entender (JSON ou form)
  *   2. confere a integration_key — sem ela, 401 e nada é gravado
- *   3. GRAVA o payload em payt_events, antes de qualquer validação de conteúdo
+ *   3. GRAVA o payload em payt_events (com a integration_key mascarada),
+ *      antes de qualquer validação de conteúdo
  *   4. responde 200 rápido e processa em waitUntil
  *
  * O passo 3 vir antes da validação é de propósito: o formato V1 real ainda não
@@ -81,6 +82,12 @@ export const payt = new Hono<AppBindings>().post('/postback', async (c) => {
     return c.json({ error: 'integration_key_invalida' }, 401);
   }
 
+  // A chave nunca vai para o banco: o payload fica inspecionável, o segredo não
+  // fica guardado nem aparece no `npm run payt:last:staging`.
+  const paraGravar: Record<string, unknown> = { ...(dados as Record<string, unknown>) };
+  if ('integration_key' in paraGravar) paraGravar.integration_key = '***';
+  const payloadJson = JSON.stringify(paraGravar);
+
   const resumo = extrairResumo(dados);
   const dedupeKey = await sha256Hex(textoDedupe(resumo));
   const id = novoId();
@@ -98,7 +105,7 @@ export const payt = new Hono<AppBindings>().post('/postback', async (c) => {
       resumo.transactionId,
       resumo.status,
       resumo.paymentStatus,
-      cru,
+      payloadJson,
       agoraIso(),
     )
     .run();

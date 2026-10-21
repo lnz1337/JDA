@@ -7,7 +7,7 @@
  * gravado antes de qualquer validação de conteúdo (ver routes/payt.ts).
  */
 import { z } from 'zod';
-import { agoraIso } from '../lib/datas';
+import { agoraIso, paytParaIso } from '../lib/datas';
 import { novoId } from '../lib/ids';
 import { concederEntitlement, revogarPorTransacao } from './entitlements';
 
@@ -302,8 +302,8 @@ async function salvarAssinatura(
       userId,
       planoDaPeriodicidade(assinatura?.periodicity),
       status,
-      assinatura?.next_charge_at ?? null,
-      assinatura?.started_at ?? null,
+      paytParaIso(assinatura?.next_charge_at),
+      paytParaIso(assinatura?.started_at),
       agoraIso(),
     )
     .run();

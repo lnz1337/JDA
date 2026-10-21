@@ -1,8 +1,8 @@
 {
-  "_nota": "SINTETICO: montado a partir do formato descrito no CLAUDE.md §7, nao e um payload real da Payt. Substituir por um postback de verdade quando houver compra de teste.",
+  "_nota": "SINTETICO: montado a partir do CLAUDE.md §7 e ajustado ao formato real observado em staging (datas em horario de Brasilia, sem fuso). Nao e um payload real da Payt.",
   "integration_key": "chave-de-teste-sintetica",
   "test": true,
-  "updated_at": "2026-10-21T18:00:00Z",
+  "updated_at": "2026-10-21 15:00:00.000000",
   "type": "upsell",
   "status": "paid",
   "transaction": {

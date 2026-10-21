@@ -8,13 +8,14 @@ import assinaturaAtivada from '../fixtures/payt/assinatura-ativada.json';
 import assinaturaAtrasada from '../fixtures/payt/assinatura-atrasada.json';
 import assinaturaCancelada from '../fixtures/payt/assinatura-cancelada.json';
 import assinaturaRenovada from '../fixtures/payt/assinatura-renovada.json';
-import carrinhoAbandonado from '../fixtures/payt/carrinho-abandonado.json';
+import carrinhoAbandonado from '../fixtures/payt/real-carrinho-abandonado.json';
 import chargeback from '../fixtures/payt/chargeback.json';
 import chaveInvalida from '../fixtures/payt/chave-invalida.json';
 import fakeEmail from '../fixtures/payt/fake-email.json';
 import pedidoComBump from '../fixtures/payt/pedido-com-order-bump.json';
 import pedidoPago from '../fixtures/payt/pedido-pago.json';
 import pedidoSkuDesconhecido from '../fixtures/payt/pedido-sku-desconhecido.json';
+import realPedidoPago from '../fixtures/payt/real-pedido-pago.json';
 import reembolso from '../fixtures/payt/reembolso.json';
 import reembolsoParcial from '../fixtures/payt/reembolso-parcial.json';
 import upsellAgrupado from '../fixtures/payt/upsell-bundle-agrupado.json';
@@ -22,6 +23,14 @@ import { prepararBanco } from './ajuda';
 import { envTeste } from './env-de-teste';
 
 const URL_POSTBACK = 'https://exemplo.test/api/payt/postback';
+
+/**
+ * As fixtures reais têm a integration_key mascarada (é assim que ela é gravada).
+ * Para postá-las, o teste repõe a chave sintética do ambiente de teste.
+ */
+function comChave<T extends object>(fixture: T): T & { integration_key: string } {
+  return { ...fixture, integration_key: envTeste.PAYT_INTEGRATION_KEY ?? '' };
+}
 
 /** Posta o payload e espera o processamento do waitUntil terminar. */
 async function postar(
@@ -131,7 +140,7 @@ describe('gravação do payload', () => {
       'SELECT payload_json, error, needs_review FROM payt_events',
     ).first<{ payload_json: string; error: string | null; needs_review: number }>();
 
-    expect(JSON.parse(linha?.payload_json ?? '{}')).toEqual(estranho);
+    expect(JSON.parse(linha?.payload_json ?? '{}')).toEqual({ ...estranho, integration_key: '***' });
     // Status que ninguém previu fica marcado para revisão, não some na fila.
     expect(linha?.needs_review).toBe(1);
   });
@@ -165,6 +174,54 @@ describe('gravação do payload', () => {
     expect(linha?.processed_at).toBeTruthy();
     expect(linha?.error).toBeNull();
     expect(await entitlementsDe('maria.souza@exemplo.com.br')).toEqual([]);
+  });
+});
+
+describe('integration_key não é guardada', () => {
+  it('grava a chave mascarada no payload', async () => {
+    await postar(pedidoPago);
+
+    const linha = await env.DB.prepare('SELECT payload_json FROM payt_events').first<{
+      payload_json: string;
+    }>();
+    const guardado = JSON.parse(linha?.payload_json ?? '{}') as Record<string, unknown>;
+
+    expect(guardado.integration_key).toBe('***');
+    expect(linha?.payload_json).not.toContain(envTeste.PAYT_INTEGRATION_KEY ?? 'nunca');
+    // O resto do payload continua inteiro, que é o ponto de guardar.
+    expect(guardado.status).toBe('paid');
+  });
+});
+
+describe('postback real da Payt', () => {
+  it('extrai transação, status e os 5 produtos do formato real', async () => {
+    await postar(comChave(realPedidoPago));
+
+    const linha = await evento('PAYTS2');
+    expect(linha?.status).toBe('paid');
+    expect(linha?.payment_status).toBe('paid');
+    // Os produtos são os fictícios da Payt: não resolvem, então pede revisão.
+    expect(linha?.needs_review).toBe(1);
+    expect(linha?.error).toMatch(/793269e47eb75/);
+  });
+
+  it('resolve os produtos do formato real pelo product_payt_map', async () => {
+    // A Payt gera o sku (hash), então o caminho de verdade é o code.
+    await env.DB.prepare(
+      "INSERT INTO product_payt_map (payt_code, product_id) VALUES ('4O9J39', 'jornada-meu-anjo')",
+    ).run();
+
+    await postar(comChave(realPedidoPago));
+
+    const { results } = await env.DB.prepare(
+      "SELECT product_id FROM entitlements WHERE status = 'active'",
+    ).all<{ product_id: string }>();
+    expect(results.map((r) => r.product_id)).toEqual(['jornada-meu-anjo']);
+
+    const linha = await evento('PAYTS2');
+    // Concedeu o que deu, e o que não resolveu ficou marcado para revisão.
+    expect(linha?.error).toBeNull();
+    expect(linha?.needs_review).toBe(1);
   });
 });
 
@@ -308,7 +365,8 @@ describe('assinatura', () => {
     expect(await assinatura('SUB-5001')).toMatchObject({
       plan: 'mensal',
       status: 'active',
-      next_charge_at: '2026-11-21T18:00:00Z',
+      // A Payt mandou "2026-11-21 15:00:00.000000" em horário de Brasília.
+      next_charge_at: '2026-11-21T18:00:00.000Z',
     });
   });
 
@@ -339,6 +397,13 @@ describe('assinatura', () => {
 
     expect((await assinatura('SUB-5001'))?.status).toBe('canceled_by_customer');
   });
+
+  it('next_charge_at só com data vira o fim do dia em Brasília', async () => {
+    await postar(assinaturaCancelada);
+
+    // "2026-11-21" -> 23:59:59 -03:00; o assinante fica com o dia 21 inteiro.
+    expect((await assinatura('SUB-5001'))?.next_charge_at).toBe('2026-11-22T02:59:59.000Z');
+  });
 });
 
 describe('eventos que só são registrados', () => {
@@ -351,10 +416,19 @@ describe('eventos que só são registrados', () => {
     expect(linha?.needs_review).toBe(0);
   });
 
-  it('carrinho abandonado não concede nada', async () => {
-    await postar(carrinhoAbandonado);
+  it('carrinho abandonado real não concede nada e não dá erro', async () => {
+    await postar(comChave(carrinhoAbandonado));
 
-    expect(await entitlementsDe('maria.souza@exemplo.com.br')).toEqual([]);
-    expect((await evento('TRX-4002'))?.error).toBeNull();
+    const linha = await env.DB.prepare(
+      "SELECT error, needs_review, transaction_id FROM payt_events WHERE status = 'lost_cart'",
+    ).first<{ error: string | null; needs_review: number; transaction_id: string | null }>();
+
+    expect(linha?.error).toBeNull();
+    expect(linha?.needs_review).toBe(0);
+    // lost_cart vem sem transaction_id: o dedupe cai no ULID, e grava mesmo assim.
+    expect(linha?.transaction_id).toBeNull();
+
+    const { results } = await env.DB.prepare('SELECT id FROM entitlements').all();
+    expect(results).toHaveLength(0);
   });
 });

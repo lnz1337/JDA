@@ -326,7 +326,7 @@ Endpoint: `POST /api/payt/postback`. Cadastrar na Payt em Ferramentas → Integr
 ### Processamento
 
 1. Validar `integration_key` contra o secret `PAYT_INTEGRATION_KEY` (no corpo ou no header `x-integration-key`). Se não bater, responde 401 e **não grava nada**.
-2. Gravar em `payt_events` com `dedupe_key`, **antes de qualquer validação de conteúdo**: o formato V1 real ainda não foi visto, e o primeiro postback de verdade precisa ficar inspecionável mesmo que o processamento quebre. Se for duplicado, responde 200 e para. Payload sem `transaction_id` entra com um ULID no `dedupe_key`, para não ser confundido com outro igualmente ilegível.
+2. Gravar em `payt_events` com `dedupe_key`, **antes de qualquer validação de conteúdo** e com a `integration_key` mascarada como `"***"` (o segredo não fica guardado): o formato V1 real ainda não foi visto, e o primeiro postback de verdade precisa ficar inspecionável mesmo que o processamento quebre. Se for duplicado, responde 200 e para. Payload sem `transaction_id` entra com um ULID no `dedupe_key`, para não ser confundido com outro igualmente ilegível.
 3. Se `test === true` e `ENV=production`, para por aqui (já está gravado).
 4. Responder **200 rápido** e processar via `ctx.waitUntil`. Erro no processamento vai para `payt_events.error`, sem quebrar a resposta.
 5. Encontrar ou criar o usuário:
@@ -347,6 +347,8 @@ Endpoint: `POST /api/payt/postback`. Cadastrar na Payt em Ferramentas → Integr
 | Qualquer outro status | Registrar e marcar `needs_review`: status que ninguém previu é como um formato diferente do esperado aparece |
 
 `subscription.periodicity`: `1 month` vira `mensal`, `1 year` vira `anual`.
+
+**Datas da Payt vêm em horário de Brasília e sem fuso** (`"2026-10-21 19:06:20.000000"`), observado no postback real. Normalizar para ISO UTC na borda com `paytParaIso` (§18). Data sem hora (`Y-m-d`) vira o **fim do dia** em Brasília: `next_charge_at` nesse formato decide até quando vale uma assinatura cancelada, e tratar como 00:00 tiraria do assinante o último dia pago.
 
 ### Testes obrigatórios
 
