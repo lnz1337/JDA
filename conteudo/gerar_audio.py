@@ -3,20 +3,25 @@
 O Voice Studio não tem tag de pausa documentada, então o roteiro é gerado em
 trechos (um por parágrafo) e montado com ffmpeg, inserindo silêncios e o canto.
 
-Etapas (rode na ordem, por dia ou com --dia todos):
+Serve para a jornada (padrão) e para os produtos de conteudo/produtos/ (--programa ID).
+
+Etapas (rode na ordem, por dia/lição ou com --dia todos):
 
   1. planejar    corta o roteiro em trechos -> audio/dNN/trechos/NNN.txt + plano.json
+                 (produtos: audio/<programa>/lNN/...)
   2. sintetizar  gera cada trecho -> NNN.wav. Motores:
                    --motor api        API local do Voice Studio (padrão)
                    --motor omnivoice  modelo OmniVoice direto em Python (ex.: Google Colab)
                  (ou gere manualmente no app e salve com o mesmo nome NNN.wav)
   3. montar      junta trechos + silêncios + canto (+ fundo) -> audio/saida/dNN.mp3
+                 (produtos: audio/saida/<programa>/lNN.mp3)
 
 Exemplos:
   python3 conteudo/gerar_audio.py planejar --dia 1
   VOICESTUDIO_URL=http://127.0.0.1:PORTA VOICESTUDIO_VOICE=minha-voz \\
       python3 conteudo/gerar_audio.py sintetizar --dia 1
   python3 conteudo/gerar_audio.py montar --dia 1 --canto midia/canto.wav --fundo midia/pad.wav
+  python3 conteudo/gerar_audio.py planejar --programa jornada-cura --dia todos
 
 Variáveis de ambiente (sintetizar):
   VOICESTUDIO_URL    URL base da API local (ver a tela de API do app). Obrigatória.
@@ -52,6 +57,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from gerar_seed import RAIZ, carregar_dias  # noqa: E402
+from gerar_seed_produtos import carregar_licoes  # noqa: E402
 
 PASTA_AUDIO = Path(os.environ.get("JDA_AUDIO_DIR", RAIZ / "audio"))
 RESPIRO_ENTRE_PARAGRAFOS = 0.6  # segundos
@@ -91,16 +97,39 @@ def montar_plano(roteiro: str) -> list[dict]:
     return itens
 
 
-def pasta_dia(dia: int) -> Path:
+def carregar(programa: str = "jornada") -> list[dict]:
+    """Itens (dias ou lições) com 'day' e 'audio_script'. Produtos trazem também 'programa'."""
+    return carregar_dias() if programa == "jornada" else carregar_licoes(programa)
+
+
+def pasta_item(item: dict) -> Path:
+    if item.get("programa"):
+        return PASTA_AUDIO / item["programa"] / f"l{item['day']:02d}"
+    return PASTA_AUDIO / f"d{item['day']:02d}"
+
+
+def saida_item(item: dict) -> Path:
+    if item.get("programa"):
+        return PASTA_AUDIO / "saida" / item["programa"] / f"l{item['day']:02d}.mp3"
+    return PASTA_AUDIO / "saida" / f"d{item['day']:02d}.mp3"
+
+
+def rotulo(item: dict) -> str:
+    if item.get("programa"):
+        return f"{item['programa']} lição {item['day']}"
+    return f"Dia {item['day']}"
+
+
+def pasta_dia(dia: int) -> Path:  # compatibilidade
     return PASTA_AUDIO / f"d{dia:02d}"
 
 
 def cmd_planejar(dia: dict) -> None:
     if not dia["audio_script"]:
-        print(f"Dia {dia['day']}: roteiro pendente, pulando.")
+        print(f"{rotulo(dia)}: sem roteiro de áudio, pulando.")
         return
     plano = montar_plano(dia["audio_script"])
-    pasta = pasta_dia(dia["day"])
+    pasta = pasta_item(dia)
     trechos = pasta / "trechos"
     trechos.mkdir(parents=True, exist_ok=True)
     for item in plano:
@@ -109,13 +138,13 @@ def cmd_planejar(dia: dict) -> None:
     (pasta / "plano.json").write_text(json.dumps(plano, ensure_ascii=False, indent=2), encoding="utf-8")
     falas = sum(1 for i in plano if i["tipo"] == "fala")
     pausas = sum(i["seg"] for i in plano if i["tipo"] == "pausa")
-    print(f"Dia {dia['day']}: {falas} trechos, {pausas:.1f}s de pausas -> {pasta}")
+    print(f"{rotulo(dia)}: {falas} trechos, {pausas:.1f}s de pausas -> {pasta}")
 
 
-def ler_plano(dia: int) -> list[dict]:
-    caminho = pasta_dia(dia) / "plano.json"
+def ler_plano(item: dict) -> list[dict]:
+    caminho = pasta_item(item) / "plano.json"
     if not caminho.exists():
-        raise SystemExit(f"Dia {dia}: rode 'planejar' antes.")
+        raise SystemExit(f"{rotulo(item)}: rode 'planejar' antes.")
     return json.loads(caminho.read_text(encoding="utf-8"))
 
 
@@ -223,8 +252,8 @@ MOTORES = {
 def cmd_sintetizar(dia: dict, motor: str, refazer: bool) -> None:
     if not dia["audio_script"]:
         return
-    plano = ler_plano(dia["day"])
-    trechos = pasta_dia(dia["day"]) / "trechos"
+    plano = ler_plano(dia)
+    trechos = pasta_item(dia) / "trechos"
     sintetizar = MOTORES[motor]
     feitos = 0
     for item in plano:
@@ -237,8 +266,8 @@ def cmd_sintetizar(dia: dict, motor: str, refazer: bool) -> None:
         sintetizar(item["texto"], tmp)
         tmp.replace(wav)
         feitos += 1
-        print(f"  dia {dia['day']:02d} trecho {item['arquivo']}")
-    print(f"Dia {dia['day']}: {feitos} trechos gerados ({motor}).")
+        print(f"  {rotulo(dia)} trecho {item['arquivo']}")
+    print(f"{rotulo(dia)}: {feitos} trechos gerados ({motor}).")
 
 
 # ---------- montar ----------
@@ -284,18 +313,18 @@ def cmd_montar(dia: dict, canto: Path | None, fundo: Path | None) -> None:
         return
     if canto and not canto.exists():
         raise SystemExit(f"Canto não encontrado: {canto}")
-    if not canto:
-        print(f"Dia {dia['day']}: sem --canto, usando 3 s de silêncio no lugar (só para teste).")
-    plano = ler_plano(dia["day"])
-    trechos = pasta_dia(dia["day"]) / "trechos"
+    plano = ler_plano(dia)
+    tem_canto = any(i["tipo"] == "canto" for i in plano)
+    if tem_canto and not canto:
+        print(f"{rotulo(dia)}: sem --canto, usando 3 s de silêncio no lugar (só para teste).")
+    trechos = pasta_item(dia) / "trechos"
     faltando = [i["arquivo"] for i in plano
                 if i["tipo"] == "fala" and not (trechos / f"{i['arquivo']}.wav").exists()]
     if faltando:
-        raise SystemExit(f"Dia {dia['day']}: faltam os trechos {', '.join(faltando)} (.wav)")
+        raise SystemExit(f"{rotulo(dia)}: faltam os trechos {', '.join(faltando)} (.wav)")
 
-    saida = PASTA_AUDIO / "saida"
-    saida.mkdir(parents=True, exist_ok=True)
-    final = saida / f"d{dia['day']:02d}.mp3"
+    final = saida_item(dia)
+    final.parent.mkdir(parents=True, exist_ok=True)
 
     with tempfile.TemporaryDirectory() as t:
         tmp = Path(t)
@@ -346,7 +375,7 @@ def cmd_montar(dia: dict, canto: Path | None, fundo: Path | None) -> None:
                "-ar", str(TAXA), "-c:a", "libmp3lame", "-b:a", "128k", str(final))
 
     seg = duracao(final)
-    print(f"Dia {dia['day']}: {final} ({int(seg // 60)}min{int(seg % 60):02d}s)")
+    print(f"{rotulo(dia)}: {final} ({int(seg // 60)}min{int(seg % 60):02d}s)")
 
 
 # ---------- CLI ----------
@@ -356,7 +385,9 @@ def main() -> None:
         raise SystemExit("ffmpeg não encontrado no PATH.")
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("etapa", choices=["planejar", "sintetizar", "montar"])
-    ap.add_argument("--dia", required=True, help="número do dia (1-19) ou 'todos'")
+    ap.add_argument("--programa", default="jornada",
+                    help="'jornada' (padrão) ou o ID de um produto em conteudo/produtos/")
+    ap.add_argument("--dia", required=True, help="número do dia/lição ou 'todos'")
     ap.add_argument("--motor", choices=list(MOTORES), default="api",
                     help="sintetizar: api (Voice Studio local), omnivoice (Python/Colab) ou simulado (teste)")
     ap.add_argument("--refazer", action="store_true", help="sintetizar: regera trechos já existentes")
@@ -364,7 +395,7 @@ def main() -> None:
     ap.add_argument("--fundo", type=Path, help="montar: trilha de fundo (opcional, entra em loop)")
     args = ap.parse_args()
 
-    dias = carregar_dias()
+    dias = carregar(args.programa)
     if args.dia != "todos":
         dias = [d for d in dias if d["day"] == int(args.dia)]
 
