@@ -80,7 +80,14 @@ async function entitlementsDe(email: string): Promise<string[]> {
   return results.map((r) => r.product_id);
 }
 
-beforeEach(prepararBanco);
+beforeEach(async () => {
+  await prepararBanco();
+  // A Payt gera o sku, então todo produto nosso resolve pelo code. Este é o mesmo
+  // mapeamento que existe no staging para o produto de teste.
+  await env.DB.prepare(
+    "INSERT INTO product_payt_map (payt_code, product_id) VALUES ('LJ7KEP', 'jornada-meu-anjo')",
+  ).run();
+});
 
 describe('autenticação do postback', () => {
   it('recusa integration_key errada e não grava nada', async () => {
@@ -94,7 +101,7 @@ describe('autenticação do postback', () => {
   });
 
   it('recusa quando o secret não está cadastrado', async () => {
-    const res = await postar(pedidoPago, { env: { PAYT_INTEGRATION_KEY: undefined } });
+    const res = await postar(comChave(pedidoPago), { env: { PAYT_INTEGRATION_KEY: undefined } });
 
     expect(res.status).toBe(401);
   });
@@ -155,8 +162,8 @@ describe('gravação do payload', () => {
   });
 
   it('trata postback repetido como duplicado', async () => {
-    const primeira = await postar(pedidoPago);
-    const segunda = await postar(pedidoPago);
+    const primeira = await postar(comChave(pedidoPago));
+    const segunda = await postar(comChave(pedidoPago));
 
     expect(await primeira.json()).toEqual({ ok: true });
     expect(await segunda.json()).toEqual({ ok: true, duplicado: true });
@@ -166,20 +173,20 @@ describe('gravação do payload', () => {
   });
 
   it('ignora test=true quando ENV=production, mas grava', async () => {
-    const res = await postar(pedidoPago, { env: { ENV: 'production' } });
+    const res = await postar(comChave({ ...pedidoPago, test: true }), { env: { ENV: 'production' } });
 
     expect(await res.json()).toEqual({ ok: true, ignorado: 'teste_em_producao' });
 
-    const linha = await evento('TRX-1001');
+    const linha = await evento('X9P8DY5');
     expect(linha?.processed_at).toBeTruthy();
     expect(linha?.error).toBeNull();
-    expect(await entitlementsDe('maria.souza@exemplo.com.br')).toEqual([]);
+    expect(await entitlementsDe('cliente.exemplo@exemplo.com.br')).toEqual([]);
   });
 });
 
 describe('integration_key não é guardada', () => {
   it('grava a chave mascarada no payload', async () => {
-    await postar(pedidoPago);
+    await postar(comChave(pedidoPago));
 
     const linha = await env.DB.prepare('SELECT payload_json FROM payt_events').first<{
       payload_json: string;
@@ -227,19 +234,19 @@ describe('postback real da Payt', () => {
 
 describe('compra paga', () => {
   it('cria o usuário e concede o produto do pedido', async () => {
-    await postar(pedidoPago);
+    await postar(comChave(pedidoPago));
 
-    expect(await entitlementsDe('maria.souza@exemplo.com.br')).toEqual(['jornada-meu-anjo']);
+    expect(await entitlementsDe('cliente.exemplo@exemplo.com.br')).toEqual(['jornada-meu-anjo']);
 
-    const linha = await evento('TRX-1001');
+    const linha = await evento('X9P8DY5');
     expect(linha?.error).toBeNull();
     expect(linha?.needs_review).toBe(0);
 
     const usuario = await env.DB.prepare('SELECT name, phone FROM users WHERE email = ?')
-      .bind('maria.souza@exemplo.com.br')
+      .bind('cliente.exemplo@exemplo.com.br')
       .first<{ name: string; phone: string }>();
-    expect(usuario?.name).toBe('Maria Souza');
-    expect(usuario?.phone).toBe('5511988887777'); // só dígitos
+    expect(usuario?.name).toBe('Cliente de Exemplo');
+    expect(usuario?.phone).toBe('11900000000'); // só dígitos
 
     const registro = await env.DB.prepare(
       "SELECT name FROM events WHERE name = 'user_created_payt'",
@@ -286,9 +293,9 @@ describe('compra paga', () => {
   });
 
   it('não duplica entitlement quando o mesmo pedido é reprocessado', async () => {
-    await postar(pedidoPago);
+    await postar(comChave(pedidoPago));
     // Mesmo payload com updated_at diferente: passa pelo dedupe e processa de novo.
-    await postar({ ...pedidoPago, updated_at: '2026-10-21T19:00:00Z' });
+    await postar(comChave({ ...pedidoPago, updated_at: '2026-10-21 20:45:00.000000' }));
 
     const { results } = await env.DB.prepare(
       "SELECT id FROM entitlements WHERE product_id = 'jornada-meu-anjo'",
@@ -316,14 +323,14 @@ describe('compra paga', () => {
 
 describe('reembolso e chargeback', () => {
   it('revoga os entitlements da transação reembolsada', async () => {
-    await postar(pedidoPago);
-    expect(await entitlementsDe('maria.souza@exemplo.com.br')).toEqual(['jornada-meu-anjo']);
+    await postar(comChave(pedidoPago));
+    expect(await entitlementsDe('cliente.exemplo@exemplo.com.br')).toEqual(['jornada-meu-anjo']);
 
     await postar(reembolso);
 
-    expect(await entitlementsDe('maria.souza@exemplo.com.br')).toEqual([]);
+    expect(await entitlementsDe('cliente.exemplo@exemplo.com.br')).toEqual([]);
     const revogado = await env.DB.prepare(
-      "SELECT status, revoked_at FROM entitlements WHERE transaction_id = 'TRX-1001'",
+      "SELECT status, revoked_at FROM entitlements WHERE transaction_id = 'X9P8DY5'",
     ).first<{ status: string; revoked_at: string }>();
     expect(revogado?.status).toBe('revoked');
     expect(revogado?.revoked_at).toBeTruthy();
@@ -337,10 +344,10 @@ describe('reembolso e chargeback', () => {
   });
 
   it('reembolso parcial não revoga e vai para a fila de revisão', async () => {
-    await postar(pedidoPago);
+    await postar(comChave(pedidoPago));
     await postar(reembolsoParcial);
 
-    expect(await entitlementsDe('maria.souza@exemplo.com.br')).toEqual(['jornada-meu-anjo']);
+    expect(await entitlementsDe('cliente.exemplo@exemplo.com.br')).toEqual(['jornada-meu-anjo']);
 
     const linha = await env.DB.prepare(
       "SELECT needs_review, error FROM payt_events WHERE payment_status = 'refunded_partial'",

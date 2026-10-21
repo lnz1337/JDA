@@ -1,28 +1,64 @@
 {
-  "_nota": "SINTETICO: montado a partir do CLAUDE.md §7 e ajustado ao formato real observado em staging (datas em horario de Brasilia, sem fuso). Nao e um payload real da Payt.",
-  "integration_key": "chave-de-teste-sintetica",
-  "test": true,
-  "updated_at": "2026-10-21 15:00:00.000000",
+  "_nota": "REAL E ANONIMIZADO: compra de teste paga capturada em staging em 2026-10-21 (produto \"60 Receitas - Saladas No Pote\", inativo). Nome, e-mail, CPF, telefone, IP e codigo de cliente trocados por ficticios; integration_key mascarada. O sku e gerado pela Payt, entao este payload so resolve com product_payt_map (code LJ7KEP), que e o caminho real.",
+  "integration_key": "***",
+  "started_at": "2026-10-21 20:43:28.000000",
+  "updated_at": "2026-10-21 20:44:08.000000",
+  "seller_id": "R36K9M",
+  "test": false,
   "type": "order",
+  "tangible": false,
+  "cart_id": "QPOJ96V",
   "status": "paid",
-  "transaction": {
-    "id": "TRX-1001",
-    "payment_status": "paid",
-    "amount": 9700,
-    "payment_method": "credit_card"
-  },
+  "transaction_id": "X9P8DY5",
   "customer": {
-    "name": "Maria Souza",
-    "email": "maria.souza@exemplo.com.br",
-    "phone": "+55 (11) 98888-7777",
+    "name": "Cliente de Exemplo",
     "fake_email": false,
-    "code": "CUS-0001"
+    "email": "cliente.exemplo@exemplo.com.br",
+    "doc": "00000000191",
+    "phone": "11900000000",
+    "ip": "203.0.113.10",
+    "url": "https://app.payt.com.br/admin/clientes/CUSEXEMPLO/edit",
+    "code": "CUSEXEMPLO"
   },
   "product": {
-    "sku": "jornada-meu-anjo",
-    "code": "PAYT-FRONT",
-    "name": "Jornada com São Miguel"
+    "name": "60 Receitas - Saladas No Pote",
+    "price": 2990,
+    "code": "LJ7KEP",
+    "sku": "5b7ad449bacac8",
+    "type": "digital",
+    "quantity": 1
   },
-  "order_bumps": [],
-  "subscription": null
+  "link": {
+    "title": "60 Receitas - Saladas No Pote",
+    "sources": [],
+    "url": "https://payt.site/wGCBqre",
+    "query_params": []
+  },
+  "transaction": {
+    "payment_method": "pix",
+    "payment_status": "paid",
+    "total_price": 2990,
+    "quantity": 1,
+    "modifiers": [],
+    "created_at": "2026-10-21 20:43:44",
+    "updated_at": "2026-10-21 20:44:08",
+    "paid_at": "2026-10-21 20:44:08",
+    "expires_at": "2026-10-21 21:43:42",
+    "pix_url": "https://checkout.payt.com.br/obrigado/X9P8DY5",
+    "pix_code": "00020101021226820014br.gov.bcb.pix2560pix.stone.com.br/pix/v2/87d99c25-49e0-45e8-aa88-156454e5c92c520400005303986540529.905802BR5925Pagar Me Instituicao De P6014RIO DE JANEIRO62290525474912cc6a75ac006c171e0ad6304AFDC"
+  },
+  "commission": [
+    {
+      "name": "PAYT TECNOLOGIA E EDUCACAO DIGITAL LTDA",
+      "email": "contato@payt.com.br",
+      "type": "platform",
+      "amount": 249
+    },
+    {
+      "name": "L V Marketing Digital LTDA",
+      "email": "leonardovcs2022@gmail.com",
+      "type": "producer",
+      "amount": 2741
+    }
+  ]
 }

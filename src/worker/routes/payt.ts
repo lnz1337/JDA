@@ -64,6 +64,16 @@ async function marcarProcessado(
     .run();
 }
 
+/** Confere o segredo no corpo ou no header. Vale para o postback e o reprocesso. */
+function chaveConfere(dados: unknown, headerChave: string | undefined, segredo?: string): boolean {
+  const noCorpo =
+    typeof dados === 'object' && dados !== null
+      ? (dados as Record<string, unknown>).integration_key
+      : undefined;
+  const recebida = typeof noCorpo === 'string' ? noCorpo : (headerChave ?? '');
+  return Boolean(segredo) && igualdadeSegura(recebida, segredo ?? '');
+}
+
 export const payt = new Hono<AppBindings>().post('/postback', async (c) => {
   const cru = await c.req.text();
   const dados = entender(cru, c.req.header('content-type') ?? '');
@@ -72,13 +82,7 @@ export const payt = new Hono<AppBindings>().post('/postback', async (c) => {
     return c.json({ error: 'payload_ilegivel' }, 400);
   }
 
-  const segredo = c.env.PAYT_INTEGRATION_KEY;
-  const recebida =
-    typeof (dados as Record<string, unknown>).integration_key === 'string'
-      ? ((dados as Record<string, unknown>).integration_key as string)
-      : (c.req.header('x-integration-key') ?? '');
-
-  if (!segredo || !igualdadeSegura(recebida, segredo)) {
+  if (!chaveConfere(dados, c.req.header('x-integration-key'), c.env.PAYT_INTEGRATION_KEY)) {
     return c.json({ error: 'integration_key_invalida' }, 401);
   }
 
@@ -140,4 +144,62 @@ export const payt = new Hono<AppBindings>().post('/postback', async (c) => {
   }
 
   return c.json({ ok: true });
+});
+
+/**
+ * POST /api/payt/reprocess — roda de novo o processamento de um evento já gravado.
+ *
+ * Existe porque o dedupe (§7 passo 3) impede que a Payt reenvie o mesmo postback:
+ * evento que falhou — produto ainda não mapeado, por exemplo — não teria como ser
+ * retomado pela origem. É o motor do botão "reprocessar" do admin (§13); quando o
+ * admin existir, atrás do Cloudflare Access, esta rota sai daqui.
+ *
+ * Fora de produção, só: em produção, reprocessar sem revisão humana pode conceder
+ * acesso a partir de um payload que já foi recusado por um motivo legítimo.
+ */
+payt.post('/reprocess', async (c) => {
+  const corpo = (await c.req.json().catch(() => null)) as Record<string, unknown> | null;
+
+  if (!chaveConfere(corpo, c.req.header('x-integration-key'), c.env.PAYT_INTEGRATION_KEY)) {
+    return c.json({ error: 'integration_key_invalida' }, 401);
+  }
+
+  if (c.env.ENV === 'production') {
+    return c.json({ error: 'reprocesso_indisponivel_em_producao' }, 403);
+  }
+
+  const transactionId = typeof corpo?.transaction_id === 'string' ? corpo.transaction_id : null;
+  const id = typeof corpo?.id === 'string' ? corpo.id : null;
+  if (!transactionId && !id) {
+    return c.json({ error: 'informe id ou transaction_id' }, 400);
+  }
+
+  const evento = await c.env.DB.prepare(
+    `SELECT id, payload_json FROM payt_events
+      WHERE ${id ? 'id = ?' : 'transaction_id = ?'}
+      ORDER BY received_at DESC LIMIT 1`,
+  )
+    .bind(id ?? transactionId)
+    .first<{ id: string; payload_json: string }>();
+
+  if (!evento) {
+    return c.json({ error: 'evento_nao_encontrado' }, 404);
+  }
+
+  let dados: unknown;
+  try {
+    dados = JSON.parse(evento.payload_json);
+  } catch {
+    return c.json({ error: 'payload_gravado_nao_e_json' }, 422);
+  }
+
+  try {
+    const r = await processarPostback(c.env.DB, dados);
+    await marcarProcessado(c.env.DB, evento.id, null, r.precisaRevisao);
+    return c.json({ ok: true, id: evento.id, ...r });
+  } catch (erro) {
+    const msg = erro instanceof Error ? erro.message : String(erro);
+    await marcarProcessado(c.env.DB, evento.id, msg, true);
+    return c.json({ ok: false, id: evento.id, error: msg }, 200);
+  }
 });

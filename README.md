@@ -50,6 +50,7 @@ Checagem rápida: `GET http://localhost:5173/api/health` devolve
 | `npm run seed:local` / `:staging` | Gera e aplica o seed (idempotente) |
 | `npm run media:upload:staging` | Sobe os MP3 de `audio/` para o R2 de staging |
 | `npm run payt:last:staging` | Últimos 5 postbacks da Payt gravados no staging |
+| `npm run payt:reprocess:staging <tx>` | Reprocessa um postback já gravado |
 | `npm run cf-typegen` | Regenera `worker-configuration.d.ts` a partir do wrangler.toml |
 | `npm run icons` | Regenera os ícones placeholder do PWA |
 | `npm run deploy:staging` | Build com `CLOUDFLARE_ENV=staging` + `wrangler deploy` |
@@ -118,8 +119,20 @@ Depois da primeira compra de teste:
 npm run payt:last:staging
 ```
 
-O endpoint grava o payload cru **antes** de validar o conteúdo, então o postback
-aparece aí inteiro mesmo que o processamento falhe. As fixtures em
+O endpoint grava o payload **antes** de validar o conteúdo (com a
+`integration_key` mascarada), então o postback aparece aí inteiro mesmo que o
+processamento falhe.
+
+Evento que falhou não pode ser reenviado pela Payt: o `dedupe_key` barra o
+postback idêntico. Para retomar:
+
+```bash
+PAYT_INTEGRATION_KEY=... npm run payt:reprocess:staging X9P8DY5
+```
+
+Isso relê o payload gravado e roda o processamento de novo, atualizando a mesma
+linha. A rota é recusada quando `ENV=production` — lá o caminho é o botão
+"reprocessar" do admin (CLAUDE.md §13), atrás do Cloudflare Access. As fixtures em
 `fixtures/payt/` são sintéticas até serem substituídas pelo formato real — veja
 `fixtures/payt/README.md`.
 

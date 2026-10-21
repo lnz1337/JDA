@@ -50,8 +50,9 @@ criar usuário → conceder entitlement) sem precisar de uma compra real do prod
 de verdade. Em produção, mapear o código de um produto para outro concederia
 acesso errado a quem comprou.
 
-O `<CODE>` sai do primeiro postback desse produto: rode `npm run payt:last:staging`
-e pegue o `product.code`.
+Já cadastrado em 21/10/2026: **`LJ7KEP` → `jornada-meu-anjo`**, o `product.code`
+do "60 Receitas - Saladas No Pote". Conferido por
+`SELECT * FROM product_payt_map` no staging e ausente do seed.
 
 ## Como substituir por payloads reais
 
@@ -75,11 +76,11 @@ o que virou fixture está anonimizado.
 
 | Arquivo | Caso |
 |---|---|
-| `pedido-pago.json` | compra do front, concede entitlement |
+| `pedido-pago.json` | **REAL e anonimizado** — compra de teste paga; só resolve via `product_payt_map` |
 | `pedido-com-order-bump.json` | order bump junto do pedido |
 | `upsell-bundle-agrupado.json` | upsell com `product.items` (bundle agrupado) |
 | `pedido-sku-desconhecido.json` | `sku` que não existe, resolvido por `product_payt_map` |
-| `reembolso.json` | revoga os entitlements da transação |
+| `reembolso.json` | revoga os entitlements da transação (aponta para o `pedido-pago.json`) |
 | `chargeback.json` | idem |
 | `reembolso-parcial.json` | **não** revoga; vai para a fila de revisão |
 | `assinatura-ativada.json` | upsert em `subscriptions` |
