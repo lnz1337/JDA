@@ -5,6 +5,7 @@
  * módulo só **lê**. A estrutura esperada é a que está lá — `## Assunto` com as
  * opções A/B, o pré-cabeçalho e `## Corpo`.
  */
+import { APP_NAME } from '../../shared/constants';
 import modelo from '../../../conteudo/emails/anuncio-app.md?raw';
 import { renderizarEmail } from './render';
 
@@ -32,10 +33,54 @@ export interface VariaveisAnuncio {
   email_suporte: string;
 }
 
+/**
+ * O arquivo de conteúdo termina com um rodapé próprio — separador `---` e um
+ * bloco `<small>` com razão social e CNPJ. Quem decide o rodapé agora é o
+ * renderizador (nome do app + motivo, sem dado de empresa), então o bloco do
+ * arquivo é descartado na leitura. **Não é edição do arquivo**: o pipeline de
+ * conteúdo é de outra sessão (CLAUDE.md §3), e cortar na leitura continua
+ * funcionando quando ele tirar o rodapé de lá.
+ */
+function semRodapeAntigo(corpo: string): string {
+  const corte = corpo.search(/\n-{3,}\s*\n/);
+  if (corte < 0) return corpo;
+  const cauda = corpo.slice(corte);
+  return /<small>|CNPJ/i.test(cauda) ? corpo.slice(0, corte).trim() : corpo;
+}
+
+/**
+ * Boa parte da base antiga não tem o nome gravado. Sem nome, a saudação
+ * `Olá, {{primeiro_nome}}!` viraria "Olá, !" e o assunto começaria por vírgula.
+ * O arquivo de conteúdo manda usar "Olá!" sem nome: é o que a limpeza faz, nos
+ * dois lugares.
+ */
+function limparSaudacao(texto: string): string {
+  return texto
+    .replace(/,[ \t]*!/g, '!')
+    .replace(/^(assunto:)\s*,\s*(.)/im, (_i, rotulo: string, primeira: string) =>
+      `${rotulo} ${primeira.toUpperCase()}`,
+    );
+}
+
 export function montarAnuncio(v: VariaveisAnuncio) {
-  // O corpo vira um modelo no formato que o renderizarEmail entende.
-  const corpo = secao(modelo, 'Corpo');
-  return renderizarEmail(`Assunto: ${assuntoA()}\n\n${corpo}`, v as unknown as Record<string, string>);
+  // O corpo vira um modelo no formato que o renderizarEmail entende. O nome
+  // entra antes da limpeza, que é justamente para o caso de ele estar vazio.
+  const corpo = semRodapeAntigo(secao(modelo, 'Corpo'));
+  const bruto = `Assunto: ${assuntoA()}\n\n${corpo}`.replaceAll(
+    '{{primeiro_nome}}',
+    v.primeiro_nome.trim(),
+  );
+
+  return renderizarEmail(
+    limparSaudacao(bruto),
+    v as unknown as Record<string, string>,
+    {
+      motivo:
+        `Você recebeu este e-mail porque comprou a ${APP_NAME}. ` +
+        `Se não quiser mais receber avisos sobre o app, [clique aqui](${v.link_parar}). ` +
+        'Os e-mails com o seu código de acesso continuam chegando.',
+    },
+  );
 }
 
 /** Versão curta para WhatsApp, para quem não tem e-mail válido. */

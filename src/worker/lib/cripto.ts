@@ -20,6 +20,19 @@ export function igualdadeSegura(a: string, b: string): boolean {
   return diferenca === 0;
 }
 
+/**
+ * Token aleatório para URL (base64url, sem padding). 32 bytes = 256 bits, que é
+ * o que torna seguro procurar a linha pelo hash do token, sem o id do usuário
+ * na URL nem no hash.
+ */
+export function tokenAleatorio(bytes = 32): string {
+  const brutos = crypto.getRandomValues(new Uint8Array(bytes));
+  return btoa(String.fromCharCode(...brutos))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
+}
+
 /** HMAC-SHA256 em hex. Assina o link de "parar de receber", que não exige login. */
 export async function hmacHex(segredo: string, mensagem: string): Promise<string> {
   const chave = await crypto.subtle.importKey(

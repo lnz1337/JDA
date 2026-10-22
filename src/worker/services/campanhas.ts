@@ -13,6 +13,7 @@ import { montarAnuncio } from '../emails/anuncio';
 import { hmacHex } from '../lib/cripto';
 import { agoraIso } from '../lib/datas';
 import type { AppBindings } from '../lib/types';
+import { criarLinkDeAcesso } from './auth';
 import { enviarEmail } from './mail';
 
 type Ambiente = AppBindings['Bindings'];
@@ -137,6 +138,24 @@ async function registrar(
     .run();
 }
 
+/**
+ * Link do e-mail de anúncio. É um link que **já entra** (§8): a base é de
+ * compradores antigos, e pedir e-mail e código a quem tem 60 anos para ver uma
+ * novidade que ele não pediu é onde a campanha se perde.
+ *
+ * No envio de teste para um endereço que não é de usuário não há a quem prender
+ * o token, então sobra o caminho antigo: a tela de login com o e-mail preenchido.
+ */
+async function linkDeAcesso(env: Ambiente, d: Destinatario, dryRun: boolean): Promise<string> {
+  if (d.user_id === 'teste') {
+    return `${env.APP_URL}/entrar?e=${encodeURIComponent(d.email)}`;
+  }
+  // Dry-run não grava token: ele serve para conferir seleção e texto, e um
+  // token que nunca vai num e-mail só sujaria a tabela.
+  if (dryRun) return `${env.APP_URL}/acesso?t=dry-run`;
+  return `${env.APP_URL}/acesso?t=${await criarLinkDeAcesso(env.DB, d.user_id)}`;
+}
+
 export interface OpcoesEnvio {
   campanha: string;
   limite: number;
@@ -203,8 +222,9 @@ export async function enviarCampanha(
   for (const d of lista) {
     const primeiro = d.nome?.trim().split(' ')[0] ?? '';
     const variaveis = {
-      primeiro_nome: primeiro || 'Olá',
-      link_acesso: `${env.APP_URL}/entrar?e=${encodeURIComponent(d.email)}`,
+      // Vazio quando não sabemos o nome: a saudação vira "Olá!" (ver emails/anuncio.ts).
+      primeiro_nome: primeiro,
+      link_acesso: await linkDeAcesso(env, d, dryRun),
       lista_produtos: (d.produtos ?? '')
         .split('|')
         .filter(Boolean)

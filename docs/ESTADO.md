@@ -4,9 +4,9 @@ Retrato para uma sessão nova continuar daqui. A spec é o [CLAUDE.md](../CLAUDE
 este arquivo registra o que **não** cabe lá: o que já rodou, o que está só em
 staging, o que depende do Leo e as armadilhas que custaram caro.
 
-Último commit: `bbf12ff`. `npm run typecheck && npm test` limpo, **118 testes**
-em 8 arquivos. Staging no ar em
-**https://jda-pwa-staging.leonardovcs2022.workers.dev**.
+Último commit: o desta sessão — ajustes de e-mail e de login para o público 55+.
+`npm run typecheck && npm test` limpo, **151 testes** em 9 arquivos. Staging no ar
+em **https://jda-pwa-staging.leonardovcs2022.workers.dev**.
 
 ---
 
@@ -17,7 +17,7 @@ em 8 arquivos. Staging no ar em
 | 1 — Scaffold | **concluída** |
 | 2 — Banco | **concluída** |
 | 3 — Postback Payt | **concluída e validada com a Payt de verdade** |
-| 4 — Auth | **concluída**, com e-mail entregando |
+| 4 — Auth | **concluída**, com e-mail entregando. Revisada 22/10 para o público 55+: link de acesso direto, sessão de 1 ano, código em ação sensível, tela de código mais fácil |
 | 5 — Jornada | **não começou** ← próxima |
 | 6 a 12 | não começaram |
 
@@ -97,15 +97,27 @@ staging**.
 
 ## 4. Staging: o que existe lá e não vai para produção
 
-### Usuários de teste (2)
+### Usuários de teste (3)
 
 | E-mail | Acesso | Como |
 |---|---|---|
 | `leonardovcs2022@gmail.com` | `jornada-meu-anjo` | `grant:staging`, `source = 'manual'` |
-| `lenzincamara@hotmail.com` | `jornada-meu-anjo` | idem |
+| `anacacancelli@outlook.com` | `jornada-meu-anjo` | idem (criado 22/10 para medir entrega no Outlook) |
+| `lenzincamara@hotmail.com` | `jornada-meu-anjo` | idem — **não use mais para medir entrega** |
 
 Entitlement manual não tem `transaction_id`, então **reembolso da Payt não o
 revoga** — sobrevive aos testes de reembolso.
+
+O `lenzincamara@hotmail.com` foi marcado à mão como "não é lixo" na caixa, então
+ele passa a entregar na entrada independente da reputação do domínio: deixou de
+medir o que interessa. Quem mede o Outlook agora é o `anacacancelli@outlook.com`,
+**enquanto ninguém mexer na pasta dele**.
+
+Nenhum dos três tem `name` gravado, então os e-mails chegam com "Olá!" e o
+assunto do anúncio sem nome — é o caminho que a base antiga sem nome vai usar.
+
+O `grant:staging` **não cria usuário**: ele responde `usuario_nao_encontrado` se
+o e-mail não existe. A linha da Ana foi inserida à mão antes do grant.
 
 ### `product_payt_map` no staging
 
@@ -119,6 +131,12 @@ nosso, usado só para exercitar o fluxo de compra. Em produção, mapear o códi
 um produto para outro daria acesso errado a quem comprou. Por isso o seed só faz
 `UPSERT` em `product_payt_map` e **nunca apaga** o que não está declarado — uma
 limpeza derrubaria esse mapeamento a cada rodada.
+
+### Tokens de acesso em staging
+
+A tabela `access_links` tem 2 tokens, dos e-mails de anúncio de teste (um por
+destinatário). São de uso único: se a pessoa já clicou, o link cai na tela de
+login com o e-mail preenchido — que é o comportamento esperado, não um defeito.
 
 ### Outros dados
 
@@ -150,6 +168,15 @@ longo de semanas, que é exatamente o motivo do plano de ondas (50, 100, 250, 50
 Hotmail/Outlook/Live. Antes de disparar as ondas grandes, vale considerar
 [cadastrar o domínio no SNDS da Microsoft](https://sendersupport.olc.protection.outlook.com/snds/)
 e no JMRP, e acompanhar o `rua` do DMARC (`suporte@jornadacomeuanjo.com`).
+
+### Segunda rodada (22/10, depois dos modelos novos)
+
+Quatro envios pelo staging, sem falha: código de login e anúncio para
+`leonardovcs2022@gmail.com` e `anacacancelli@outlook.com`. **A pasta de cada um
+ainda não foi conferida** — o Leo ia dizer. O que mudou desde a primeira rodada é
+só o conteúdo (HTML completo, letra grande, rodapé sem CNPJ, link que já entra);
+SPF, DKIM e DMARC são os mesmos, então uma mudança de pasta aqui é reputação ou
+conteúdo, não autenticação.
 
 ### DNS do envio
 
@@ -189,25 +216,46 @@ evita veredito de "sem SPF" em verificador ingênuo.
    `npx wrangler secret put PAYT_INTEGRATION_KEY --env staging`. Nenhum arquivo
    depende dela.
 
-### Decisão pendente
+### DNS, no painel (o token não tem permissão de DNS)
 
-4. **DMARC do domínio principal continua em `p=reject`.** Se o Leo responde
-   cliente pelo Gmail usando `suporte@jornadacomeuanjo.com` como remetente, essas
-   respostas saem por servidor do Google, que não está no SPF da zona e não assina
-   DKIM para o domínio — e podem ser **rejeitadas**. Recomendação: baixar para
-   `p=none` também. Não foi feito porque não foi pedido.
+4. **Tirar o `rua=mailto:suporte@…` do `_dmarc.mail.jornadacomeuanjo.com`**,
+   deixando `v=DMARC1; p=none;`. Pedido em 22/10 e **não feito**: o token OAuth do
+   wrangler tem `zone (read)`, não escreve registro de DNS.
 
-5. **Teste de resposta ao suporte** ainda não foi feito: responder um dos e-mails
+5. **Ativar o DMARC Management** (painel → domínio → Email → DMARC Management).
+   Ele **só funciona em domínio apex**: cobre `jornadacomeuanjo.com`, não
+   `mail.`. Ao achar o `_dmarc` que já existe, ele **acrescenta** um `rua` da
+   Cloudflare e **não mexe na política** — o `p=reject` do apex continua. Depois
+   de ativar, copiar esse mesmo endereço de `rua` para o `_dmarc.mail` à mão, que
+   é como o subdomínio de envio entra no relatório.
+
+6. **Teste de resposta ao suporte** ainda não foi feito: responder um dos e-mails
    recebidos e confirmar que chega no Gmail pelo Email Routing.
 
-6. **Identidade visual.** Ícones em `public/icons/` são placeholder gerados por
+### Pipeline de conteúdo (pedir, não editar)
+
+7. **`conteudo/emails/anuncio-app.md` está desatualizado** em dois pontos, e é de
+   outra sessão (CLAUDE.md §3):
+   - o bloco "Para entrar é simples" ainda descreve os três passos com código de
+     6 números, mas o link do e-mail **já entra** — o texto contradiz o que o
+     botão faz;
+   - o rodapé ainda tem o `<small>` com razão social e CNPJ. O app **descarta
+     esse bloco na leitura** (`emails/anuncio.ts`), então o e-mail sai certo, mas
+     o arquivo continua dizendo o contrário do §14.
+
+   O cabeçalho do arquivo também descreve `{{link_acesso}}` como
+   `/entrar?e={email}`; hoje é `/acesso?t={token}`.
+
+8. **Identidade visual.** Ícones em `public/icons/` são placeholder gerados por
    script (fundo azul com cruz dourada).
 
 ### Limitação de ferramenta
 
-7. O token da Cloudflare **não tem permissão de Email Routing**, então a sessão
-   não conseguiu verificar as regras de encaminhamento pela API. O Leo testou pelo
-   painel e funciona.
+9. **A credencial da Cloudflare desta máquina não escreve DNS.** O wrangler está
+   logado por OAuth (`C:\Users\lenzi\AppData\Roaming\xdg.config\.wrangler`), com
+   workers, d1, pages, `email_routing` e `email_sending` em escrita, mas `zone`
+   só em leitura — nenhum escopo de `dns_records`. Qualquer mudança de DNS é no
+   painel, ou com um API token criado à parte com "Zone → DNS → Edit".
 
 ---
 
@@ -252,6 +300,24 @@ lista um prefixo por produto.
 **Comando multi-statement no `wrangler d1 execute` nem sempre aplica.** Um
 `DELETE` em cascata com vários `;` passou sem efeito e sem erro claro. Em operação
 destrutiva, um comando por vez e conferir a contagem.
+
+**`events.name` é um espaço compartilhado.** O log de envio usa `email_enviado` e
+`email_falhou`, e um evento de conta chamado `email_trocado` entrou nesse mesmo
+prefixo: toda consulta `name LIKE 'email_%'` passou a pegar um evento que não é
+envio. Evento de conta leva prefixo `conta_` (`conta_excluida`,
+`conta_email_trocado`). Quem achou isso foi um teste que lia o último `email_%`.
+
+**Link de e-mail de uso único e leitor de links não se dão bem.** Outlook e Gmail
+abrem links de e-mail para checagem, e isso pode consumir um token de uso único
+antes da pessoa. Por isso a reivindicação é um `UPDATE ... WHERE used_at IS NULL`
+conferido pelo número de linhas, e por isso o caminho de "já usado" cai na tela de
+login com o e-mail preenchido em vez de numa página de erro. **Se aparecer relato
+de "o link não funcionou na primeira vez", é aqui.**
+
+**O DMARC Management da Cloudflare só vale para domínio apex.** Não dá para ativar
+em `mail.jornadacomeuanjo.com`; o que dá é copiar o `rua` dele para o
+`_dmarc.mail` à mão. Ativar no apex **não** muda a política que já está lá — ele
+só acrescenta um `rua`.
 
 **O e-mail de teste de compra era aleatório** e podia ser de uma pessoa real.
 Virou regra no CLAUDE.md (§16): sempre endereço próprio. A limpeza exigiu apagar

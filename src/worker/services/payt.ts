@@ -7,12 +7,13 @@
  * gravado antes de qualquer validação de conteúdo (ver routes/payt.ts).
  */
 import { z } from 'zod';
-import { APP_NAME } from '../../shared/constants';
+import { APP_NAME, LINK_ACESSO_DIAS } from '../../shared/constants';
 import modeloBoasVindas from '../emails/boas-vindas.md?raw';
 import { renderizarEmail } from '../emails/render';
 import { agoraIso, paytParaIso } from '../lib/datas';
 import { novoId } from '../lib/ids';
 import type { AppBindings } from '../lib/types';
+import { criarLinkDeAcesso } from './auth';
 import { concederEntitlement, revogarPorTransacao } from './entitlements';
 import { enviarEmail } from './mail';
 
@@ -420,13 +421,20 @@ export async function processarPostback(
   const email = p.customer?.email?.trim().toLowerCase();
   if (usuario.novo && email && p.customer?.fake_email !== true) {
     const primeiro = p.customer?.name?.trim().split(' ')[0] ?? '';
-    const corpo = renderizarEmail(modeloBoasVindas, {
-      app: APP_NAME,
-      nome: primeiro ? `, ${primeiro}` : '',
-      nome_ou_ola: primeiro || 'Olá',
-      link_acesso: `${env.APP_URL}/entrar?e=${encodeURIComponent(email)}`,
-      suporte: env.SUPPORT_EMAIL ?? '',
-    });
+    // Link que já entra: quem acabou de comprar não digita código nenhum (§8).
+    const token = await criarLinkDeAcesso(db, usuario.userId);
+    const corpo = renderizarEmail(
+      modeloBoasVindas,
+      {
+        app: APP_NAME,
+        nome: primeiro ? `, ${primeiro}` : '',
+        nome_ou_ola: primeiro || 'Olá',
+        link_acesso: `${env.APP_URL}/acesso?t=${token}`,
+        validade_link: String(LINK_ACESSO_DIAS),
+        suporte: env.SUPPORT_EMAIL ?? '',
+      },
+      { motivo: `Você recebeu este e-mail porque sua compra da ${APP_NAME} foi confirmada.` },
+    );
 
     await enviarEmail(
       env,

@@ -161,9 +161,21 @@ CREATE TABLE login_codes (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL REFERENCES users(id),
   code_hash TEXT NOT NULL,
+  purpose TEXT NOT NULL DEFAULT 'login',  -- 'login' | 'excluir_conta' | 'trocar_email'
   expires_at TEXT NOT NULL,
   attempts INTEGER NOT NULL DEFAULT 0,
-  used_at TEXT
+  used_at TEXT,
+  created_at TEXT,
+  ip TEXT
+);
+
+CREATE TABLE access_links (          -- link do e-mail que já entra (§8)
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id),
+  token_hash TEXT NOT NULL UNIQUE,   -- sha256 do token; o token em claro só vai no e-mail
+  expires_at TEXT NOT NULL,
+  used_at TEXT,
+  created_at TEXT NOT NULL
 );
 
 CREATE TABLE sessions (
@@ -381,11 +393,35 @@ Usar `fixtures/payt/*.json`: pedido pago, pedido com order bump, upsell, reembol
 - Login por **código de 6 dígitos no e-mail**. Código com hash (sha256 do código + id do usuário), expira em 15 min, máximo de 5 tentativas.
 - **A resposta de "pedir código" é sempre a mesma**, exista o e-mail ou não: senão o endpoint vira um verificador de quem é cliente.
 - Limite de **5 pedidos por hora por e-mail e por IP**. Só por e-mail deixaria varrer uma lista; só por IP não protegeria um e-mail específico.
-- Sessão em cookie `httpOnly; Secure; SameSite=Lax`, validade de 90 dias, renovada a cada uso.
-- O e-mail de boas-vindas pós-compra leva um link `/entrar?e={email}` com o campo já preenchido.
+- Sessão em cookie `httpOnly; Secure; SameSite=Lax`, validade de **365 dias**, renovada a cada uso. O público é 55+: pedir e-mail de novo a cada três meses é atrito que faz desistir do app.
+- **Link de acesso direto.** O e-mail de boas-vindas e o de campanha levam `/acesso?t={token}`, que já abre a sessão — quem acabou de comprar não digita código nenhum. Token de 256 bits, guardado com **hash** (`access_links`), **uso único**, preso ao usuário e válido por **7 dias**.
+  - A busca é pelo hash do token, sem id na URL: 256 bits sorteados não precisam de sal, diferente do código de 6 dígitos, que repete entre usuários.
+  - Marcar como usado é um `UPDATE ... WHERE used_at IS NULL` e vale pelo número de linhas afetadas: é a reivindicação atômica do token, porque leitor de link de e-mail abre o link antes da pessoa.
+  - Vencido, já usado ou desconhecido **cai na tela de login** com o e-mail preenchido e uma frase simples ("Este link já foi usado. Vamos te enviar um código."), nunca numa página de erro. Token desconhecido não preenche e-mail nenhum.
+- **Ação sensível pede código mesmo com sessão aberta**: excluir a conta e trocar o e-mail. O código vai para o e-mail **atual** da conta — é o acesso àquela caixa que prova que é a pessoa; mandar para o endereço novo deixaria um celular destravado virar perda de conta. `login_codes.purpose` separa os códigos: o de login não autoriza exclusão, e o de exclusão não abre sessão.
+- **A tela de código é feita para 55+**: um passo por tela, letra grande, `autocomplete="one-time-code"` e `inputmode="numeric"`, e o aviso "Não chegou? Confira a pasta Spam ou Lixo eletrônico" **visível desde o início**, com o botão de reenviar logo abaixo. O reenvio respeita o limite de 5 por hora e, no limite, oferece o suporte em vez de um botão que não funciona.
 - Usuário com `fake_email`: login por telefone, com o código enviado por WhatsApp (**fase 2**; no MVP, contato manual pelo suporte).
 - Quem entra sem nenhum produto ativo **vê uma tela explicando** (compra processando, e-mail diferente, reembolso) com o contato do suporte — não um erro.
 - Todo envio de e-mail vira linha em `events` (`email_enviado` / `email_falhou`) com tipo, provedor e erro. **Nunca o código.** Falha de código de login sai no log como `[EMAIL][FALHA CRITICA]`: deixa alguém de fora do app.
+
+### Como os e-mails são escritos
+
+O modelo é markdown (`src/worker/emails/*.md`); o HTML sai de `emails/layout.ts`.
+**Quem escreve o modelo não escreve HTML**: tag crua é removida das duas versões.
+
+- **Documento completo**: `<!doctype html>`, `<html lang="pt-BR">`, `<head>` com
+  charset e viewport, `<body>` com cor de fundo própria.
+- **Uma coluna de 600px, em tabela, com estilo inline em cada elemento.** Boa
+  parte da base lê no Outlook, que renderiza com o motor do Word: flex, grid e
+  `<style>` no `<head>` não valem lá.
+- **Corpo em 19px com entrelinha 1.65.** Letra grande é requisito do público, não
+  estética. Nada abaixo de 15px, nem no rodapé.
+- **Sem imagem**: imagem bloqueada por padrão deixaria o e-mail sem sentido, e
+  peso de imagem conta contra a reputação de quem começou a enviar agora.
+- **A versão `text/plain` não tem nenhuma tag.** Era o bug que fazia sair
+  `<small>` literal para quem lê em texto puro.
+- `:destaque: {{codigo}}` vira o bloco grande do código de login, e um link
+  sozinho na linha (`[ Entrar ](url)`) vira botão.
 
 ### E-mail: remetente, resposta e cota
 
@@ -447,6 +483,12 @@ Registrar `offer_viewed` e `offer_clicked` em `events`. Uma oferta dispensada pe
 - Textos do app (UI, descrição de produtos, push) **não prometem** dinheiro, cura ou resultado garantido. Linguagem devocional: "reze", "peça", "entregue sua intenção".
 - Produtos ligados a saúde (Jornada de Cura, Manual de Purificação) exibem: *"Conteúdo devocional. Não substitui acompanhamento médico nem tratamento."*
 - Página de **Política de Privacidade** e **Termos** (LGPD), com o CNPJ da empresa no rodapé.
+- **O rodapé dos e-mails não leva dado de empresa** — só o nome do app e o motivo
+  de a pessoa estar recebendo aquele e-mail ("porque pediu um código", "porque
+  sua compra foi confirmada", "porque comprou a Jornada"). Razão social e CNPJ
+  ficam na página de privacidade. Quem identifica o remetente no e-mail é o nome
+  do remetente e o `Reply-To` do suporte. O e-mail de campanha continua levando o
+  link de "parar de receber" nesse mesmo rodapé.
 - **Excluir conta** no Perfil: anonimiza o usuário (`deleted_at`, limpa e-mail, telefone e nome) e oculta as intenções dele.
 - Suporte visível no Perfil (e-mail + WhatsApp).
 - **Campanha de e-mail** (aviso de novidade, promoção) leva link de "parar de receber" assinado por HMAC, sem exigir login; marca `users.marketing_opt_out_at`. Quem opta por sair **continua recebendo** código de login e e-mail de compra, que são transacionais. Cada envio fica em `campaign_sends`, com chave única por campanha e usuário: nunca reenvia.
@@ -498,7 +540,13 @@ O domínio de envio é `mail.jornadacomeuanjo.com`, habilitado no Email Sending.
 
 DNS do subdomínio de envio: SPF, DKIM (`cf-bounce._domainkey`) e DMARC. O DMARC
 fica em **`p=none`** enquanto o domínio é novo: `p=reject` em domínio sem
-reputação derruba e-mail legítimo sem deixar rastro de diagnóstico.
+reputação derruba e-mail legítimo sem deixar rastro de diagnóstico. O domínio
+principal fica em `p=reject`, por decisão do Leo.
+
+O `rua` dos relatórios não aponta mais para o suporte: quem lê relatório DMARC é
+o **DMARC Management da Cloudflare**, e caixa de suporte recebendo XML de
+relatório só atrapalha o atendimento. O DMARC Management **só funciona em domínio
+apex** — em `mail.` o `rua` da Cloudflare entra à mão.
 
 ## 16. Fases de entrega (um commit por item, testes passando)
 

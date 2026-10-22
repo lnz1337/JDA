@@ -256,7 +256,7 @@ describe('texto da campanha', () => {
     const { montarAnuncio } = await import('../src/worker/emails/anuncio');
     const email = montarAnuncio({
       primeiro_nome: 'Maria',
-      link_acesso: 'https://exemplo.test/entrar?e=maria%40exemplo.com.br',
+      link_acesso: 'https://exemplo.test/acesso?t=tok',
       lista_produtos: '- Jornada com São Miguel\n- Oração de Gargano',
       link_parar: 'https://exemplo.test/parar?u=1&t=2',
       email_suporte: 'suporte@exemplo.com.br',
@@ -265,10 +265,38 @@ describe('texto da campanha', () => {
     expect(email.assunto).toContain('Maria');
     expect(email.texto).toContain('Jornada com São Miguel');
     expect(email.texto).toContain('Oração de Gargano');
-    expect(email.html).toContain('<a href="https://exemplo.test/entrar?e=maria%40exemplo.com.br">');
+    expect(email.html).toContain('href="https://exemplo.test/acesso?t=tok"');
     // Nada de variável por substituir.
     expect(email.texto).not.toContain('{{');
     expect(email.html).not.toContain('{{');
+  });
+
+  it('cada destinatário recebe um token próprio; dry-run não gera token', async () => {
+    await criarComprador(1);
+    await criarComprador(2);
+
+    await chamar('/api/campanha/enviar', {
+      method: 'POST',
+      headers: { 'x-admin-key': envTeste.ADMIN_API_KEY ?? '' },
+      body: JSON.stringify({ campanha: CAMPANHA, limite: 2, dry_run: true }),
+    });
+    expect(
+      await env.DB.prepare('SELECT COUNT(*) AS n FROM access_links').first<{ n: number }>(),
+    ).toMatchObject({ n: 0 });
+
+    await chamar('/api/campanha/enviar', {
+      method: 'POST',
+      headers: { 'x-admin-key': envTeste.ADMIN_API_KEY ?? '' },
+      body: JSON.stringify({ campanha: CAMPANHA, limite: 2 }),
+    });
+
+    const { results } = await env.DB.prepare(
+      'SELECT user_id, token_hash FROM access_links',
+    ).all<{ user_id: string; token_hash: string }>();
+
+    expect(results).toHaveLength(2);
+    expect(new Set(results.map((r) => r.user_id)).size).toBe(2);
+    expect(new Set(results.map((r) => r.token_hash)).size).toBe(2);
   });
 });
 

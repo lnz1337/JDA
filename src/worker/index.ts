@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import type { ApiErrorResponse } from '../shared/types';
 import type { AppBindings } from './lib/types';
 import { admin } from './routes/admin';
-import { auth, me } from './routes/auth';
+import { acesso, auth, me } from './routes/auth';
 import { campanha, parar } from './routes/campanha';
 import { health } from './routes/health';
 import { payt } from './routes/payt';
@@ -14,6 +14,7 @@ app.route('/api/me', me);
 app.route('/api/admin', admin);
 app.route('/api/campanha', campanha);
 app.route('/parar', parar);
+app.route('/acesso', acesso);
 app.route('/api/health', health);
 app.route('/api/payt', payt);
 

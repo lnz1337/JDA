@@ -18,6 +18,7 @@ const TABELAS = [
   'events',
   'payt_events',
   'login_codes',
+  'access_links',
   'sessions',
   'bundle_items',
   'lessons',

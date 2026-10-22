@@ -2,14 +2,16 @@ Assunto: Seu código de acesso: {{codigo}}
 
 Olá{{nome}}!
 
-Seu código para entrar no {{app}} é:
+Você pediu para entrar no app {{app}}. Este é o seu código:
 
-**{{codigo}}**
+:destaque: {{codigo}}
 
-Ele vale por {{validade}} minutos. Se você não pediu este código, pode ignorar este e-mail — ninguém entra sem ele.
+Digite estes {{digitos}} números na tela do app. O código vale por {{validade}} minutos.
+
+Se não foi você que pediu, pode ignorar este e-mail. Ninguém entra na sua conta sem este código.
+
+Qualquer dificuldade, escreva para {{suporte}}. A gente te ajuda a entrar.
 
 Que São Miguel Arcanjo vá à sua frente.
 
 Equipe {{app}}
-
-<small>Precisa de ajuda? Escreva para {{suporte}}.</small>
