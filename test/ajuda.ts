@@ -7,6 +7,7 @@ import { envTeste } from './env-de-teste';
  * de cada caso. Ordem: filho antes de pai, por causa das FKs.
  */
 const TABELAS = [
+  'campaign_sends',
   'intention_prayers',
   'intentions',
   'progress',

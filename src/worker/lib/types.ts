@@ -16,6 +16,8 @@ export interface Secrets {
   VAPID_PUBLIC_KEY?: string;
   VAPID_PRIVATE_KEY?: string;
   VAPID_SUBJECT?: string;
+  /** Assina o link de "parar de receber" das campanhas. */
+  CAMPAIGN_SIGNING_KEY?: string;
 }
 
 export type AppBindings = {

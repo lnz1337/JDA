@@ -437,6 +437,8 @@ Registrar `offer_viewed` e `offer_clicked` em `events`. Uma oferta dispensada pe
 - Página de **Política de Privacidade** e **Termos** (LGPD), com o CNPJ da empresa no rodapé.
 - **Excluir conta** no Perfil: anonimiza o usuário (`deleted_at`, limpa e-mail, telefone e nome) e oculta as intenções dele.
 - Suporte visível no Perfil (e-mail + WhatsApp).
+- **Campanha de e-mail** (aviso de novidade, promoção) leva link de "parar de receber" assinado por HMAC, sem exigir login; marca `users.marketing_opt_out_at`. Quem opta por sair **continua recebendo** código de login e e-mail de compra, que são transacionais. Cada envio fica em `campaign_sends`, com chave única por campanha e usuário: nunca reenvia.
+- Domínio de envio novo sobe volume em ondas (50, 100, 250, 500, 1.000/dia). O disparo recusa limite maior que o dobro da onda anterior e para sozinho acima de 5% de falha.
 
 ## 15. Secrets e variáveis
 

@@ -14,7 +14,7 @@ enabled = true
 # SPA: qualquer rota desconhecida devolve o index.html do PWA.
 not_found_handling = "single-page-application"
 # API e mídia passam pelo Worker antes de qualquer asset.
-run_worker_first = ["/api/*", "/media/*"]
+run_worker_first = ["/api/*", "/media/*", "/parar"]
 
 # ---------------------------------------------------------------- development
 [vars]

@@ -19,3 +19,16 @@ export function igualdadeSegura(a: string, b: string): boolean {
   }
   return diferenca === 0;
 }
+
+/** HMAC-SHA256 em hex. Assina o link de "parar de receber", que não exige login. */
+export async function hmacHex(segredo: string, mensagem: string): Promise<string> {
+  const chave = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(segredo),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  );
+  const assinatura = await crypto.subtle.sign('HMAC', chave, new TextEncoder().encode(mensagem));
+  return [...new Uint8Array(assinatura)].map((b) => b.toString(16).padStart(2, '0')).join('');
+}

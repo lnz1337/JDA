@@ -168,6 +168,53 @@ npx wrangler email sending dns get mail.jornadacomeuanjo.com   # confere SPF, DK
 mexer em código: `MAIL_PROVIDER = "resend"` no `wrangler.toml` e
 `npx wrangler secret put RESEND_API_KEY --env staging`.
 
+## Campanha para a base
+
+Um disparo único avisando os compradores antigos de que o app existe. O texto é
+do pipeline de conteúdo (`conteudo/emails/anuncio-app.md`) — **ler, não editar**.
+
+**1. Importar os compradores da exportação da Payt.** Primeiro confira o
+mapeamento das colunas, sem gravar nada:
+
+```bash
+npm run import:compradores -- vendas.csv --colunas
+npm run import:compradores -- vendas.csv --env staging --dry-run
+npm run import:compradores -- vendas.csv --env staging
+```
+
+Só entra venda paga. O entitlement recebe `source = 'payt'` e o `transaction_id`
+real, para um reembolso futuro revogar pelo caminho normal. Produto sem
+mapeamento em `product_payt_map` **interrompe** a importação com a lista do que
+falta — pular calado deixaria cliente sem acesso e ninguém saberia.
+
+**2. Disparar, em ondas.** O domínio é novo, então o volume sobe devagar:
+50, 100, 250, 500, 1.000 por dia. O script recusa um `--limite` maior que o dobro
+da onda anterior e para sozinho se a taxa de falha passar de 5%.
+
+```bash
+PAYT_INTEGRATION_KEY=... npm run campanha:anuncio -- --env staging --teste-para eu@exemplo.com
+PAYT_INTEGRATION_KEY=... npm run campanha:anuncio -- --env production --limite 50 --dry-run
+PAYT_INTEGRATION_KEY=... npm run campanha:anuncio -- --env production --limite 50
+```
+
+Cada envio vira uma linha em `campaign_sends` (chave única por campanha e
+usuário): nunca reenvia e retoma de onde parou se cair no meio.
+
+**3. Quem não tem e-mail** sai num CSV com nome, telefone e link de acesso, para
+o contato por WhatsApp:
+
+```bash
+npm run exportar:sem-email -- --env production
+```
+
+**Parar de receber**: cada e-mail leva um link assinado (HMAC, sem login) que
+marca `users.marketing_opt_out_at`. Quem opta por sair deixa as campanhas, mas
+continua recebendo código de login e e-mails da compra. Precisa do secret:
+
+```bash
+npx wrangler secret put CAMPAIGN_SIGNING_KEY --env production
+```
+
 ## Deploy de staging
 
 O ambiente é escolhido **no build** (`CLOUDFLARE_ENV`), não no `wrangler deploy`:
