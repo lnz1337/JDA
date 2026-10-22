@@ -23,6 +23,7 @@
     "media:upload:staging": "node scripts/upload-media.ts jda-pwa-media-staging",
     "payt:last:staging": "node scripts/payt-last.ts staging 5",
     "payt:reprocess:staging": "node scripts/payt-reprocess.ts",
+    "grant:staging": "node scripts/grant.ts",
     "cf-typegen": "wrangler types",
     "icons": "node scripts/make-icons.mjs",
     "deploy:staging": "npm run build:staging && wrangler deploy",

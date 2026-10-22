@@ -95,6 +95,7 @@ o que virou fixture está anonimizado.
 | `pedido-com-order-bump.json` | order bump junto do pedido |
 | `upsell-bundle-agrupado.json` | upsell com `product.items` (bundle agrupado) |
 | `pedido-sku-desconhecido.json` | `sku` que não existe, resolvido por `product_payt_map` |
+| `reembolso-solicitado.json` | **REAL e anonimizado** — `refund_requested`, só registra, não revoga |
 | `reembolso.json` | revoga os entitlements da transação (aponta para o `pedido-pago.json`) |
 | `chargeback.json` | idem |
 | `reembolso-parcial.json` | **não** revoga; vai para a fila de revisão |

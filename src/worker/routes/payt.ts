@@ -64,14 +64,22 @@ async function marcarProcessado(
     .run();
 }
 
-/** Confere o segredo no corpo ou no header. Vale para o postback e o reprocesso. */
-function chaveConfere(dados: unknown, headerChave: string | undefined, segredo?: string): boolean {
+/** Compara o que chegou com o segredo, sempre em tempo constante. */
+function chaveBate(recebida: string | undefined, segredo?: string): boolean {
+  return Boolean(segredo) && igualdadeSegura(recebida ?? '', segredo ?? '');
+}
+
+/**
+ * O postback aceita a chave no corpo (é como a Payt manda) ou no header.
+ * O reprocesso aceita **só** no header: é rota administrativa, e segredo em
+ * corpo de requisição acaba em log, em replay de formulário e em histórico.
+ */
+function chaveDoPostback(dados: unknown, headerChave: string | undefined, segredo?: string): boolean {
   const noCorpo =
     typeof dados === 'object' && dados !== null
       ? (dados as Record<string, unknown>).integration_key
       : undefined;
-  const recebida = typeof noCorpo === 'string' ? noCorpo : (headerChave ?? '');
-  return Boolean(segredo) && igualdadeSegura(recebida, segredo ?? '');
+  return chaveBate(typeof noCorpo === 'string' ? noCorpo : headerChave, segredo);
 }
 
 export const payt = new Hono<AppBindings>().post('/postback', async (c) => {
@@ -82,7 +90,7 @@ export const payt = new Hono<AppBindings>().post('/postback', async (c) => {
     return c.json({ error: 'payload_ilegivel' }, 400);
   }
 
-  if (!chaveConfere(dados, c.req.header('x-integration-key'), c.env.PAYT_INTEGRATION_KEY)) {
+  if (!chaveDoPostback(dados, c.req.header('x-integration-key'), c.env.PAYT_INTEGRATION_KEY)) {
     return c.json({ error: 'integration_key_invalida' }, 401);
   }
 
@@ -154,15 +162,17 @@ export const payt = new Hono<AppBindings>().post('/postback', async (c) => {
  * retomado pela origem. É o motor do botão "reprocessar" do admin (§13); quando o
  * admin existir, atrás do Cloudflare Access, esta rota sai daqui.
  *
- * Fora de produção, só: em produção, reprocessar sem revisão humana pode conceder
- * acesso a partir de um payload que já foi recusado por um motivo legítimo.
+ * Autenticação pelo header `x-integration-key`, em tempo constante. Fora de
+ * produção, só: em produção, reprocessar sem revisão humana pode conceder acesso
+ * a partir de um payload que já foi recusado por um motivo legítimo.
  */
 payt.post('/reprocess', async (c) => {
-  const corpo = (await c.req.json().catch(() => null)) as Record<string, unknown> | null;
-
-  if (!chaveConfere(corpo, c.req.header('x-integration-key'), c.env.PAYT_INTEGRATION_KEY)) {
+  // Só o header: a chave não entra no corpo desta rota.
+  if (!chaveBate(c.req.header('x-integration-key'), c.env.PAYT_INTEGRATION_KEY)) {
     return c.json({ error: 'integration_key_invalida' }, 401);
   }
+
+  const corpo = (await c.req.json().catch(() => null)) as Record<string, unknown> | null;
 
   if (c.env.ENV === 'production') {
     return c.json({ error: 'reprocesso_indisponivel_em_producao' }, 403);

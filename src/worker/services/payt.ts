@@ -31,8 +31,19 @@ const ASSINATURA_ATIVA = new Set([
 /** type de transação que concede acesso quando paga. */
 const TIPOS_DE_COMPRA = new Set(['order', 'upsell', 'manual_upsell']);
 
-/** Status que a §7 manda só registrar. Qualquer outro desconhecido pede revisão. */
-const SO_REGISTRAM = new Set(['waiting_payment', 'lost_cart', 'canceled']);
+/**
+ * Status que só ficam registrados. Qualquer outro desconhecido pede revisão.
+ *
+ * `refund_requested` entra aqui porque é estado intermediário: a revogação
+ * acontece quando chega o `refunded`. Deixá-lo pedindo revisão encheria a fila
+ * com um item por reembolso, e a fila é para o que precisa de alguém olhar.
+ */
+const SO_REGISTRAM = new Set([
+  'waiting_payment',
+  'lost_cart',
+  'canceled',
+  'refund_requested',
+]);
 
 /**
  * Tudo aceita null além de ausente: o postback manda `"subscription": null` em

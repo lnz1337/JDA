@@ -357,6 +357,7 @@ Endpoint: `POST /api/payt/postback`. Cadastrar na Payt em Ferramentas → Integr
 | `subscription_overdue` | Atualizar status para `overdue` (a carência vale pela regra da seção 6) |
 | `subscription_canceled` | Atualizar status com `subscription.status` (ex.: `canceled_by_customer`) |
 | `waiting_payment`, `lost_cart`, `canceled` | Só registrar (futuro: recuperação) |
+| `refund_requested` | Só registrar. A revogação acontece quando chega o `refunded`; marcar revisão aqui encheria a fila com um item por reembolso |
 | Qualquer outro status | Registrar e marcar `needs_review`: status que ninguém previu é como um formato diferente do esperado aparece |
 
 `subscription.periodicity`: `1 month` vira `mensal`, `1 year` vira `anual`.

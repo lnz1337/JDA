@@ -51,6 +51,7 @@ Checagem rápida: `GET http://localhost:5173/api/health` devolve
 | `npm run media:upload:staging` | Sobe os MP3 de `audio/` para o R2 de staging |
 | `npm run payt:last:staging` | Últimos 5 postbacks da Payt gravados no staging |
 | `npm run payt:reprocess:staging <tx>` | Reprocessa um postback já gravado |
+| `npm run grant:staging <email> <produto>` | Concede acesso manual (`source = 'manual'`) |
 | `npm run cf-typegen` | Regenera `worker-configuration.d.ts` a partir do wrangler.toml |
 | `npm run icons` | Regenera os ícones placeholder do PWA |
 | `npm run deploy:staging` | Build com `CLOUDFLARE_ENV=staging` + `wrangler deploy` |
@@ -131,10 +132,24 @@ PAYT_INTEGRATION_KEY=... npm run payt:reprocess:staging X9P8DY5
 ```
 
 Isso relê o payload gravado e roda o processamento de novo, atualizando a mesma
-linha. A rota é recusada quando `ENV=production` — lá o caminho é o botão
+linha. A chave vai **só no header** `x-integration-key` — a rota não aceita
+segredo no corpo. A rota é recusada quando `ENV=production` — lá o caminho é o botão
 "reprocessar" do admin (CLAUDE.md §13), atrás do Cloudflare Access. As fixtures em
 `fixtures/payt/` são sintéticas até serem substituídas pelo formato real — veja
 `fixtures/payt/README.md`.
+
+### Acesso manual
+
+Para manter um usuário de teste com acesso sem depender de compra, ou para
+suporte (CLAUDE.md §13):
+
+```bash
+npm run grant:staging alguem@exemplo.com.br jornada-meu-anjo
+```
+
+O entitlement entra com `source = 'manual'` e sem `transaction_id`, então
+reembolso da Payt não o revoga — ele sai só por decisão humana. Rodar de novo
+reativa em vez de duplicar.
 
 ## Deploy de staging
 

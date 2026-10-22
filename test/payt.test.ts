@@ -17,6 +17,7 @@ import pedidoPago from '../fixtures/payt/pedido-pago.json';
 import pedidoSkuDesconhecido from '../fixtures/payt/pedido-sku-desconhecido.json';
 import realPedidoPago from '../fixtures/payt/real-pedido-pago.json';
 import reembolso from '../fixtures/payt/reembolso.json';
+import reembolsoSolicitado from '../fixtures/payt/reembolso-solicitado.json';
 import reembolsoParcial from '../fixtures/payt/reembolso-parcial.json';
 import upsellAgrupado from '../fixtures/payt/upsell-bundle-agrupado.json';
 import { prepararBanco } from './ajuda';
@@ -344,6 +345,22 @@ describe('reembolso e chargeback', () => {
     expect(await entitlementsDe('joao.pereira@exemplo.com.br')).toEqual([]);
   });
 
+  it('pedido de reembolso só registra, sem revisão e sem revogar', async () => {
+    await postar(comChave(pedidoPago));
+    await postar(comChave(reembolsoSolicitado));
+
+    // A revogação acontece no refunded; aqui o acesso continua de pé.
+    expect(await entitlementsDe('cliente.exemplo@exemplo.com.br')).toEqual(['jornada-meu-anjo']);
+
+    const linha = await env.DB.prepare(
+      "SELECT needs_review, error FROM payt_events WHERE status = 'refund_requested'",
+    ).first<{ needs_review: number; error: string | null }>();
+
+    // A fila de revisão é só para o que precisa de alguém olhar.
+    expect(linha?.needs_review).toBe(0);
+    expect(linha?.error).toBeNull();
+  });
+
   it('reembolso parcial não revoga e vai para a fila de revisão', async () => {
     await postar(comChave(pedidoPago));
     await postar(reembolsoParcial);
@@ -438,5 +455,76 @@ describe('eventos que só são registrados', () => {
 
     const { results } = await env.DB.prepare('SELECT id FROM entitlements').all();
     expect(results).toHaveLength(0);
+  });
+});
+
+describe('rota de reprocesso', () => {
+  async function reprocessar(headers: Record<string, string>, corpo: unknown, env?: Record<string, unknown>) {
+    const ctx = createExecutionContext();
+    const res = await app.request(
+      'https://exemplo.test/api/payt/reprocess',
+      { method: 'POST', headers: { 'content-type': 'application/json', ...headers }, body: JSON.stringify(corpo) },
+      { ...envTeste, ...env },
+      ctx,
+    );
+    await waitOnExecutionContext(ctx);
+    return res;
+  }
+
+  const chave = () => ({ 'x-integration-key': envTeste.PAYT_INTEGRATION_KEY ?? '' });
+
+  it('recusa sem chave', async () => {
+    const res = await reprocessar({}, { transaction_id: 'X9P8DY5' });
+    expect(res.status).toBe(401);
+  });
+
+  it('recusa chave errada', async () => {
+    const res = await reprocessar({ 'x-integration-key': 'chute' }, { transaction_id: 'X9P8DY5' });
+    expect(res.status).toBe(401);
+  });
+
+  it('não aceita a chave pelo corpo', async () => {
+    // Rota administrativa: segredo em corpo de requisição acaba em log.
+    const res = await reprocessar(
+      {},
+      { transaction_id: 'X9P8DY5', integration_key: envTeste.PAYT_INTEGRATION_KEY },
+    );
+    expect(res.status).toBe(401);
+  });
+
+  it('recusa em produção', async () => {
+    const res = await reprocessar(chave(), { transaction_id: 'X9P8DY5' }, { ENV: 'production' });
+    expect(res.status).toBe(403);
+  });
+
+  it('404 para evento que não existe', async () => {
+    const res = await reprocessar(chave(), { transaction_id: 'NAO-EXISTE' });
+    expect(res.status).toBe(404);
+  });
+
+  it('exige id ou transaction_id', async () => {
+    const res = await reprocessar(chave(), {});
+    expect(res.status).toBe(400);
+  });
+
+  it('reprocessa e concede o que faltou', async () => {
+    // Sem o mapeamento, o pedido falha por produto não resolvido.
+    await env.DB.prepare("DELETE FROM product_payt_map WHERE payt_code = 'LJ7KEP'").run();
+    await postar(comChave(pedidoPago));
+    expect(await entitlementsDe('cliente.exemplo@exemplo.com.br')).toEqual([]);
+
+    // Com o mapeamento, o mesmo payload gravado passa a resolver.
+    await env.DB.prepare(
+      "INSERT INTO product_payt_map (payt_code, product_id) VALUES ('LJ7KEP', 'jornada-meu-anjo')",
+    ).run();
+    const res = await reprocessar(chave(), { transaction_id: 'X9P8DY5' });
+
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({ ok: true, acao: 'entitlements_concedidos' });
+    expect(await entitlementsDe('cliente.exemplo@exemplo.com.br')).toEqual(['jornada-meu-anjo']);
+
+    const linha = await evento('X9P8DY5');
+    expect(linha?.error).toBeNull();
+    expect(linha?.needs_review).toBe(0);
   });
 });
