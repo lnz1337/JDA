@@ -5,7 +5,7 @@ funcionando (no mínimo fases 4 e 5 entregues: login e jornada com player).
 
 Variáveis disponíveis no template:
 - `{{primeiro_nome}}`: primeiro nome do cliente (se vazio, usar "Olá!" sem nome)
-- `{{link_acesso}}`: `https://jornadacomeuanjo.com/entrar?e={email}`
+- `{{link_acesso}}`: link de acesso direto e pessoal (`/acesso?t={token}`), de uso único e válido por 7 dias
 - `{{lista_produtos}}`: lista dos produtos liberados para esse cliente, um por linha
 - `{{link_parar}}`: link para deixar de receber avisos (não afeta e-mails de login)
 - `{{email_suporte}}`: suporte@jornadacomeuanjo.com
@@ -36,14 +36,13 @@ Você faz parte da **Jornada com Meu Anjo**, e preparamos um presente para a sua
 
 Você não paga nada a mais.
 
-**Para entrar é simples:**
-1. Toque no botão abaixo.
-2. Confirme o seu e-mail. Vamos enviar um código de 6 números para ele.
-3. Digite o código e pronto, você já está dentro.
+**Para entrar é só um toque.** Toque no botão abaixo e você já entra no app, sem senha:
 
 [ Entrar no meu app ]({{link_acesso}})
 
-**Dica:** depois de entrar, o app mostra como colocá-lo na tela inicial do seu celular, como um aplicativo comum. Assim você abre com um toque, todos os dias.
+Este botão é só seu e vale por 7 dias. Se ele já tiver sido usado ou estiver vencido, o app pede o seu e-mail e manda um código de 6 números. É só digitar o código e pronto.
+
+**Dica:** depois de entrar, o app mostra como colocá-lo na tela inicial do seu celular, como um aplicativo comum. Assim você abre com um toque, todos os dias. No iPhone, ao abrir pela tela inicial pela primeira vez, ele pode pedir o código uma vez.
 
 Se tiver qualquer dificuldade para entrar, é só responder este e-mail ou escrever para {{email_suporte}}. Vamos te ajudar.
 
@@ -67,7 +66,7 @@ Use para quem não tem e-mail válido (`fake_email`) ou não abriu o e-mail em 3
 >
 > Aqui é da *Jornada com Meu Anjo*. Temos uma novidade: agora a sua jornada com São Miguel tem um *aplicativo*, com os 19 dias, os áudios e um lembrete diário de oração.
 >
-> Já está liberado para você, sem pagar nada a mais. Para entrar, toque no link e confirme o seu e-mail:
+> Já está liberado para você, sem pagar nada a mais. Para entrar, é só tocar no link:
 > {{link_acesso}}
 >
-> Qualquer dúvida, é só responder aqui. Que São Miguel vá à sua frente!
+> Se o app pedir um código ou qualquer coisa não funcionar, é só responder esta mensagem que a gente te ajuda. Que São Miguel vá à sua frente!
