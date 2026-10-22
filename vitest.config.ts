@@ -29,6 +29,8 @@ export default defineConfig({
                 // Valor sintético, igual ao das fixtures. A integration_key real
                 // vive só como secret (wrangler secret put), nunca em arquivo.
                 PAYT_INTEGRATION_KEY: 'chave-de-teste-sintetica',
+                // Credencial administrativa, separada da chave da Payt.
+                ADMIN_API_KEY: 'chave-admin-de-teste',
               },
             },
           }),

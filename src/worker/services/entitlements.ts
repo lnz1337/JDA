@@ -28,6 +28,36 @@ interface LinhaAssinatura {
  * volta para 'active'.
  */
 export async function concederEntitlement(db: D1Database, p: ConcederParams): Promise<void> {
+  const transacao = p.transactionId ?? null;
+
+  if (transacao === null) {
+    /*
+     * Sem transação a UNIQUE não protege: no SQLite NULL não conflita com NULL,
+     * então o ON CONFLICT nunca dispararia e cada chamada criaria linha nova.
+     * Insere só se não existir e reativa o que já houver.
+     */
+    await db
+      .prepare(
+        `INSERT INTO entitlements (id, user_id, product_id, source, transaction_id, status, granted_at)
+         SELECT ?, ?, ?, ?, NULL, 'active', ?
+          WHERE NOT EXISTS (
+            SELECT 1 FROM entitlements
+             WHERE user_id = ? AND product_id = ? AND source = ? AND transaction_id IS NULL
+          )`,
+      )
+      .bind(novoId(), p.userId, p.productId, p.source, agoraIso(), p.userId, p.productId, p.source)
+      .run();
+
+    await db
+      .prepare(
+        `UPDATE entitlements SET status = 'active', revoked_at = NULL
+          WHERE user_id = ? AND product_id = ? AND source = ? AND transaction_id IS NULL`,
+      )
+      .bind(p.userId, p.productId, p.source)
+      .run();
+    return;
+  }
+
   await db
     .prepare(
       `INSERT INTO entitlements (id, user_id, product_id, source, transaction_id, status, granted_at)
@@ -37,7 +67,7 @@ export async function concederEntitlement(db: D1Database, p: ConcederParams): Pr
          revoked_at = NULL,
          source = excluded.source`,
     )
-    .bind(novoId(), p.userId, p.productId, p.source, p.transactionId ?? null, agoraIso())
+    .bind(novoId(), p.userId, p.productId, p.source, transacao, agoraIso())
     .run();
 }
 

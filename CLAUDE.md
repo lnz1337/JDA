@@ -1,6 +1,6 @@
 # CLAUDE.md — PWA devocional São Miguel
 
-> Spec do projeto. Leia inteiro antes de qualquer tarefa. Nome do app ainda é placeholder: `{{APP_NAME}}`.
+> Spec do projeto. Leia inteiro antes de qualquer tarefa. O app é a **Jornada com Meu Anjo** (nome curto **Meu Anjo**), em `jornadacomeuanjo.com`.
 
 ## 1. O que é
 
@@ -25,7 +25,7 @@ Toda a monetização roda pela **Payt** (checkout + postback). O app nunca proce
 | Estilo | Tailwind |
 | Banco | Cloudflare D1 (migrations em `migrations/`) |
 | Arquivos | Cloudflare R2 (áudios MP3, PDFs, capas) servidos via Worker com checagem de acesso |
-| E-mail | Cloudflare Email Service (binding `send_email`), com Resend implementado como alternativa. O provedor sai da var `MAIL_PROVIDER` — o Email Sending está em beta, e trocar tem que ser variável + secret, sem deploy de código |
+| E-mail | **Cloudflare Email Service** (binding `send_email`), remetente `contato@mail.jornadacomeuanjo.com`. Resend fica implementado como alternativa; o provedor sai da var `MAIL_PROVIDER` — o Email Sending está em beta, e trocar tem que ser variável + secret, sem deploy de código |
 | Push | Web Push com VAPID, lib compatível com Workers (WebCrypto, ex.: `@block65/webcrypto-web-push`; validar antes) |
 | Cron | Cron Triggers do Worker (push diário, ofertas D+3) |
 | Admin | Rotas `/admin/*` protegidas por Cloudflare Access |
@@ -387,6 +387,18 @@ Usar `fixtures/payt/*.json`: pedido pago, pedido com order bump, upsell, reembol
 - Quem entra sem nenhum produto ativo **vê uma tela explicando** (compra processando, e-mail diferente, reembolso) com o contato do suporte — não um erro.
 - Todo envio de e-mail vira linha em `events` (`email_enviado` / `email_falhou`) com tipo, provedor e erro. **Nunca o código.** Falha de código de login sai no log como `[EMAIL][FALHA CRITICA]`: deixa alguém de fora do app.
 
+### E-mail: remetente, resposta e cota
+
+- O app envia **só** por `contato@mail.jornadacomeuanjo.com`. O domínio principal
+  (`jornadacomeuanjo.com`) fica habilitado para outro uso — responder cliente como
+  `suporte@` pelo Gmail — e **o app não envia por ele**.
+- Todos os e-mails do app (login, boas-vindas e campanha) saem com
+  **`Reply-To: suporte@jornadacomeuanjo.com`**, nos dois provedores. Esse endereço
+  é do Email Routing e encaminha para a caixa do Leo.
+- **Cota de 1.000 envios por dia**, da conta inteira. A campanha reserva **300**
+  para o transacional (login e boas-vindas) e nunca encosta nessa fatia: ficar sem
+  cota de login deixaria cliente fora do app.
+
 ## 9. Ofertas contextuais (`services/offers.ts`)
 
 Uma função `getOffer(user)` retorna no máximo **uma** oferta para a Home, ou `null`. Regras em ordem de prioridade:
@@ -445,11 +457,27 @@ Registrar `offer_viewed` e `offer_clicked` em `events`. Uma oferta dispensada pe
 **Secrets** (`wrangler secret put`, nunca em arquivo):
 
 ```
-PAYT_INTEGRATION_KEY
+PAYT_INTEGRATION_KEY           # SÓ o /api/payt/postback
+ADMIN_API_KEY                  # rotas administrativas, header x-admin-key
+CAMPAIGN_SIGNING_KEY           # assina o link de "parar de receber"
 RESEND_API_KEY                 # só se MAIL_PROVIDER=resend
 VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY / VAPID_SUBJECT
-CAMPAIGN_SIGNING_KEY           # assina o link de "parar de receber"
 ```
+
+**As credenciais são separadas de propósito.** A `PAYT_INTEGRATION_KEY` é
+conhecida por terceiro — a Payt a manda no corpo de todo postback. Se ela também
+administrasse, quem tem o segredo do postback poderia reprocessar evento, liberar
+acesso e disparar e-mail para a base. Por isso reprocesso, campanha e concessão
+manual usam a `ADMIN_API_KEY` no header `x-admin-key`.
+
+Gere e grave sem passar pela tela:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"   | npx wrangler secret put ADMIN_API_KEY --env staging
+```
+
+Os scripts leem a `ADMIN_API_KEY` do ambiente ou de uma cópia no `.dev.vars`,
+que está fora do git.
 
 **Vars** (no `wrangler.toml`, não são segredo):
 
@@ -468,6 +496,10 @@ O domínio de envio é `mail.jornadacomeuanjo.com`, habilitado no Email Sending.
 **Sem essa habilitação o binding só entrega para endereço verificado** — o erro é
 `destination address is not a verified address`.
 
+DNS do subdomínio de envio: SPF, DKIM (`cf-bounce._domainkey`) e DMARC. O DMARC
+fica em **`p=none`** enquanto o domínio é novo: `p=reject` em domínio sem
+reputação derruba e-mail legítimo sem deixar rastro de diagnóstico.
+
 ## 16. Fases de entrega (um commit por item, testes passando)
 
 1. **Scaffold**: Worker + Hono + Vite React + Tailwind + wrangler.toml + rota de health check + deploy de staging.
@@ -483,12 +515,20 @@ O domínio de envio é `mail.jornadacomeuanjo.com`, habilitado no Email Sending.
 11. **Admin**.
 12. **Polimento PWA**: offline do shell, ícones, Lighthouse PWA sem erros.
 
+### Compra de teste
+
+**Nunca usar e-mail aleatório em compra de teste.** Sempre um endereço próprio.
+Um endereço inventado pode existir de verdade: a pessoa recebe e-mail do app,
+vira usuário no banco e os dados dela ficam no `payt_events`. Aconteceu uma vez,
+e a limpeza exigiu apagar o usuário de todas as tabelas e mascarar o payload.
+
 ## 17. Pendências a confirmar (perguntar ao Leo antes da fase correspondente)
 
 - Payt: o checkout aceita pré-preenchimento de e-mail/nome via URL? (fase 6)
 - Payt: assinatura aceita **Pix** (Pix Automático) ou só cartão? Isso muda o texto do paywall. (fase 7)
 - Payt: o SKU dos produtos pode ser definido igual ao `products.id`? Se não, popular `product_payt_map`. (fase 3)
-- Domínio do app e do remetente de e-mail (SPF/DKIM no Resend). (fase 4)
+- ~~Domínio do app e do remetente de e-mail~~: `jornadacomeuanjo.com`, envio por
+  `contato@mail.jornadacomeuanjo.com`, suporte em `suporte@jornadacomeuanjo.com`.
 - ~~Nome final do app~~: **Jornada com Meu Anjo**, nome curto **Meu Anjo**, domínio
   `jornadacomeuanjo.com`. Falta só a identidade visual (ícones ainda são placeholder).
 - ~~Payt: o SKU pode ser igual ao `products.id`?~~ **Não**: a Payt gera o sku

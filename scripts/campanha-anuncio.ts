@@ -1,13 +1,16 @@
 /**
  * Dispara a campanha de anúncio do app.
  *
- *   PAYT_INTEGRATION_KEY=... node scripts/campanha-anuncio.ts --env production --limite 50
+ *   node scripts/campanha-anuncio.ts --env production --limite 50
  *   ... --dry-run                 só mostra o que faria
  *   ... --teste-para eu@ex.com    manda só para esse endereço, sem tocar na base
  *
  * A seleção, o controle de onda e o corte por taxa de falha ficam no Worker
  * (services/campanhas.ts): é lá que estão o banco e o envio.
+ *
+ * Autentica com a ADMIN_API_KEY (ambiente ou .dev.vars).
  */
+import { exigirSegredo } from './lib/segredos.ts';
 const URLS: Record<string, string> = {
   staging: 'https://jda-pwa-staging.leonardovcs2022.workers.dev',
   production: 'https://jornadacomeuanjo.com',
@@ -24,12 +27,8 @@ const limite = Number(valor('--limite') ?? 0);
 const testePara = valor('--teste-para');
 const dryRun = argv.includes('--dry-run');
 const campanha = valor('--campanha') ?? 'anuncio-app';
-const chave = process.env.PAYT_INTEGRATION_KEY;
+const chave = exigirSegredo('ADMIN_API_KEY');
 
-if (!chave) {
-  console.error('defina PAYT_INTEGRATION_KEY no ambiente');
-  process.exit(1);
-}
 if (!Number.isFinite(limite) || limite <= 0) {
   console.error('informe --limite N');
   process.exit(1);
@@ -47,7 +46,7 @@ console.log(
 
 const res = await fetch(`${base}/api/campanha/enviar`, {
   method: 'POST',
-  headers: { 'content-type': 'application/json', 'x-integration-key': chave },
+  headers: { 'content-type': 'application/json', 'x-admin-key': chave },
   body: JSON.stringify({
     campanha,
     limite,

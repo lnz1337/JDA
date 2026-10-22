@@ -19,6 +19,14 @@ type Ambiente = AppBindings['Bindings'];
 
 /** Acima disto a campanha para sozinha. */
 export const TETO_FALHA = 0.05;
+
+/** Cota de envio da conta, por dia, compartilhada por todos os e-mails. */
+export const COTA_DIARIA = 1000;
+/**
+ * Fatia reservada para transacional (código de login e boas-vindas). Campanha
+ * nunca encosta nela: ficar sem cota de login deixaria cliente fora do app.
+ */
+export const RESERVA_TRANSACIONAL = 300;
 /** Mínimo de envios antes de a taxa de falha valer alguma coisa. */
 const AMOSTRA_MINIMA = 10;
 
@@ -31,6 +39,8 @@ export interface Destinatario {
 
 export interface RelatorioCampanha {
   campanha: string;
+  enviadosHoje: number;
+  cotaRestante: number;
   enviados: number;
   falhas: number;
   pulados: number;
@@ -58,6 +68,16 @@ export async function conferirAssinaturaParar(
   const segredo = env.CAMPAIGN_SIGNING_KEY;
   if (!segredo) return false;
   return (await hmacHex(segredo, `parar:${userId}`)) === token;
+}
+
+/** Quantos e-mails já saíram hoje (qualquer tipo), para a cota da conta. */
+export async function enviadosHoje(db: D1Database): Promise<number> {
+  const inicioDoDia = `${new Date().toISOString().slice(0, 10)}T00:00:00.000Z`;
+  const r = await db
+    .prepare("SELECT COUNT(*) AS n FROM events WHERE name = 'email_enviado' AND created_at >= ?")
+    .bind(inicioDoDia)
+    .first<{ n: number }>();
+  return r?.n ?? 0;
 }
 
 /** Quanto a última onda desta campanha enviou. */
@@ -134,16 +154,40 @@ export async function enviarCampanha(
   const erros: string[] = [];
 
   // Onda só pode dobrar. Domínio novo que dispara 1.000 de uma vez vira spam.
-  const teto = anterior === 0 ? limite : anterior * 2;
+  const tetoOnda = anterior === 0 ? limite : anterior * 2;
+
+  // E a cota do dia é da conta inteira: o que sobra para campanha é o total
+  // menos o que já saiu hoje menos a reserva do transacional.
+  const jaHoje = await enviadosHoje(env.DB);
+  const tetoCota = COTA_DIARIA - RESERVA_TRANSACIONAL - jaHoje;
+
+  const teto = Math.min(tetoOnda, tetoCota);
   if (limite > teto) {
     throw new Error(
-      `limite ${limite} passa do dobro da onda anterior (${anterior}). Máximo agora: ${teto}.`,
+      `limite ${limite} acima do máximo agora, que é ${Math.max(teto, 0)}. ` +
+        `Onda anterior: ${anterior} (teto ${tetoOnda}). ` +
+        `Cota do dia: ${COTA_DIARIA} no total, ${jaHoje} já enviado(s), ` +
+        `${RESERVA_TRANSACIONAL} reservado(s) para login e boas-vindas (teto ${tetoCota}).`,
     );
   }
 
+  /*
+   * Em modo teste a mensagem sai para um endereço só e nada é gravado. Se esse
+   * endereço for de um usuário que existe, usamos os dados dele: assim o e-mail
+   * de teste tem a lista de produtos de verdade e um link de parar que funciona
+   * — que é justamente o que se quer conferir antes de disparar para a base.
+   */
   const lista = opcoes.testePara
     ? [
-        {
+        (await env.DB.prepare(
+          `SELECT u.id AS user_id, u.email, u.name AS nome,
+                  (SELECT GROUP_CONCAT(p.name, '|')
+                     FROM entitlements e JOIN products p ON p.id = e.product_id
+                    WHERE e.user_id = u.id AND e.status = 'active') AS produtos
+             FROM users u WHERE u.email = ? AND u.deleted_at IS NULL`,
+        )
+          .bind(opcoes.testePara.trim().toLowerCase())
+          .first<Destinatario>()) ?? {
           user_id: 'teste',
           email: opcoes.testePara,
           nome: 'Teste',
@@ -166,7 +210,9 @@ export async function enviarCampanha(
         .filter(Boolean)
         .map((n) => `- ${n}`)
         .join('\n'),
-      link_parar: opcoes.testePara ? `${env.APP_URL}/parar?u=teste&t=teste` : await linkParar(env, d.user_id),
+      // Usuário de verdade ganha link assinado, mesmo em teste.
+      link_parar:
+        d.user_id === 'teste' ? `${env.APP_URL}/parar?u=teste&t=invalido` : await linkParar(env, d.user_id),
       email_suporte: env.SUPPORT_EMAIL ?? '',
     };
 
@@ -211,6 +257,9 @@ export async function enviarCampanha(
   const feitos = enviados + falhas;
   return {
     campanha,
+    // Dry-run não manda nada, então não debita a cota do dia.
+    enviadosHoje: jaHoje + (dryRun ? 0 : enviados),
+    cotaRestante: Math.max(COTA_DIARIA - jaHoje - (dryRun ? 0 : enviados), 0),
     enviados,
     falhas,
     pulados: lista.length - feitos,

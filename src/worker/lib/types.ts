@@ -18,6 +18,8 @@ export interface Secrets {
   VAPID_SUBJECT?: string;
   /** Assina o link de "parar de receber" das campanhas. */
   CAMPAIGN_SIGNING_KEY?: string;
+  /** Rotas administrativas. Separada da chave da Payt (ver lib/admin.ts). */
+  ADMIN_API_KEY?: string;
 }
 
 export type AppBindings = {

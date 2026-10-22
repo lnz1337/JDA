@@ -28,7 +28,7 @@ async function chamar(
   return res;
 }
 
-const comChave = () => ({ 'x-integration-key': envTeste.PAYT_INTEGRATION_KEY ?? '' });
+const comChave = () => ({ 'x-admin-key': envTeste.ADMIN_API_KEY ?? '' });
 
 async function criarComprador(n: number): Promise<string> {
   const id = `comprador-${n}`;
@@ -181,9 +181,11 @@ describe('ondas', () => {
     });
 
     expect(res.status).toBe(400);
-    expect((await res.json()) as { error: string }).toMatchObject({
-      error: expect.stringContaining('dobro da onda anterior') as unknown as string,
-    });
+    const corpo = (await res.json()) as { error: string };
+    // A mensagem diz o teto efetivo e de onde ele veio: onda e cota do dia.
+    expect(corpo.error).toContain('máximo agora, que é 2');
+    expect(corpo.error).toContain('Onda anterior: 1');
+    expect(corpo.error).toContain('Cota do dia: 1000');
   });
 
   it('aceita exatamente o dobro', async () => {
@@ -267,5 +269,72 @@ describe('texto da campanha', () => {
     // Nada de variável por substituir.
     expect(email.texto).not.toContain('{{');
     expect(email.html).not.toContain('{{');
+  });
+});
+
+describe('separação de credenciais', () => {
+  it('a chave da Payt não dispara campanha', async () => {
+    const res = await chamar('/api/campanha/enviar', {
+      method: 'POST',
+      headers: { 'x-admin-key': envTeste.PAYT_INTEGRATION_KEY ?? '' },
+      body: JSON.stringify({ campanha: CAMPANHA, limite: 1, dry_run: true }),
+    });
+    expect(res.status).toBe(401);
+  });
+});
+
+describe('cota diária', () => {
+  /** Centenas de linhas num comando só: uma por uma estoura o tempo do teste. */
+  async function marcarEnviadosHoje(n: number): Promise<void> {
+    await env.DB.prepare(
+      `INSERT INTO events (id, name, props_json, created_at)
+       WITH RECURSIVE contador(i) AS (
+         SELECT 1 UNION ALL SELECT i + 1 FROM contador WHERE i < ?
+       )
+       SELECT 'ev-' || i, 'email_enviado', '{}', ? FROM contador`,
+    )
+      .bind(n, new Date().toISOString())
+      .run();
+  }
+
+  it('reserva 300 envios para o transacional', async () => {
+    await criarComprador(1);
+    // 650 já enviados hoje: sobram 1000 - 650 - 300 = 50 para campanha.
+    await marcarEnviadosHoje(650);
+
+    const res = await chamar('/api/campanha/enviar', {
+      method: 'POST',
+      headers: comChave(),
+      body: JSON.stringify({ campanha: CAMPANHA, limite: 51 }),
+    });
+
+    expect(res.status).toBe(400);
+    const corpo = (await res.json()) as { error: string };
+    expect(corpo.error).toContain('máximo agora, que é 50');
+    expect(corpo.error).toContain('300 reservado');
+  });
+
+  it('aceita o que cabe na cota', async () => {
+    await criarComprador(1);
+    await marcarEnviadosHoje(650);
+
+    const res = await chamar('/api/campanha/enviar', {
+      method: 'POST',
+      headers: comChave(),
+      body: JSON.stringify({ campanha: CAMPANHA, limite: 50, dry_run: true }),
+    });
+    expect(res.status).toBe(200);
+  });
+
+  it('informa a cota restante no relatório', async () => {
+    await criarComprador(1);
+
+    const res = await chamar('/api/campanha/enviar', {
+      method: 'POST',
+      headers: comChave(),
+      body: JSON.stringify({ campanha: CAMPANHA, limite: 1, dry_run: true }),
+    });
+
+    expect((await res.json()) as { cotaRestante: number }).toMatchObject({ cotaRestante: 1000 });
   });
 });

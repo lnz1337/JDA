@@ -471,7 +471,7 @@ describe('rota de reprocesso', () => {
     return res;
   }
 
-  const chave = () => ({ 'x-integration-key': envTeste.PAYT_INTEGRATION_KEY ?? '' });
+  const chave = () => ({ 'x-admin-key': envTeste.ADMIN_API_KEY ?? '' });
 
   it('recusa sem chave', async () => {
     const res = await reprocessar({}, { transaction_id: 'X9P8DY5' });
@@ -479,7 +479,7 @@ describe('rota de reprocesso', () => {
   });
 
   it('recusa chave errada', async () => {
-    const res = await reprocessar({ 'x-integration-key': 'chute' }, { transaction_id: 'X9P8DY5' });
+    const res = await reprocessar({ 'x-admin-key': 'chute' }, { transaction_id: 'X9P8DY5' });
     expect(res.status).toBe(401);
   });
 
@@ -487,7 +487,17 @@ describe('rota de reprocesso', () => {
     // Rota administrativa: segredo em corpo de requisição acaba em log.
     const res = await reprocessar(
       {},
-      { transaction_id: 'X9P8DY5', integration_key: envTeste.PAYT_INTEGRATION_KEY },
+      { transaction_id: 'X9P8DY5', admin_key: envTeste.ADMIN_API_KEY },
+    );
+    expect(res.status).toBe(401);
+  });
+
+  it('a chave da Payt não serve para administrar', async () => {
+    // Separação de credencial: a Payt conhece a integration_key e a manda em
+    // todo postback. Ela não pode reprocessar evento nem liberar acesso.
+    const res = await reprocessar(
+      { 'x-admin-key': envTeste.PAYT_INTEGRATION_KEY ?? '' },
+      { transaction_id: 'X9P8DY5' },
     );
     expect(res.status).toBe(401);
   });

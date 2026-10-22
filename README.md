@@ -168,6 +168,24 @@ npx wrangler email sending dns get mail.jornadacomeuanjo.com   # confere SPF, DK
 mexer em código: `MAIL_PROVIDER = "resend"` no `wrangler.toml` e
 `npx wrangler secret put RESEND_API_KEY --env staging`.
 
+O app envia só por `contato@mail.jornadacomeuanjo.com`, sempre com
+`Reply-To: suporte@jornadacomeuanjo.com`. A conta tem **1.000 envios por dia** no
+total; a campanha reserva 300 para login e boas-vindas.
+
+### Credenciais
+
+| Secret | Onde vale |
+|---|---|
+| `PAYT_INTEGRATION_KEY` | só `/api/payt/postback` |
+| `ADMIN_API_KEY` | reprocesso, campanha e concessão manual (header `x-admin-key`) |
+| `CAMPAIGN_SIGNING_KEY` | assina o link de "parar de receber" |
+
+Gere sem exibir, e guarde uma cópia no `.dev.vars` (fora do git) para os scripts:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))" | npx wrangler secret put ADMIN_API_KEY --env staging
+```
+
 ## Campanha para a base
 
 Um disparo único avisando os compradores antigos de que o app existe. O texto é

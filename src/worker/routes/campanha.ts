@@ -1,15 +1,15 @@
 /**
  * Disparo de campanha e o link de "parar de receber".
  *
- * `POST /api/campanha/enviar` exige a chave no header, como o reprocesso. É
- * interino: na fase 11 o admin fica atrás do Cloudflare Access (§13) e estas
- * rotas saem daqui.
+ * `POST /api/campanha/enviar` exige a `ADMIN_API_KEY` no header `x-admin-key`,
+ * como o reprocesso. É interino: na fase 11 o admin fica atrás do Cloudflare
+ * Access (§13) e estas rotas saem daqui.
  *
  * `GET /parar` é público de propósito — o link vai num e-mail e precisa
  * funcionar sem login. Quem protege é a assinatura HMAC.
  */
 import { Hono } from 'hono';
-import { igualdadeSegura } from '../lib/cripto';
+import { chaveAdminConfere } from '../lib/admin';
 import { agoraIso } from '../lib/datas';
 import type { AppBindings } from '../lib/types';
 import { conferirAssinaturaParar, enviarCampanha } from '../services/campanhas';
@@ -24,10 +24,8 @@ h1{font-size:1.25rem}p{color:#2f2c73;line-height:1.6}</style></head>
 }
 
 export const campanha = new Hono<AppBindings>().post('/enviar', async (c) => {
-  const segredo = c.env.PAYT_INTEGRATION_KEY;
-  const recebida = c.req.header('x-integration-key') ?? '';
-  if (!segredo || !igualdadeSegura(recebida, segredo)) {
-    return c.json({ error: 'integration_key_invalida' }, 401);
+  if (!chaveAdminConfere(c.req.header('x-admin-key'), c.env)) {
+    return c.json({ error: 'nao_autorizado' }, 401);
   }
 
   const corpo = (await c.req.json().catch(() => null)) as {
