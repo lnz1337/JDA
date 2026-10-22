@@ -1,80 +1,77 @@
-import { useEffect, useState } from 'react';
-import { APP_NAME, JOURNEY_TOTAL_DAYS } from '../shared/constants';
-import type { HealthResponse } from '../shared/types';
+import { useCallback, useEffect, useState } from 'react';
+import { APP_NAME } from '../shared/constants';
+import { api, type Me } from './lib/api';
+import { Entrar } from './screens/Entrar';
+import { SemAcesso } from './screens/SemAcesso';
 
-type HealthState =
-  | { kind: 'loading' }
-  | { kind: 'ok'; data: HealthResponse }
-  | { kind: 'error'; message: string };
+type Estado = { fase: 'carregando' } | { fase: 'deslogado' } | { fase: 'logado'; me: Me };
 
-/**
- * Tela provisória da fase 1: confirma que o Worker, os bindings e o build do
- * PWA estão de pé. As telas reais entram a partir da fase 5 (CLAUDE.md §16).
- */
 export function App() {
-  const [health, setHealth] = useState<HealthState>({ kind: 'loading' });
+  const [estado, setEstado] = useState<Estado>({ fase: 'carregando' });
 
-  useEffect(() => {
-    const controller = new AbortController();
-
-    const load = async () => {
-      try {
-        const res = await fetch('/api/health', { signal: controller.signal });
-        if (!res.ok) {
-          throw new Error(`HTTP ${res.status}`);
-        }
-        setHealth({ kind: 'ok', data: (await res.json()) as HealthResponse });
-      } catch (err) {
-        if (controller.signal.aborted) return;
-        setHealth({
-          kind: 'error',
-          message: err instanceof Error ? err.message : 'falha desconhecida',
-        });
-      }
-    };
-
-    void load();
-    return () => controller.abort();
+  const carregar = useCallback(async () => {
+    try {
+      setEstado({ fase: 'logado', me: await api<Me>('/api/me') });
+    } catch {
+      setEstado({ fase: 'deslogado' });
+    }
   }, []);
 
+  useEffect(() => {
+    void carregar();
+  }, [carregar]);
+
+  const sair = useCallback(async () => {
+    await api('/api/auth/sair', { method: 'POST' }).catch(() => undefined);
+    setEstado({ fase: 'deslogado' });
+  }, []);
+
+  if (estado.fase === 'carregando') {
+    return (
+      <main className="flex min-h-dvh items-center justify-center">
+        <p className="text-sm text-noite-300">carregando…</p>
+      </main>
+    );
+  }
+
+  if (estado.fase === 'deslogado') {
+    return <Entrar aoEntrar={carregar} />;
+  }
+
+  if (!estado.me.temAcesso) {
+    return <SemAcesso suporte={estado.me.suporte} aoSair={sair} />;
+  }
+
+  const primeiro = estado.me.usuario.nome?.split(' ')[0];
+
   return (
-    <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-6 px-6 py-12">
-      <header className="space-y-2">
+    <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-6 px-6 py-12">
+      <header className="space-y-1">
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-ouro-500">
-          Jornada de {JOURNEY_TOTAL_DAYS} dias
+          {primeiro ? `Olá, ${primeiro}` : 'Olá'}
         </p>
-        <h1 className="text-3xl font-semibold text-noite-900">{APP_NAME}</h1>
-        <p className="text-sm text-noite-700">
-          Scaffold da fase 1: Worker + Hono + Vite + React + Tailwind.
-        </p>
+        <h1 className="text-2xl font-semibold text-noite-900">{APP_NAME}</h1>
       </header>
 
-      <section className="rounded-2xl border border-noite-100 bg-white p-5 shadow-sm">
-        <h2 className="text-sm font-semibold text-noite-900">API</h2>
-        {health.kind === 'loading' && (
-          <p className="mt-2 text-sm text-noite-300">consultando /api/health…</p>
-        )}
-        {health.kind === 'error' && (
-          <p className="mt-2 text-sm text-red-700">/api/health falhou: {health.message}</p>
-        )}
-        {health.kind === 'ok' && (
-          <dl className="mt-3 space-y-1 text-sm text-noite-700">
-            <Row label="status" value="ok" />
-            <Row label="ambiente" value={health.data.env} />
-            <Row label="D1 (DB)" value={health.data.bindings.db ? 'conectado' : 'ausente'} />
-            <Row label="R2 (MEDIA)" value={health.data.bindings.media ? 'conectado' : 'ausente'} />
-          </dl>
-        )}
+      <section className="space-y-3">
+        <h2 className="text-sm font-semibold text-noite-900">Liberado para você</h2>
+        <ul className="space-y-2">
+          {estado.me.produtos.map((p) => (
+            <li
+              key={p.id}
+              className="rounded-2xl border border-noite-100 bg-white px-4 py-3 text-sm font-medium text-noite-900"
+            >
+              {p.name}
+            </li>
+          ))}
+        </ul>
+        {/* A jornada e o player entram na fase 5 (CLAUDE.md §16). */}
+        <p className="text-sm text-noite-300">A jornada começa aqui em breve.</p>
       </section>
-    </main>
-  );
-}
 
-function Row({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-baseline justify-between gap-4">
-      <dt className="text-noite-300">{label}</dt>
-      <dd className="font-medium text-noite-900">{value}</dd>
-    </div>
+      <button type="button" onClick={sair} className="mt-auto text-sm text-noite-700 underline">
+        Sair
+      </button>
+    </main>
   );
 }

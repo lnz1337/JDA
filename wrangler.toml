@@ -20,6 +20,15 @@ run_worker_first = ["/api/*", "/media/*"]
 [vars]
 ENV = "development"
 APP_URL = "http://localhost:5173"
+MAIL_PROVIDER = "cloudflare"
+MAIL_FROM = "contato@mail.jornadacomeuanjo.com"
+MAIL_FROM_NAME = "Jornada com Meu Anjo"
+SUPPORT_EMAIL = "suporte@jornadacomeuanjo.com"
+
+# Sem destination_address: o app manda para o e-mail do cliente, não para uma
+# caixa verificada. O remetente é checado pelo domínio habilitado no Email Sending.
+[[send_email]]
+name = "EMAIL"
 
 [[d1_databases]]
 binding = "DB"
@@ -40,6 +49,13 @@ name = "jda-pwa-staging"
 # (ver CLAUDE.md §7, passo 2).
 ENV = "development"
 APP_URL = "https://jda-pwa-staging.leonardovcs2022.workers.dev"
+MAIL_PROVIDER = "cloudflare"
+MAIL_FROM = "contato@mail.jornadacomeuanjo.com"
+MAIL_FROM_NAME = "Jornada com Meu Anjo"
+SUPPORT_EMAIL = "suporte@jornadacomeuanjo.com"
+
+[[env.staging.send_email]]
+name = "EMAIL"
 
 [env.staging.observability]
 enabled = true
@@ -60,7 +76,14 @@ name = "jda-pwa"
 
 [env.production.vars]
 ENV = "production"
-APP_URL = "https://TROCAR_PELO_DOMINIO_FINAL"
+APP_URL = "https://jornadacomeuanjo.com"
+MAIL_PROVIDER = "cloudflare"
+MAIL_FROM = "contato@mail.jornadacomeuanjo.com"
+MAIL_FROM_NAME = "Jornada com Meu Anjo"
+SUPPORT_EMAIL = "suporte@jornadacomeuanjo.com"
+
+[[env.production.send_email]]
+name = "EMAIL"
 
 [env.production.observability]
 enabled = true

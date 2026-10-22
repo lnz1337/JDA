@@ -1,11 +1,14 @@
 import { Hono } from 'hono';
 import type { ApiErrorResponse } from '../shared/types';
 import type { AppBindings } from './lib/types';
+import { auth, me } from './routes/auth';
 import { health } from './routes/health';
 import { payt } from './routes/payt';
 
 const app = new Hono<AppBindings>();
 
+app.route('/api/auth', auth);
+app.route('/api/me', me);
 app.route('/api/health', health);
 app.route('/api/payt', payt);
 

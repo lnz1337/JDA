@@ -25,7 +25,7 @@ Toda a monetização roda pela **Payt** (checkout + postback). O app nunca proce
 | Estilo | Tailwind |
 | Banco | Cloudflare D1 (migrations em `migrations/`) |
 | Arquivos | Cloudflare R2 (áudios MP3, PDFs, capas) servidos via Worker com checagem de acesso |
-| E-mail | Resend (login por código + transacionais) |
+| E-mail | Cloudflare Email Service (binding `send_email`), com Resend implementado como alternativa. O provedor sai da var `MAIL_PROVIDER` — o Email Sending está em beta, e trocar tem que ser variável + secret, sem deploy de código |
 | Push | Web Push com VAPID, lib compatível com Workers (WebCrypto, ex.: `@block65/webcrypto-web-push`; validar antes) |
 | Cron | Cron Triggers do Worker (push diário, ofertas D+3) |
 | Admin | Rotas `/admin/*` protegidas por Cloudflare Access |
@@ -378,10 +378,14 @@ Usar `fixtures/payt/*.json`: pedido pago, pedido com order bump, upsell, reembol
 
 ## 8. Autenticação
 
-- Login por **código de 6 dígitos no e-mail** (Resend). Código com hash, expira em 15 min, máximo de 5 tentativas.
+- Login por **código de 6 dígitos no e-mail**. Código com hash (sha256 do código + id do usuário), expira em 15 min, máximo de 5 tentativas.
+- **A resposta de "pedir código" é sempre a mesma**, exista o e-mail ou não: senão o endpoint vira um verificador de quem é cliente.
+- Limite de **5 pedidos por hora por e-mail e por IP**. Só por e-mail deixaria varrer uma lista; só por IP não protegeria um e-mail específico.
 - Sessão em cookie `httpOnly; Secure; SameSite=Lax`, validade de 90 dias, renovada a cada uso.
 - O e-mail de boas-vindas pós-compra leva um link `/entrar?e={email}` com o campo já preenchido.
 - Usuário com `fake_email`: login por telefone, com o código enviado por WhatsApp (**fase 2**; no MVP, contato manual pelo suporte).
+- Quem entra sem nenhum produto ativo **vê uma tela explicando** (compra processando, e-mail diferente, reembolso) com o contato do suporte — não um erro.
+- Todo envio de e-mail vira linha em `events` (`email_enviado` / `email_falhou`) com tipo, provedor e erro. **Nunca o código.** Falha de código de login sai no log como `[EMAIL][FALHA CRITICA]`: deixa alguém de fora do app.
 
 ## 9. Ofertas contextuais (`services/offers.ts`)
 
@@ -436,16 +440,31 @@ Registrar `offer_viewed` e `offer_clicked` em `events`. Uma oferta dispensada pe
 
 ## 15. Secrets e variáveis
 
+**Secrets** (`wrangler secret put`, nunca em arquivo):
+
 ```
 PAYT_INTEGRATION_KEY
-RESEND_API_KEY
-MAIL_FROM
+RESEND_API_KEY                 # só se MAIL_PROVIDER=resend
 VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY / VAPID_SUBJECT
-APP_URL
-ENV = development | production
+CAMPAIGN_SIGNING_KEY           # assina o link de "parar de receber"
 ```
 
-Bindings: `DB` (D1), `MEDIA` (R2).
+**Vars** (no `wrangler.toml`, não são segredo):
+
+```
+ENV = development | production
+APP_URL
+MAIL_PROVIDER = cloudflare | resend
+MAIL_FROM = contato@mail.jornadacomeuanjo.com
+MAIL_FROM_NAME
+SUPPORT_EMAIL = suporte@jornadacomeuanjo.com
+```
+
+Bindings: `DB` (D1), `MEDIA` (R2), `EMAIL` (send_email).
+
+O domínio de envio é `mail.jornadacomeuanjo.com`, habilitado no Email Sending.
+**Sem essa habilitação o binding só entrega para endereço verificado** — o erro é
+`destination address is not a verified address`.
 
 ## 16. Fases de entrega (um commit por item, testes passando)
 
@@ -468,7 +487,11 @@ Bindings: `DB` (D1), `MEDIA` (R2).
 - Payt: assinatura aceita **Pix** (Pix Automático) ou só cartão? Isso muda o texto do paywall. (fase 7)
 - Payt: o SKU dos produtos pode ser definido igual ao `products.id`? Se não, popular `product_payt_map`. (fase 3)
 - Domínio do app e do remetente de e-mail (SPF/DKIM no Resend). (fase 4)
-- Nome final do app e identidade visual. (fase 1, pode seguir com placeholder)
+- ~~Nome final do app~~: **Jornada com Meu Anjo**, nome curto **Meu Anjo**, domínio
+  `jornadacomeuanjo.com`. Falta só a identidade visual (ícones ainda são placeholder).
+- ~~Payt: o SKU pode ser igual ao `products.id`?~~ **Não**: a Payt gera o sku
+  (observado `853b4781f48478`). A resolução normal é pelo `payt_map` com o
+  `product.code` — cada produto do funil precisa do código dele lá antes da produção.
 
 ## 18. Convenções
 

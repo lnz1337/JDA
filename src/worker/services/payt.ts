@@ -7,9 +7,14 @@
  * gravado antes de qualquer validação de conteúdo (ver routes/payt.ts).
  */
 import { z } from 'zod';
+import { APP_NAME } from '../../shared/constants';
+import modeloBoasVindas from '../emails/boas-vindas.md?raw';
+import { renderizarEmail } from '../emails/render';
 import { agoraIso, paytParaIso } from '../lib/datas';
 import { novoId } from '../lib/ids';
+import type { AppBindings } from '../lib/types';
 import { concederEntitlement, revogarPorTransacao } from './entitlements';
+import { enviarEmail } from './mail';
 
 /** payment_status que revoga acesso na hora. */
 const REVOGAM = new Set(['refunded', 'chargeback', 'one_click_buy_refunded']);
@@ -331,9 +336,10 @@ export interface ResultadoProcessamento {
  * em payt_events.error, sem derrubar a resposta do postback.
  */
 export async function processarPostback(
-  db: D1Database,
+  env: AppBindings['Bindings'],
   bruto: unknown,
 ): Promise<ResultadoProcessamento> {
+  const db = env.DB;
   const parse = PostbackSchema.safeParse(bruto);
   if (!parse.success) {
     throw new Error(`payload fora do formato esperado: ${parse.error.issues[0]?.message ?? '?'}`);
@@ -406,6 +412,33 @@ export async function processarPostback(
   if (ids.length === 0) {
     throw new Error(
       `nenhum produto do pedido existe no catálogo: ${naoResolvidos.join(', ') || '(pedido sem produto)'}`,
+    );
+  }
+
+  // Boas-vindas só para quem acabou de nascer no banco E ganhou acesso: quem já
+  // era cliente comprando de novo não recebe "bem-vindo" outra vez.
+  const email = p.customer?.email?.trim().toLowerCase();
+  if (usuario.novo && email && p.customer?.fake_email !== true) {
+    const primeiro = p.customer?.name?.trim().split(' ')[0] ?? '';
+    const corpo = renderizarEmail(modeloBoasVindas, {
+      app: APP_NAME,
+      nome: primeiro ? `, ${primeiro}` : '',
+      nome_ou_ola: primeiro || 'Olá',
+      link_acesso: `${env.APP_URL}/entrar?e=${encodeURIComponent(email)}`,
+      suporte: env.SUPPORT_EMAIL ?? '',
+    });
+
+    await enviarEmail(
+      env,
+      'boas_vindas',
+      {
+        para: email,
+        assunto: corpo.assunto,
+        texto: corpo.texto,
+        html: corpo.html,
+        ...(env.SUPPORT_EMAIL ? { responderPara: env.SUPPORT_EMAIL } : {}),
+      },
+      usuario.userId,
     );
   }
 

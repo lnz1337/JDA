@@ -4,9 +4,8 @@ PWA de conteúdo devocional católico servido por um único Cloudflare Worker
 (API em Hono + assets estáticos do client React). A spec completa está em
 [CLAUDE.md](CLAUDE.md); este README cobre só como rodar e publicar.
 
-> Fase atual: **3 — postback da Payt** (CLAUDE.md §16). Schema do D1, seed, áudios
-> no R2 e o endpoint de postback com `entitlements.ts`. Auth e telas entram nas
-> fases seguintes.
+> Fase atual: **4 — auth** (CLAUDE.md §16). Login por código no e-mail, sessão e
+> e-mail de boas-vindas. A jornada e o player entram na fase 5.
 
 ## Pré-requisitos
 
@@ -150,6 +149,24 @@ npm run grant:staging alguem@exemplo.com.br jornada-meu-anjo
 O entitlement entra com `source = 'manual'` e sem `transaction_id`, então
 reembolso da Payt não o revoga — ele sai só por decisão humana. Rodar de novo
 reativa em vez de duplicar.
+
+## E-mail
+
+O provedor sai da var `MAIL_PROVIDER` (`cloudflare` ou `resend`), não do código.
+Os textos ficam em `src/worker/emails/*.md` — primeira linha `Assunto:`, corpo em
+markdown, variáveis em `{{chave}}`.
+
+O envio pelo Cloudflare Email Service exige o domínio habilitado:
+
+```bash
+npx wrangler email sending enable mail.jornadacomeuanjo.com
+npx wrangler email sending dns get mail.jornadacomeuanjo.com   # confere SPF, DKIM e DMARC
+```
+
+**Sem isso o binding só entrega para endereço verificado** e o envio falha com
+`destination address is not a verified address`. Para trocar para o Resend sem
+mexer em código: `MAIL_PROVIDER = "resend"` no `wrangler.toml` e
+`npx wrangler secret put RESEND_API_KEY --env staging`.
 
 ## Deploy de staging
 

@@ -135,7 +135,7 @@ export const payt = new Hono<AppBindings>().post('/postback', async (c) => {
   const db = c.env.DB;
   const processar = async () => {
     try {
-      const r = await processarPostback(db, dados);
+      const r = await processarPostback(c.env, dados);
       await marcarProcessado(db, id, null, r.precisaRevisao);
     } catch (erro) {
       const msg = erro instanceof Error ? erro.message : String(erro);
@@ -204,7 +204,7 @@ payt.post('/reprocess', async (c) => {
   }
 
   try {
-    const r = await processarPostback(c.env.DB, dados);
+    const r = await processarPostback(c.env, dados);
     await marcarProcessado(c.env.DB, evento.id, null, r.precisaRevisao);
     return c.json({ ok: true, id: evento.id, ...r });
   } catch (erro) {
