@@ -53,8 +53,11 @@ Com carinho,
 **Equipe Jornada com Meu Anjo**
 
 ---
-<small>Você está recebendo este e-mail porque comprou a Jornada com Meu Anjo. Se não quiser mais receber avisos sobre o app, [clique aqui]({{link_parar}}). Os e-mails com o seu código de acesso continuam chegando normalmente.
-Nexstage Digital (L V Marketing Digital LTDA), CNPJ 02.709.649/0001-01.</small>
+Você está recebendo este e-mail porque comprou a Jornada com Meu Anjo. Se não quiser mais receber avisos sobre o app, [clique aqui]({{link_parar}}). Os e-mails com o seu código de acesso continuam chegando normalmente.
+
+Jornada com Meu Anjo · [jornadacomeuanjo.com](https://jornadacomeuanjo.com) · [Política de Privacidade](https://jornadacomeuanjo.com/privacidade)
+
+<!-- Nota editorial: o rodapé não traz os dados da empresa de propósito. A identificação completa do responsável pelos dados (exigida pela LGPD) fica na Política de Privacidade. -->
 
 ## Versão para WhatsApp (opcional, para quem tem telefone)
 
