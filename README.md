@@ -4,6 +4,10 @@ PWA de conteúdo devocional católico servido por um único Cloudflare Worker
 (API em Hono + assets estáticos do client React). A spec completa está em
 [CLAUDE.md](CLAUDE.md); este README cobre só como rodar e publicar.
 
+**Retomando o trabalho?** [docs/ESTADO.md](docs/ESTADO.md) tem o estado atual:
+o que está pronto, o que só existe em staging, o que depende do Leo e as
+armadilhas já descobertas.
+
 > Fase atual: **4 — auth** (CLAUDE.md §16). Login por código no e-mail, sessão e
 > e-mail de boas-vindas. A jornada e o player entram na fase 5.
 
