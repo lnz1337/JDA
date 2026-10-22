@@ -76,8 +76,21 @@ JSON gerado à mão: a próxima geração sobrescreve.
 | `conteudo/*.md` + `conteudo/gerar_audio.py` | os MP3 em `audio/` | `notebooks/gerar_audio_colab.ipynb` (Colab) |
 
 `seed/catalogo.json` é a exceção: mantido **à mão**, só com dado comercial
-(`price_cents`, `checkout_url`, `listed`, `sort`, `requires_subscription`). Os `id`
-são os **SKU cadastrados na Payt**.
+(`price_cents`, `checkout_url`, `listed`, `sort`, `requires_subscription`) e o
+`payt_map`.
+
+**`payt_map` vs. mapeamento de teste.** O `product.sku` que a Payt manda é gerado
+por ela (observado: `853b4781f48478` para a Jornada), não é o nosso `products.id`
+— então o caminho normal de resolução é o `product_payt_map` pelo `product.code`.
+São duas coisas diferentes:
+
+| Onde | O quê | Vale em |
+|---|---|---|
+| `payt_map` no `seed/catalogo.json` | código real dos nossos produtos (ex.: `RVEEJ8` → `jornada-meu-anjo`) | todos os ambientes, inclusive produção |
+| `product_payt_map` cadastrado à mão | código de um produto **que não é nosso**, usado só para testar o fluxo | só staging, nunca no seed |
+
+Por isso o seed **nunca apaga** linha de `product_payt_map` que não esteja
+declarada: uma limpeza derrubaria o mapeamento de teste do staging a cada rodada.
 
 **Uma fonte por campo** — `scripts/seed-sql.ts` falha se um campo aparecer em duas:
 

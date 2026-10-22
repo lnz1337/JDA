@@ -82,8 +82,9 @@ async function entitlementsDe(email: string): Promise<string[]> {
 
 beforeEach(async () => {
   await prepararBanco();
-  // A Payt gera o sku, então todo produto nosso resolve pelo code. Este é o mesmo
-  // mapeamento que existe no staging para o produto de teste.
+  // A Payt gera o sku, então todo produto nosso resolve pelo code. O mapeamento
+  // do produto real (RVEEJ8) vem do seed; este aqui é o do produto de teste, que
+  // existe só no staging e por isso é cadastrado à mão.
   await env.DB.prepare(
     "INSERT INTO product_payt_map (payt_code, product_id) VALUES ('LJ7KEP', 'jornada-meu-anjo')",
   ).run();

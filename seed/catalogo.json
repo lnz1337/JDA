@@ -1,14 +1,12 @@
 {
   "_comentario": [
-    "Dados COMERCIAIS do funil, mantidos à mão. Os 'id' são os SKU cadastrados na Payt.",
-    "Uma fonte por campo (CLAUDE.md §3):",
-    "  - nome, descrição, aviso e lições dos itens de bundle vêm de seed/produtos.json (gerado);",
-    "  - a jornada vem de seed/jornada-19-dias.json (gerado);",
-    "  - preço, checkout, ordem e assinatura vêm daqui.",
-    "Por isso os produtos que já têm conteúdo (jornada-meu-anjo e os 5 itens) NÃO repetem",
-    "name/kind/listed/description_md aqui — o seed falha se repetirem.",
-    "Bundles e assinaturas não têm arquivo de conteúdo, então o nome deles mora aqui.",
-    "Preços em centavos. checkout_url fica null até os links da Payt (CLAUDE.md §17)."
+    "Catálogo do funil, mantido À MÃO (ao contrário de jornada-19-dias.json, que é gerado).",
+    "Os 'id' são os SKU cadastrados na Payt (CLAUDE.md §5 e §7).",
+    "Preços em centavos. checkout_url fica null até os links da Payt serem definidos (§17).",
+    "Os produtos dentro de bundles são kind=program, listed=0: só aparecem como item do bundle.",
+    "payt_map: product.code da Payt -> nosso produto. Vale em TODOS os ambientes, inclusive",
+    "produção. Mapeamento de teste (produto que não é nosso) nunca entra aqui — fica só no",
+    "staging, cadastrado à mão (ver fixtures/payt/README.md)."
   ],
   "products": [
     {
@@ -97,5 +95,8 @@
       "requires_subscription": 0,
       "sort": 94
     }
-  ]
+  ],
+  "payt_map": {
+    "RVEEJ8": "jornada-meu-anjo"
+  }
 }

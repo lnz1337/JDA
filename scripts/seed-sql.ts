@@ -102,6 +102,8 @@ export interface ItemCatalogo {
 
 export interface Catalogo {
   products: ItemCatalogo[];
+  /** product.code da Payt -> nosso produto. Vale em todos os ambientes. */
+  payt_map?: Record<string, string>;
 }
 
 /** Campos de um produto que vêm de uma fonte de conteúdo. */
@@ -242,6 +244,12 @@ export function conferirFontes(
   for (const id of conteudo.keys()) {
     if (!noCatalogo.has(id)) {
       erros.push(`produto '${id}' tem conteúdo mas não está em seed/catalogo.json (sem preço nem ordem)`);
+    }
+  }
+
+  for (const [paytCode, productId] of Object.entries(catalogo.payt_map ?? {})) {
+    if (!noCatalogo.has(productId)) {
+      erros.push(`payt_map '${paytCode}' aponta para '${productId}', que não está no catálogo`);
     }
   }
 
@@ -427,6 +435,21 @@ export function gerarSeedSql(): { sql: string; comDuracao: number; semDuracao: s
     ` WHERE bundle_id IN (${bundles.map(sql).join(', ')})\n` +
     `   AND bundle_id || '|' || product_id NOT IN (${pares.map(sql).join(', ')});`;
 
+  /*
+   * product_payt_map: só UPSERT, nunca limpeza do que não está declarado. Staging
+   * tem um mapeamento cadastrado à mão (produto de teste que não é nosso) e uma
+   * limpeza o apagaria a cada seed. Mapeamento que deixou de valer sai à mão.
+   */
+  const entradasMap = Object.entries(catalogo.payt_map ?? {});
+  const sqlPaytMap = entradasMap.length
+    ? upsert(
+        'product_payt_map',
+        ['payt_code', 'product_id'],
+        entradasMap.map(([code, produto]) => linha([code, produto])),
+        'payt_code',
+      )
+    : null;
+
   const cabecalho = [
     '-- GERADO por scripts/seed-sql.ts — não editar à mão.',
     '-- Fontes: seed/jornada-19-dias.json e seed/produtos.json (gerados do conteúdo)',
@@ -444,6 +467,7 @@ export function gerarSeedSql(): { sql: string; comDuracao: number; semDuracao: s
     sqlLicoes,
     sqlLimpaItens,
     sqlItens,
+    ...(sqlPaytMap ? [sqlPaytMap] : []),
   ].join('\n\n-- @stmt\n\n');
 
   return { sql: `${cabecalho}\n\n${corpo}\n`, comDuracao, semDuracao };

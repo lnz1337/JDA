@@ -33,6 +33,21 @@ teste do próprio painel da Payt):
   Por isso as fixtures reais não podem ser postadas como estão — os testes
   repõem a chave sintética.
 
+## Dois mapeamentos diferentes
+
+| Mapeamento | Onde mora | Vale em |
+|---|---|---|
+| `RVEEJ8` → `jornada-meu-anjo` | `seed/catalogo.json`, campo `payt_map` | **todos**, inclusive produção |
+| `LJ7KEP` → `jornada-meu-anjo` | só no D1 de staging, à mão | **só staging** |
+
+`RVEEJ8` é o `product.code` real do produto "Jornada com meu Anjo", capturado de
+um carrinho abandonado antes de o evento ser apagado — está preservado em
+`real-carrinho-abandonado.json`.
+
+`LJ7KEP` é o "60 Receitas - Saladas No Pote", um produto que **não é nosso**,
+usado só para exercitar o fluxo de compra. Em produção, mapear o código de um
+produto para outro daria acesso errado a quem comprou.
+
 ## Mapeamento só de staging (`product_payt_map`)
 
 O postback de staging está restrito ao produto **"60 Receitas - Saladas No Pote"**,

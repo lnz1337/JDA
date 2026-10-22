@@ -9,7 +9,8 @@ async function contagens(): Promise<Record<string, number>> {
        (SELECT COUNT(*) FROM products) AS products,
        (SELECT COUNT(*) FROM programs) AS programs,
        (SELECT COUNT(*) FROM lessons) AS lessons,
-       (SELECT COUNT(*) FROM bundle_items) AS bundle_items`,
+       (SELECT COUNT(*) FROM bundle_items) AS bundle_items,
+       (SELECT COUNT(*) FROM product_payt_map) AS payt_map`,
   ).first<Record<string, number>>();
   return r ?? {};
 }
@@ -17,15 +18,21 @@ async function contagens(): Promise<Record<string, number>> {
 beforeEach(limparBanco);
 
 describe('seed', () => {
-  it('gera seis comandos: products, programs, limpa+insere lessons, limpa+insere bundle_items', () => {
-    expect(comandosDoSeed(envTeste.TEST_SEED_SQL)).toHaveLength(6);
+  it('gera sete comandos: products, programs, limpa+insere lessons e bundle_items, payt_map', () => {
+    expect(comandosDoSeed(envTeste.TEST_SEED_SQL)).toHaveLength(7);
   });
 
   it('rodado duas vezes não duplica nada', async () => {
     await aplicarSeed();
     const primeira = await contagens();
 
-    expect(primeira).toEqual({ products: 10, programs: 6, lessons: 41, bundle_items: 5 });
+    expect(primeira).toEqual({
+      products: 10,
+      programs: 6,
+      lessons: 41,
+      bundle_items: 5,
+      payt_map: 1,
+    });
 
     await aplicarSeed();
     const segunda = await contagens();
@@ -146,6 +153,32 @@ describe('seed', () => {
     expect(item?.listed).toBe(0);
     expect(item?.price_cents).toBeNull();
     expect(item?.sort).toBe(91);
+  });
+
+  it('mapeia o product.code real da Payt para a jornada', async () => {
+    await aplicarSeed();
+
+    const linha = await env.DB.prepare(
+      "SELECT product_id FROM product_payt_map WHERE payt_code = 'RVEEJ8'",
+    ).first<{ product_id: string }>();
+
+    expect(linha?.product_id).toBe('jornada-meu-anjo');
+  });
+
+  it('não apaga mapeamento cadastrado à mão fora do seed', async () => {
+    // Staging tem o código de um produto de teste mapeado à mão. Uma limpeza de
+    // "o que não está declarado" apagaria isso a cada seed — por isso não existe.
+    await aplicarSeed();
+    await env.DB.prepare(
+      "INSERT INTO product_payt_map (payt_code, product_id) VALUES ('LJ7KEP', 'jornada-meu-anjo')",
+    ).run();
+
+    await aplicarSeed();
+
+    const { results } = await env.DB.prepare(
+      'SELECT payt_code FROM product_payt_map ORDER BY payt_code',
+    ).all<{ payt_code: string }>();
+    expect(results.map((r) => r.payt_code)).toEqual(['LJ7KEP', 'RVEEJ8']);
   });
 
   it('cadastra os preços do funil em centavos', async () => {
