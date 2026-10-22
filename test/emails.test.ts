@@ -127,6 +127,26 @@ describe('anúncio da campanha', () => {
     expect(montarAnuncio(variaveis).html).toContain(variaveis.link_acesso);
   });
 
+  it('o rodapé aparece uma vez só', () => {
+    const { html, texto } = montarAnuncio(variaveis);
+
+    // O arquivo de conteúdo tem rodapé próprio e o renderizador põe o dele: se
+    // os dois saírem, a pessoa recebe duas vezes o "parar de receber".
+    expect(texto.split(variaveis.link_parar)).toHaveLength(2);
+    expect(html.split('href="https://exemplo.test/parar?u=1&amp;t=2"')).toHaveLength(2);
+    expect(texto.match(/está recebendo este e-mail|recebeu este e-mail/g)).toHaveLength(1);
+  });
+
+  it('comentário de HTML no conteúdo não vira texto do e-mail', () => {
+    const { html, texto } = montarAnuncio(variaveis);
+
+    // O arquivo tem uma nota editorial em <!-- -->: é recado para quem escreve.
+    for (const saida of [html, texto]) {
+      expect(saida).not.toContain('Nota editorial');
+      expect(saida).not.toContain('<!--');
+    }
+  });
+
   it('sem nome, a saudação e o assunto não ficam com vírgula solta', () => {
     const { texto, assunto } = montarAnuncio({ ...variaveis, primeiro_nome: '' });
     expect(texto).not.toMatch(/Olá,\s*!/);

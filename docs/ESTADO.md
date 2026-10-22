@@ -234,17 +234,19 @@ evita veredito de "sem SPF" em verificador ingênuo.
 
 ### Pipeline de conteúdo (pedir, não editar)
 
-7. **`conteudo/emails/anuncio-app.md` está desatualizado** em dois pontos, e é de
-   outra sessão (CLAUDE.md §3):
-   - o bloco "Para entrar é simples" ainda descreve os três passos com código de
-     6 números, mas o link do e-mail **já entra** — o texto contradiz o que o
-     botão faz;
-   - o rodapé ainda tem o `<small>` com razão social e CNPJ. O app **descarta
-     esse bloco na leitura** (`emails/anuncio.ts`), então o e-mail sai certo, mas
-     o arquivo continua dizendo o contrário do §14.
+7. **`conteudo/emails/anuncio-app.md` ainda descreve o login antigo.** O arquivo é
+   de outra sessão (CLAUDE.md §3), que em 22/10 já tirou os dados da empresa do
+   rodapé (commit `b1b87b9`). Falta:
+   - o bloco "Para entrar é simples" descreve três passos com código de 6
+     números, mas o link do e-mail **já entra** — o texto contradiz o botão;
+   - o cabeçalho descreve `{{link_acesso}}` como `/entrar?e={email}`; hoje é
+     `/acesso?t={token}`.
 
-   O cabeçalho do arquivo também descreve `{{link_acesso}}` como
-   `/entrar?e={email}`; hoje é `/acesso?t={token}`.
+   **O rodapé do arquivo é descartado na leitura** (`emails/anuncio.ts`): quem
+   monta o rodapé é o renderizador, igual nos três e-mails, senão o "parar de
+   receber" sai duas vezes. Com isso, o `· jornadacomeuanjo.com · Política de
+   Privacidade` que o pipeline pôs lá **não aparece no e-mail**. Se o Leo quiser
+   esse link no rodapé, é uma linha no `motivo` em `montarAnuncio`.
 
 8. **Identidade visual.** Ícones em `public/icons/` são placeholder gerados por
    script (fundo azul com cruz dourada).

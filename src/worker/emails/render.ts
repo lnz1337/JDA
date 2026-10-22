@@ -47,9 +47,18 @@ type Bloco =
   | { tipo: 'botao'; rotulo: string; url: string }
   | { tipo: 'separador' };
 
-/** Tag HTML escrita no markdown não é conteúdo: sai das duas versões. */
+/**
+ * Tag HTML escrita no markdown não é conteúdo: sai das duas versões. Comentário
+ * também — o arquivo de conteúdo usa `<!-- -->` para recado a quem escreve, e
+ * isso nunca pode virar texto do e-mail.
+ */
 function semTags(linha: string): string {
-  return linha.replace(/<\/?[a-z][^>]*>/gi, '');
+  return semComentarios(linha).replace(/<\/?[a-z][^>]*>/gi, '');
+}
+
+/** Aplicado no corpo inteiro, porque o comentário pode ocupar várias linhas. */
+function semComentarios(texto: string): string {
+  return texto.replace(/<!--[\s\S]*?-->/g, '');
 }
 
 function escapar(s: string): string {
@@ -75,7 +84,8 @@ function inline(linha: string, paraHtml: boolean): string {
     .replace(LINK, `<a href="$2" style="${ESTILOS.link}">$1</a>`);
 }
 
-function analisar(corpo: string): Bloco[] {
+function analisar(texto: string): Bloco[] {
+  const corpo = semComentarios(texto);
   const blocos: Bloco[] = [];
 
   const lista = (): Extract<Bloco, { tipo: 'lista' }> | null => {

@@ -34,18 +34,22 @@ export interface VariaveisAnuncio {
 }
 
 /**
- * O arquivo de conteúdo termina com um rodapé próprio — separador `---` e um
- * bloco `<small>` com razão social e CNPJ. Quem decide o rodapé agora é o
- * renderizador (nome do app + motivo, sem dado de empresa), então o bloco do
- * arquivo é descartado na leitura. **Não é edição do arquivo**: o pipeline de
- * conteúdo é de outra sessão (CLAUDE.md §3), e cortar na leitura continua
- * funcionando quando ele tirar o rodapé de lá.
+ * O arquivo de conteúdo termina com rodapé próprio, depois de um separador
+ * `---`. Quem monta o rodapé é o renderizador, igual nos três e-mails, então o
+ * bloco do arquivo é descartado na leitura — senão o "parar de receber" sai
+ * duas vezes no mesmo e-mail.
+ *
+ * **Não é edição do arquivo**: o pipeline de conteúdo é de outra sessão
+ * (CLAUDE.md §3). O que o rodapé de lá diz vai para o `motivo` em `montarAnuncio`.
+ *
+ * O marcador é o `{{link_parar}}`, que só existe no rodapé — mais estável do que
+ * procurar `<small>` ou CNPJ, que foi o formato até 22/10/2026.
  */
 function semRodapeAntigo(corpo: string): string {
   const corte = corpo.search(/\n-{3,}\s*\n/);
   if (corte < 0) return corpo;
   const cauda = corpo.slice(corte);
-  return /<small>|CNPJ/i.test(cauda) ? corpo.slice(0, corte).trim() : corpo;
+  return /\{\{link_parar\}\}|<small>|CNPJ/i.test(cauda) ? corpo.slice(0, corte).trim() : corpo;
 }
 
 /**
