@@ -233,29 +233,26 @@ evita veredito de "sem SPF" em verificador ingênuo.
    `_dmarc.mail.jornadacomeuanjo.com` agora é `v=DMARC1; p=none;`. O apex
    continua `v=DMARC1; p=reject;`, por decisão do Leo.
 
-5. **Ativar o DMARC Management — só pelo painel.** Não existe API: as rotas
-   `/zones/{zone}/dmarc_management`, `/zones/{zone}/email/dmarc` e
-   `/zones/{zone}/dmarc_reports` respondem `7000 No route for that URI`, e a
-   documentação do produto só traz o caminho do painel.
+5. ~~Ativar o DMARC Management e copiar o `rua`~~ **feito em 22/10.** O Leo ativou
+   pelo painel e a cópia do `rua` saiu pela API. Como está agora:
 
-   Caminho: painel → conta → `jornadacomeuanjo.com` → **Email → DMARC
-   Management → Enable DMARC Management**. Ele **só funciona em domínio apex**
-   (cobre `jornadacomeuanjo.com`, nunca `mail.`). Achando o `_dmarc` que já
-   existe, ele **acrescenta** um `rua` da Cloudflare e **não mexe na política** —
-   o `p=reject` do apex continua de pé.
+   | Registro | Conteúdo |
+   |---|---|
+   | `_dmarc.jornadacomeuanjo.com` | `v=DMARC1; p=reject; rua=mailto:e11046c0725a4827b21a40ecd2139f43@dmarc-reports.cloudflare.net;` |
+   | `_dmarc.mail.jornadacomeuanjo.com` | `v=DMARC1; p=none; rua=mailto:e11046c0725a4827b21a40ecd2139f43@dmarc-reports.cloudflare.net;` |
 
-   **Depois de ativar**, falta copiar esse mesmo `rua` para o `_dmarc.mail`, que
-   é como o subdomínio de envio entra no relatório. Com um token de DNS → Edit:
+   O `p=reject` do apex sobreviveu à ativação, como a documentação promete: o
+   DMARC Management **acrescenta** o `rua` e não mexe na política.
 
-   ```bash
-   # 1) ler o rua que a Cloudflare pôs no apex
-   curl -s -H "Authorization: Bearer $CF_TOKEN" \
-     "https://api.cloudflare.com/client/v4/zones/ec2afa685c14f4f2b58d6fb87a52b4e3/dns_records?type=TXT&name=_dmarc.jornadacomeuanjo.com"
-   # 2) gravar no _dmarc.mail (id do registro: 2b5d717f04ef204667b97c61a7d5b326)
-   curl -s -X PATCH -H "Authorization: Bearer $CF_TOKEN" -H 'content-type: application/json' \
-     --data '{"content":"v=DMARC1; p=none; rua=mailto:<o endereço da Cloudflare>"}' \
-     "https://api.cloudflare.com/client/v4/zones/ec2afa685c14f4f2b58d6fb87a52b4e3/dns_records/2b5d717f04ef204667b97c61a7d5b326"
-   ```
+   **O DMARC Management não tem API** — `/zones/{zone}/dmarc_management`,
+   `/zones/{zone}/email/dmarc` e `/zones/{zone}/dmarc_reports` respondem `7000 No
+   route for that URI`. Ativar é sempre painel → conta → domínio → **Email →
+   DMARC Management**, e **só em domínio apex**: `mail.` nunca aparece lá, por
+   isso o `rua` dele é copiado à mão.
+
+   **O primeiro relatório demora até 24 h** para aparecer no painel. Os dois
+   domínios mandam relatório para o mesmo endereço, então dá para ver o envio do
+   app (`mail.`) e qualquer uso indevido do domínio principal no mesmo lugar.
 
 6. **Teste de resposta ao suporte** ainda não foi feito: responder um dos e-mails
    recebidos e confirmar que chega no Gmail pelo Email Routing.
