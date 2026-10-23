@@ -2,7 +2,7 @@ import { createExecutionContext, waitOnExecutionContext } from 'cloudflare:test'
 import { env } from 'cloudflare:workers';
 import { beforeEach, describe, expect, it } from 'vitest';
 import app from '../src/worker/index';
-import { servicoDoEndpoint } from '../src/worker/services/push';
+import { enviarERegistrar, enviarPush, servicoDoEndpoint } from '../src/worker/services/push';
 import { prepararBanco } from './ajuda';
 import { envTeste } from './env-de-teste';
 
@@ -10,6 +10,10 @@ const BASE = 'https://exemplo.test';
 const USER = 'u-push';
 const COOKIE = 'sessao=s-push';
 const ENDPOINT = 'https://fcm.googleapis.com/fcm/send/aparelho-1';
+/** Chave pública P-256 de verdade: a biblioteca recusa ponto inválido. */
+const P256DH =
+  'BCVxsr7N_eNgVRqvHtD0zTZsEc6-VV-JvLexhqUzORcxaOzi6-AYWXvTBHm4bjyPjs7Vd8pZGH6SRpkNtoIAiw4';
+const AUTH = 'BTBZMqHH6r4Tts7J_aSIgg';
 
 async function chamar(caminho: string, init: RequestInit = {}): Promise<Response> {
   const ctx = createExecutionContext();
@@ -187,6 +191,107 @@ describe('assinatura do aparelho', () => {
     expect(((await res.json()) as { chave: string }).chave).toBeTruthy();
 
     expect((await chamar('/api/push/chave')).status).toBe(401);
+  });
+});
+
+/**
+ * O que o serviço de push responde decide o que acontece com a assinatura. O
+ * `fetch` é trocado para o teste não sair pela internet — a criptografia já tem
+ * teste próprio em `push-cripto.test.ts`.
+ */
+describe('resposta do serviço de push', () => {
+  const original = globalThis.fetch;
+
+  async function comResposta(status: number): Promise<void> {
+    globalThis.fetch = (async () => new Response(null, { status })) as typeof fetch;
+    try {
+      await enviarERegistrar(
+        envTeste,
+        USER,
+        { id: 'sub-1', endpoint: ENDPOINT, p256dh: P256DH, auth: AUTH },
+        { titulo: 'oi', corpo: 'teste', url: '/' },
+      );
+    } finally {
+      globalThis.fetch = original;
+    }
+  }
+
+  async function prepararAssinatura(): Promise<void> {
+    await criarUsuario();
+    await env.DB.prepare(
+      `INSERT INTO push_subscriptions (id, user_id, endpoint, p256dh, auth, created_at)
+       VALUES ('sub-1', ?, ?, ?, ?, ?)`,
+    )
+      .bind(USER, ENDPOINT, P256DH, AUTH, new Date().toISOString())
+      .run();
+  }
+
+  for (const status of [404, 410]) {
+    it(`${status} apaga a assinatura: aquele aparelho não existe mais`, async () => {
+      await prepararAssinatura();
+      await comResposta(status);
+
+      const n = await env.DB.prepare('SELECT COUNT(*) AS n FROM push_subscriptions').first<{
+        n: number;
+      }>();
+      expect(n?.n).toBe(0);
+
+      const evento = await env.DB.prepare(
+        "SELECT name, props_json FROM events WHERE name LIKE 'push_%'",
+      ).first<{ name: string; props_json: string }>();
+      expect(evento?.name).toBe('push_falhou');
+      // O evento guarda o serviço, nunca o endpoint — ele é credencial de entrega.
+      expect(JSON.parse(evento?.props_json ?? '{}')).toMatchObject({ servico: 'fcm' });
+      expect(evento?.props_json).not.toContain('fcm.googleapis.com/fcm/send');
+    });
+  }
+
+  it('erro passageiro (500) mantém a assinatura', async () => {
+    await prepararAssinatura();
+    await comResposta(500);
+
+    const n = await env.DB.prepare('SELECT COUNT(*) AS n FROM push_subscriptions').first<{
+      n: number;
+    }>();
+    expect(n?.n).toBe(1);
+  });
+
+  it('sucesso marca o último envio que deu certo', async () => {
+    await prepararAssinatura();
+    await comResposta(201);
+
+    const linha = await env.DB.prepare(
+      'SELECT last_success_at FROM push_subscriptions WHERE id = ?',
+    )
+      .bind('sub-1')
+      .first<{ last_success_at: string | null }>();
+
+    expect(linha?.last_success_at).toBeTruthy();
+    const evento = await env.DB.prepare(
+      "SELECT name FROM events WHERE name LIKE 'push_%'",
+    ).first<{ name: string }>();
+    expect(evento?.name).toBe('push_enviado');
+  });
+
+  it('endpoint que não é de serviço conhecido nem chega a sair', async () => {
+    await criarUsuario();
+    let chamou = false;
+    globalThis.fetch = (async () => {
+      chamou = true;
+      return new Response(null, { status: 201 });
+    }) as typeof fetch;
+
+    try {
+      const r = await enviarPush(
+        envTeste,
+        { endpoint: 'https://exemplo.test/webhook', p256dh: P256DH, auth: AUTH },
+        { titulo: 'oi', corpo: 'x', url: '/' },
+      );
+      expect(r.ok).toBe(false);
+      expect(chamou).toBe(false);
+    } finally {
+      globalThis.fetch = original;
+    }
   });
 });
 

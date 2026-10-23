@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { enviarLembretes } from './cron';
 import type { ApiErrorResponse } from '../shared/types';
 import type { AppBindings } from './lib/types';
 import { admin } from './routes/admin';
@@ -52,4 +53,28 @@ app.onError((err, c) => {
   return c.json(body, 500);
 });
 
-export default app;
+/**
+ * O Worker exporta `fetch` e `scheduled`: o cron do lembrete é do mesmo Worker,
+ * com os mesmos bindings (§11).
+ *
+ * O `scheduled` é pendurado na própria instância do Hono (que já tem `fetch`),
+ * em vez de um objeto novo: assim `app.request()` continua valendo nos testes.
+ */
+const worker = app as typeof app & {
+  scheduled: (evento: ScheduledController, env: Env, ctx: ExecutionContext) => Promise<void>;
+};
+
+worker.scheduled = async (_evento, env, ctx) => {
+  ctx.waitUntil(
+    enviarLembretes(env as AppBindings['Bindings'])
+      .then((r) => {
+        // Sai no log do Worker: é por ele que se vê o lembrete andando.
+        console.log('[cron][lembrete]', JSON.stringify(r));
+      })
+      .catch((erro) => {
+        console.error('[cron][lembrete] falhou', erro);
+      }),
+  );
+};
+
+export default worker;

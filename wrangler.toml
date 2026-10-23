@@ -10,6 +10,14 @@ compatibility_flags = ["nodejs_compat"]
 [observability]
 enabled = true
 
+# Lembrete de oração (§11). A cada 5 minutos, não de hora em hora: o horário
+# padrão é 7h e quase todo mundo fica nele, então uma execução por hora
+# concentraria a base inteira numa só — e execução de Worker tem limite de tempo
+# e de subrequisições. Em lotes de 5 em 5 minutos, quem está na hora certa
+# continua recebendo dentro da hora que escolheu.
+[triggers]
+crons = ["*/5 * * * *"]
+
 [assets]
 # SPA: qualquer rota desconhecida devolve o index.html do PWA.
 not_found_handling = "single-page-application"
@@ -68,6 +76,11 @@ name = "EMAIL"
 [env.staging.observability]
 enabled = true
 
+# Environment do wrangler NÃO herda os triggers do bloco de cima: sem repetir
+# aqui, o cron simplesmente não existiria em staging.
+[env.staging.triggers]
+crons = ["*/5 * * * *"]
+
 [[env.staging.d1_databases]]
 binding = "DB"
 database_name = "jda-pwa-staging"
@@ -110,6 +123,9 @@ name = "EMAIL"
 
 [env.production.observability]
 enabled = true
+
+[env.production.triggers]
+crons = ["*/5 * * * *"]
 
 [[env.production.d1_databases]]
 binding = "DB"

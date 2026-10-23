@@ -526,8 +526,13 @@ Registrar `offer_viewed` e `offer_clicked` em `events`. Uma oferta dispensada pe
 ## 11. Push
 
 - Pedir permissão **só depois** do app instalado e com explicação na tela. No iOS, push só funciona com o PWA adicionado à tela inicial: o onboarding precisa de um passo visual "Compartilhar → Adicionar à Tela de Início".
-- Cron de hora em hora: envia "oração do dia" para usuários cujo `prayer_hour` local é a hora atual.
-- Remover `push_subscriptions` que retornarem 404/410.
+- **Cron a cada 5 minutos**, não de hora em hora: envia a "oração do dia" para quem está na hora, no fuso de cada um. O horário padrão é 7h e quase todo mundo fica nele — uma execução por hora juntaria a base inteira numa só, e execução de Worker tem limite de tempo e de subrequisições. Cada execução pega um lote (`LOTE`, 300).
+- **A trava contra lembrete repetido é `push_envios`**, com `(user_id, tipo, data_local)` de chave: a linha entra **antes** do envio, com `INSERT OR IGNORE`, e só envia quem conseguiu inserir. Duas execuções sobrepostas disputam a mesma chave e só uma ganha. `data_local` é o dia **no fuso do usuário**: em Brasília o dia vira três horas antes do dia UTC.
+- Quem recebe: está na hora, tem assinatura de push, tem acesso à jornada e **ainda não concluiu o dia de hoje**. Sem matrícula, o lembrete convida para o dia 1 e **não matricula** — o relógio da jornada começa quando a pessoa entra no programa (§6). Para de lembrar 7 dias depois de o dia 19 abrir; o que vem depois é da fase 10.
+- Notificação com `tag: 'oracao-do-dia'`: um lembrete **substitui** o anterior em vez de empilhar na tela de quem passou dias sem abrir.
+- Remover `push_subscriptions` que retornarem 404/410. Erro passageiro não apaga nada.
+- `events` de push guarda **só o serviço** (fcm, apple…), nunca o endpoint: ele é credencial de entrega, não dado de relatório.
+- O endpoint da assinatura só é aceito se for https e de um serviço conhecido. Sem essa lista, quem grava uma assinatura usa o Worker para disparar POST para qualquer URL.
 - Chaves VAPID em secrets (`VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`).
 
 ## 12. PWA

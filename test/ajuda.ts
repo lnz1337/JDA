@@ -16,6 +16,7 @@ const TABELAS = [
   'subscriptions',
   'push_subscriptions',
   'events',
+  'push_envios',
   'payt_events',
   'login_codes',
   'access_links',
