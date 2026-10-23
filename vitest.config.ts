@@ -31,6 +31,16 @@ export default defineConfig({
                 PAYT_INTEGRATION_KEY: 'chave-de-teste-sintetica',
                 // Credencial administrativa, separada da chave da Payt.
                 ADMIN_API_KEY: 'chave-admin-de-teste',
+                /*
+                 * Par VAPID **sintético**, gerado só para o teste: ele precisa
+                 * ser um ponto P-256 de verdade para a biblioteca aceitar, mas
+                 * não é o de nenhum ambiente. As chaves reais vivem só como
+                 * secret (CLAUDE.md §15).
+                 */
+                VAPID_PUBLIC_KEY:
+                  'BJkELrNZ_z_apnVQsk6voQ9w0YaGmDSciNAnt2neucyS-mYPUGtcydve0Frowdq6Ur-_l_tQzB1avIC6uKt8x08',
+                VAPID_PRIVATE_KEY: 'ivvRPS7gd9oYxkPxisPaFYhQRu2PulTc8ITkpCl6Ix0',
+                VAPID_SUBJECT: 'mailto:suporte@exemplo.test',
               },
             },
           }),

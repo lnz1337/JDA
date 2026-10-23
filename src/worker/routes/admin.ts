@@ -8,6 +8,7 @@ import { chaveAdminConfere } from '../lib/admin';
 import type { AppBindings } from '../lib/types';
 import { normalizarEmail } from '../services/auth';
 import { excluirConta } from '../services/conta';
+import { assinaturasDoUsuario, enviarERegistrar } from '../services/push';
 import {
   assinaturaDoUsuario,
   assinaturaValida,
@@ -17,6 +18,12 @@ import {
 const ConcederSchema = z.object({
   email: z.string().trim().email(),
   product_id: z.string().trim().min(1),
+});
+
+const PushTesteSchema = z.object({
+  email: z.string().trim().email(),
+  titulo: z.string().trim().max(80).optional(),
+  corpo: z.string().trim().max(200).optional(),
 });
 
 const ExcluirSchema = z.object({
@@ -124,4 +131,48 @@ export const admin = new Hono<AppBindings>().post('/conceder', async (c) => {
 
     await excluirConta(c.env.DB, usuario.id);
     return c.json({ ok: true, excluido: true, ...resumo });
+  })
+
+  /**
+   * Push de teste para os aparelhos de alguém. Serve para o suporte conferir a
+   * corrente inteira — VAPID, assinatura, serviço de push e service worker —
+   * sem esperar a hora do lembrete chegar.
+   */
+  .post('/push-teste', async (c) => {
+    if (!chaveAdminConfere(c.req.header('x-admin-key'), c.env)) {
+      return c.json({ error: 'nao_autorizado' }, 401);
+    }
+
+    const corpo = PushTesteSchema.safeParse(await c.req.json().catch(() => null));
+    if (!corpo.success) return c.json({ error: 'informe email' }, 400);
+
+    const usuario = await c.env.DB.prepare(
+      'SELECT id FROM users WHERE email = ? AND deleted_at IS NULL',
+    )
+      .bind(normalizarEmail(corpo.data.email))
+      .first<{ id: string }>();
+
+    if (!usuario) return c.json({ error: 'usuario_nao_encontrado' }, 404);
+
+    const assinaturas = await assinaturasDoUsuario(c.env.DB, usuario.id);
+    if (assinaturas.length === 0) return c.json({ error: 'sem_assinatura' }, 404);
+
+    const resultados = [];
+    for (const assinatura of assinaturas) {
+      const r = await enviarERegistrar(
+        c.env,
+        usuario.id,
+        assinatura,
+        {
+          titulo: corpo.data.titulo ?? 'Teste do lembrete',
+          corpo: corpo.data.corpo ?? 'Se você está lendo isto, o lembrete está funcionando.',
+          url: '/?origem=push',
+          tag: 'teste',
+        },
+        { teste: true },
+      );
+      resultados.push({ servico: r.servico, ok: r.ok, ...(r.ok ? {} : { erro: r.erro }) });
+    }
+
+    return c.json({ ok: true, aparelhos: resultados.length, resultados });
   });

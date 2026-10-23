@@ -20,6 +20,35 @@ const FUSO_BRASIL = '-03:00';
 /** Fuso usado quando o do usuário não existe ou não é reconhecido. */
 export const FUSO_PADRAO = 'America/Sao_Paulo';
 
+/** O fuso existe neste runtime? Fuso inventado derrubaria a regra do dia. */
+export function fusoValido(timezone: string): boolean {
+  if (!timezone) return false;
+  try {
+    new Intl.DateTimeFormat('en-CA', { timeZone: timezone }).format(new Date());
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Hora local (0..23) daquele instante no fuso pedido. */
+export function horaLocal(timezone: string, agora = agoraIso()): number {
+  const fuso = fusoValido(timezone) ? timezone : FUSO_PADRAO;
+  const texto = new Intl.DateTimeFormat('en-GB', {
+    timeZone: fuso,
+    hour: '2-digit',
+    hour12: false,
+  }).format(new Date(agora));
+  // en-GB devolve "07" ou, à meia-noite, "24" em alguns runtimes.
+  return Number(texto) % 24;
+}
+
+/** `YYYY-MM-DD` no fuso pedido — o "dia" que vale para o usuário. */
+export function dataLocalIso(timezone: string, agora = agoraIso()): string {
+  const fuso = fusoValido(timezone) ? timezone : FUSO_PADRAO;
+  return diaLocal(Date.parse(agora), fuso);
+}
+
 /** `YYYY-MM-DD` daquele instante no fuso pedido. */
 function diaLocal(ms: number, timezone: string): string {
   // en-CA formata como YYYY-MM-DD, que é o que dá para subtrair sem parser.

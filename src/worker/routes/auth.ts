@@ -17,12 +17,14 @@ import {
   APP_NAME,
   CODIGO_DIGITOS,
   CODIGO_VALIDADE_MIN,
+  DEFAULT_TIMEZONE,
   SESSAO_DIAS,
 } from '../../shared/constants';
 import modeloAcao from '../emails/codigo-acao.md?raw';
 import modeloCodigo from '../emails/codigo-login.md?raw';
 import { renderizarEmail } from '../emails/render';
 import { escaparHtml, pagina } from '../lib/pagina';
+import { fusoValido } from '../lib/datas';
 import type { AppBindings } from '../lib/types';
 import {
   ACOES_SENSIVEIS,
@@ -54,6 +56,11 @@ const EntrarSchema = z.object({
 });
 
 const ConfirmarSchema = z.object({ acao: z.enum(ACOES_SENSIVEIS) });
+
+const LembreteSchema = z.object({
+  prayer_hour: z.number().int().min(0).max(23),
+  timezone: z.string().trim().max(60).optional(),
+});
 const ExcluirSchema = z.object({ codigo: CodigoSchema });
 const TrocarEmailSchema = z.object({
   codigo: CodigoSchema,
@@ -251,6 +258,30 @@ export const me = new Hono<AppBindings>()
       temAcesso: produtos.length > 0,
       suporte: c.env.SUPPORT_EMAIL ?? null,
     });
+  })
+
+  /**
+   * Horário do lembrete e fuso do aparelho (§11). Ficam na conta, não no
+   * aparelho: quem troca de celular não perde o horário que escolheu.
+   */
+  .patch('/lembrete', async (c) => {
+    const userId = await exigirSessao(c);
+    if (!userId) return c.json({ error: 'nao_autenticado' }, 401);
+
+    const corpo = LembreteSchema.safeParse(await c.req.json().catch(() => null));
+    if (!corpo.success) return c.json({ error: 'dados_invalidos' }, 400);
+
+    // Fuso que este runtime não conhece viraria uma conta sem lembrete nenhum,
+    // em silêncio: melhor cair no padrão e avisar quem chamou o que foi gravado.
+    const fuso = corpo.data.timezone && fusoValido(corpo.data.timezone)
+      ? corpo.data.timezone
+      : DEFAULT_TIMEZONE;
+
+    await c.env.DB.prepare('UPDATE users SET prayer_hour = ?, timezone = ? WHERE id = ?')
+      .bind(corpo.data.prayer_hour, fuso, userId)
+      .run();
+
+    return c.json({ ok: true, prayer_hour: corpo.data.prayer_hour, timezone: fuso });
   })
 
   /** Manda o código que autoriza uma ação sensível, para o e-mail atual da conta. */
