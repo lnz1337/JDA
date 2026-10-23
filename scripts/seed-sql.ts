@@ -53,6 +53,8 @@ export interface SeedJornada {
     program_id: string;
     day: number;
     title: string;
+    /** Frase curta do dia, usada no cartão da Home e na lista (§6). */
+    summary?: string | null;
     body_md: string;
     push_text: string;
     audio_key: string;
@@ -360,7 +362,8 @@ export function gerarSeedSql(): { sql: string; comDuracao: number; semDuracao: s
       l.program_id,
       l.day,
       l.title,
-      null, // summary: a jornada não tem resumo por dia
+      // Vazio vira NULL, e aí o app cai no recurso da linha `**Intenção:**`.
+      l.summary?.trim() || null,
       l.body_md,
       l.audio_key,
       medir(l.id, l.audio_key),

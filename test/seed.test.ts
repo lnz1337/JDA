@@ -71,6 +71,21 @@ describe('seed', () => {
     }
   });
 
+  it('traz a frase curta de cada dia da jornada', async () => {
+    await aplicarSeed();
+
+    const { results } = await env.DB.prepare(
+      `SELECT day, summary FROM lessons WHERE program_id = 'jornada-19' ORDER BY day`,
+    ).all<{ day: number; summary: string | null }>();
+
+    // O `summary` já existiu só nos produtos avulsos e vinha fixo como NULL na
+    // jornada, o que empurrava o cartão da Home para o recurso da `**Intenção:**`.
+    for (const licao of results) {
+      expect(licao.summary, `dia ${licao.day} sem frase curta`).toBeTruthy();
+      expect(licao.summary?.length ?? 0).toBeLessThan(160);
+    }
+  });
+
   it('põe o hino como faixa extra só no dia 19', async () => {
     await aplicarSeed();
 
