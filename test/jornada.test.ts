@@ -285,10 +285,26 @@ describe('abrir e concluir lição', () => {
   it('concluir os 19 fecha a matrícula, que é o gatilho da oferta', async () => {
     await prepararUsuario({ inicio: inicioNoDia(19) });
 
-    for (let dia = 1; dia <= 19; dia += 1) {
-      const id = `jornada-19-d${String(dia).padStart(2, '0')}`;
-      await chamar(`/api/licoes/${id}/concluir`, { method: 'POST', headers: { cookie: COOKIE } });
-    }
+    /*
+     * Os 18 primeiros entram direto no banco e só o último passa pela rota: o
+     * que está sob teste é o fechamento da matrícula no dia que completa, não a
+     * rota 19 vezes. Em HTTP eram ~10 s, e o teste caía por tempo quando a suíte
+     * inteira rodava junto.
+     */
+    const agora = new Date().toISOString();
+    await env.DB.batch(
+      Array.from({ length: 18 }, (_, i) =>
+        env.DB.prepare(
+          'INSERT INTO progress (user_id, lesson_id, completed_at) VALUES (?, ?, ?)',
+        ).bind(USER, `jornada-19-d${String(i + 1).padStart(2, '0')}`, agora),
+      ),
+    );
+
+    const ultimo = await chamar('/api/licoes/jornada-19-d19/concluir', {
+      method: 'POST',
+      headers: { cookie: COOKIE },
+    });
+    expect(await ultimo.json()).toMatchObject({ concluidos: 19, total: 19 });
 
     const m = await env.DB.prepare(
       'SELECT completed_at FROM enrollments WHERE user_id = ? AND program_id = ?',
