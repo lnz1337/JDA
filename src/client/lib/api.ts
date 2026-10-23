@@ -22,7 +22,13 @@ export async function api<T>(caminho: string, init?: RequestInit): Promise<T> {
 }
 
 export interface Me {
-  usuario: { id: string; email: string | null; nome: string | null };
+  usuario: {
+    id: string;
+    email: string | null;
+    nome: string | null;
+    timezone?: string;
+    prayer_hour?: number;
+  };
   produtos: Array<{ id: string; name: string; kind: string }>;
   temAcesso: boolean;
   suporte: string | null;

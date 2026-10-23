@@ -1,10 +1,16 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api, type Me, registrarEvento } from './lib/api';
+import { permissaoDeNotificacao } from './lib/dispositivo';
+import { garantirAssinatura } from './lib/lembrete';
 import { irPara, useRota } from './lib/rota';
 import { Entrar } from './screens/Entrar';
 import { Home } from './screens/Home';
 import { Inicio } from './screens/Inicio';
 import { Licao } from './screens/Licao';
+import { Onboarding, deveRodarOnboarding, marcarOnboardingFeito } from './screens/Onboarding';
+import { PassoHorario } from './screens/PassoHorario';
+import { PassoInstalar } from './screens/PassoInstalar';
+import { PassoLembrete } from './screens/PassoLembrete';
 import { Programa } from './screens/Programa';
 import { SemAcesso } from './screens/SemAcesso';
 
@@ -12,6 +18,7 @@ type Estado = { fase: 'carregando' } | { fase: 'deslogado' } | { fase: 'logado';
 
 export function App() {
   const [estado, setEstado] = useState<Estado>({ fase: 'carregando' });
+  const [onboarding, setOnboarding] = useState(deveRodarOnboarding);
   const rota = useRota();
 
   const carregar = useCallback(async () => {
@@ -31,6 +38,15 @@ export function App() {
    * parâmetro faria o recarregar da página contar de novo, e ele apareceria no
    * link que a pessoa manda para alguém.
    */
+  /*
+   * Permissão concedida e sem assinatura neste aparelho — reinstalou, limpou os
+   * dados, o navegador expirou a assinatura. Refaz em silêncio: a pessoa já
+   * disse sim uma vez, e perguntar de novo seria atrito sem motivo.
+   */
+  useEffect(() => {
+    if (estado.fase === 'logado') void garantirAssinatura();
+  }, [estado.fase]);
+
   useEffect(() => {
     const parametros = new URLSearchParams(location.search);
     if (parametros.get('origem') !== 'push') return;
@@ -65,8 +81,33 @@ export function App() {
     return <SemAcesso suporte={estado.me.suporte} aoSair={sair} />;
   }
 
+  // O onboarding só aparece na Home: quem chegou pelo push vai direto para a
+  // oração, e quem está no meio da jornada não é interrompido para instalar.
+  if (onboarding && rota.nome === 'inicio') {
+    return (
+      <Onboarding
+        aoTerminar={() => {
+          marcarOnboardingFeito();
+          setOnboarding(false);
+        }}
+      />
+    );
+  }
+
   if (rota.nome === 'programa') return <Programa id={rota.id} />;
   if (rota.nome === 'licao') return <Licao id={rota.id} />;
+
+  // Chamadas pelos cards da Home, para quem disse "Agora não" antes.
+  if (rota.nome === 'instalar') return <PassoInstalar aoPular={() => irPara('/')} />;
+
+  if (rota.nome === 'lembrete') {
+    // Permissão ainda não dada: pedir vem antes de escolher a hora.
+    return permissaoDeNotificacao() === 'granted' ? (
+      <PassoHorario aoTerminar={() => irPara('/')} />
+    ) : (
+      <PassoLembrete aoLigar={() => irPara('/lembrete')} aoPular={() => irPara('/')} />
+    );
+  }
 
   return <Home me={estado.me} aoSair={sair} />;
 }

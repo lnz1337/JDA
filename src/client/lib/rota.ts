@@ -13,7 +13,9 @@ export type Rota =
   | { nome: 'inicio' }
   | { nome: 'entrar' }
   | { nome: 'programa'; id: string }
-  | { nome: 'licao'; id: string };
+  | { nome: 'licao'; id: string }
+  | { nome: 'instalar' }
+  | { nome: 'lembrete' };
 
 const EVENTO = 'jda:rota';
 
@@ -25,6 +27,9 @@ export function rotaDe(caminho: string, busca: string): Rota {
   if (caminho === '/entrar' || parametros.has('e') || parametros.has('motivo')) {
     return { nome: 'entrar' };
   }
+
+  if (caminho === '/instalar') return { nome: 'instalar' };
+  if (caminho === '/lembrete') return { nome: 'lembrete' };
 
   const programa = /^\/programa\/([\w-]+)\/?$/.exec(caminho);
   if (programa?.[1]) return { nome: 'programa', id: programa[1] };

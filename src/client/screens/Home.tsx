@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react';
 import type { Programa } from '../../shared/types';
 import { APP_NAME } from '../../shared/constants';
 import { api, type Me } from '../lib/api';
+import { permissaoDeNotificacao } from '../lib/dispositivo';
 import { irPara } from '../lib/rota';
+import { CHAVES, dispensar, type Passo, passoAtual } from './Onboarding';
 
 /**
  * A primeira tela de quem está dentro: o cartão do dia, grande, com o que fazer
@@ -40,6 +42,8 @@ export function Home({ me, aoSair }: { me: Me; aoSair: () => void }) {
       )}
 
       {programas === null && !erro && <p className="text-lg text-noite-700">carregando…</p>}
+
+      <ConviteDoAparelho />
 
       {jornada && <CartaoDoDia programa={jornada} />}
 
@@ -84,6 +88,8 @@ export function Home({ me, aoSair }: { me: Me; aoSair: () => void }) {
         </section>
       )}
 
+      <LinhaDoLembrete hora={me.usuario.prayer_hour ?? null} />
+
       <button
         type="button"
         onClick={aoSair}
@@ -92,6 +98,60 @@ export function Home({ me, aoSair }: { me: Me; aoSair: () => void }) {
         Sair do app
       </button>
     </main>
+  );
+}
+
+/**
+ * Um convite por vez, dispensável por 7 dias (§11). É o que resta de onboarding
+ * para quem disse "Agora não": lembra sem prender.
+ */
+function ConviteDoAparelho() {
+  const [passo, setPasso] = useState<Passo>(() => passoAtual());
+
+  if (passo !== 'instalar' && passo !== 'lembrete') return null;
+
+  const instalar = passo === 'instalar';
+
+  return (
+    <section className="space-y-3 rounded-2xl border-2 border-ouro-300 bg-ouro-300/10 px-5 py-4">
+      <p className="text-lg font-semibold leading-snug text-noite-900">
+        {instalar ? 'Coloque o app na tela inicial' : 'Ligar o lembrete'}
+      </p>
+      <button
+        type="button"
+        onClick={() => irPara(instalar ? '/instalar' : '/lembrete')}
+        className="min-h-[56px] w-full rounded-xl bg-noite-900 px-4 py-3 text-lg font-semibold text-white"
+      >
+        {instalar ? 'Ver como fazer' : 'Quero o lembrete'}
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          dispensar(instalar ? CHAVES.instalarDispensado : CHAVES.lembreteDispensado);
+          setPasso(passoAtual());
+        }}
+        className="min-h-[48px] w-full py-1 text-base text-noite-700 underline"
+      >
+        Agora não
+      </button>
+    </section>
+  );
+}
+
+/**
+ * Até o Perfil existir (fase 7), é por aqui que se troca o horário. Discreta de
+ * propósito: quem já escolheu não precisa ver isso todo dia.
+ */
+function LinhaDoLembrete({ hora }: { hora: number | null }) {
+  if (hora === null || permissaoDeNotificacao() !== 'granted') return null;
+
+  return (
+    <p className="text-base text-noite-700">
+      Lembrete às {hora}h ·{' '}
+      <button type="button" onClick={() => irPara('/lembrete')} className="underline">
+        mudar
+      </button>
+    </p>
   );
 }
 
