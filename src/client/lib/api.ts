@@ -30,7 +30,7 @@ export interface Me {
 
 /** Eventos do funil que só o client sabe (§13). Falha de evento nunca atrapalha. */
 export function registrarEvento(
-  nome: 'lesson_started' | 'audio_completed',
+  nome: 'lesson_started' | 'audio_completed' | 'push_aberto' | 'app_instalado' | 'push_ativado' | 'push_negado',
   props: { lesson_id?: string; dia?: number; programa?: string } = {},
 ): void {
   void api('/api/eventos', {

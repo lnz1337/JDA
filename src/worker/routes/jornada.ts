@@ -21,7 +21,15 @@ import {
 } from '../services/jornada';
 
 /** Eventos que o client pode registrar. Lista fechada: `events` vira relatório. */
-const EVENTOS_DO_CLIENT = ['lesson_started', 'audio_completed'] as const;
+const EVENTOS_DO_CLIENT = [
+  'lesson_started',
+  'audio_completed',
+  /** Fase 8: instalação e lembrete, que só o aparelho sabe se aconteceram. */
+  'push_aberto',
+  'app_instalado',
+  'push_ativado',
+  'push_negado',
+] as const;
 
 const EventoSchema = z.object({
   nome: z.enum(EVENTOS_DO_CLIENT),

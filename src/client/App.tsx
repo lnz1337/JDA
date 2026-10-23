@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { api, type Me } from './lib/api';
+import { api, type Me, registrarEvento } from './lib/api';
 import { irPara, useRota } from './lib/rota';
 import { Entrar } from './screens/Entrar';
 import { Home } from './screens/Home';
@@ -25,6 +25,21 @@ export function App() {
   useEffect(() => {
     void carregar();
   }, [carregar]);
+
+  /*
+   * Abriu pela notificação: registra e tira o `origem=push` da URL. Deixar o
+   * parâmetro faria o recarregar da página contar de novo, e ele apareceria no
+   * link que a pessoa manda para alguém.
+   */
+  useEffect(() => {
+    const parametros = new URLSearchParams(location.search);
+    if (parametros.get('origem') !== 'push') return;
+
+    registrarEvento('push_aberto');
+    parametros.delete('origem');
+    const busca = parametros.toString();
+    history.replaceState({}, '', `${location.pathname}${busca ? `?${busca}` : ''}`);
+  }, []);
 
   const sair = useCallback(async () => {
     await api('/api/auth/sair', { method: 'POST' }).catch(() => undefined);
