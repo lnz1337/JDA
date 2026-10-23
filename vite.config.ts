@@ -12,6 +12,47 @@ import {
 } from './src/shared/constants';
 
 /**
+ * `robots.txt` e `_headers` dependem do ambiente, e o ambiente é escolhido no
+ * build (CLAUDE.md §2) — então eles são **gerados**, não versionados.
+ *
+ * Staging mora num subdomínio do domínio de verdade. Se o Google indexar aquilo,
+ * o resultado é uma cópia do app aparecendo na busca, o que é ruim para o cliente
+ * (entra no app errado) e para a reputação do domínio. Por isso staging sai com
+ * `Disallow: /` e `X-Robots-Tag: noindex`.
+ *
+ * O `_headers` vale só para asset estático; resposta gerada pelo Worker não passa
+ * por ele (é o `index.html` que interessa aqui). As páginas que o Worker serve
+ * recebem o cabeçalho no próprio Worker (`lib/pagina.ts` / `index.ts`).
+ */
+function robots(producao: boolean): Plugin {
+  return {
+    name: 'jda-robots',
+    applyToEnvironment: (environment: { name: string }) => environment.name === 'client',
+    generateBundle() {
+      const txt = producao
+        ? [
+            'User-agent: *',
+            'Allow: /',
+            '',
+            '# Telas de acesso não têm o que indexar e não devem aparecer na busca.',
+            'Disallow: /entrar',
+            'Disallow: /acesso',
+            'Disallow: /parar',
+            '',
+          ].join('\n')
+        : ['# Ambiente de teste: não indexar nada.', 'User-agent: *', 'Disallow: /', ''].join('\n');
+
+      const headers = producao
+        ? ['/entrar*', '  X-Robots-Tag: noindex', ''].join('\n')
+        : ['/*', '  X-Robots-Tag: noindex, nofollow', ''].join('\n');
+
+      this.emitFile({ type: 'asset', fileName: 'robots.txt', source: txt });
+      this.emitFile({ type: 'asset', fileName: '_headers', source: headers });
+    },
+  };
+}
+
+/**
  * O vite-plugin-pwa só deve rodar no build do client: sem isso ele também
  * emite manifest/registerSW dentro da saída do Worker.
  */
@@ -27,6 +68,7 @@ export default defineConfig({
     react(),
     tailwindcss(),
     cloudflare(),
+    robots(process.env.CLOUDFLARE_ENV === 'production'),
     ...clientOnly(
       VitePWA({
         strategies: 'injectManifest',

@@ -2,12 +2,28 @@ import { useCallback, useEffect, useState } from 'react';
 import { APP_NAME } from '../shared/constants';
 import { api, type Me } from './lib/api';
 import { Entrar } from './screens/Entrar';
+import { Inicio } from './screens/Inicio';
 import { SemAcesso } from './screens/SemAcesso';
 
 type Estado = { fase: 'carregando' } | { fase: 'deslogado' } | { fase: 'logado'; me: Me };
 
+/**
+ * Ainda não há roteador (fase 5 provavelmente traz um). Deslogado, só duas telas
+ * importam: a apresentação em `/` e o login em `/entrar` — e é por `/entrar` que
+ * chegam os links que já vêm com e-mail e motivo preenchidos.
+ */
+function telaInicial(): 'inicio' | 'entrar' {
+  const p = location.pathname;
+  const parametros = new URLSearchParams(location.search);
+  // Veio de um link nosso (e-mail preenchido ou link de acesso que não serviu):
+  // mandar essa pessoa para a apresentação seria um passo a mais sem motivo.
+  if (p === '/entrar' || parametros.has('e') || parametros.has('motivo')) return 'entrar';
+  return 'inicio';
+}
+
 export function App() {
   const [estado, setEstado] = useState<Estado>({ fase: 'carregando' });
+  const [tela, setTela] = useState<'inicio' | 'entrar'>(telaInicial);
 
   const carregar = useCallback(async () => {
     try {
@@ -20,6 +36,14 @@ export function App() {
   useEffect(() => {
     void carregar();
   }, [carregar]);
+
+  // "Voltar" precisa voltar de verdade: sem isto a URL vira `/` e a tela fica no
+  // login, que é o tipo de descompasso que faz a pessoa achar que travou.
+  useEffect(() => {
+    const aoVoltar = () => setTela(telaInicial());
+    addEventListener('popstate', aoVoltar);
+    return () => removeEventListener('popstate', aoVoltar);
+  }, []);
 
   const sair = useCallback(async () => {
     await api('/api/auth/sair', { method: 'POST' }).catch(() => undefined);
@@ -35,6 +59,18 @@ export function App() {
   }
 
   if (estado.fase === 'deslogado') {
+    if (tela === 'inicio') {
+      return (
+        <Inicio
+          aoEntrar={() => {
+            // Sem roteador, mas a URL precisa acompanhar: quem apertar "voltar"
+            // volta para a apresentação em vez de sair do app.
+            history.pushState({}, '', '/entrar');
+            setTela('entrar');
+          }}
+        />
+      );
+    }
     return <Entrar aoEntrar={carregar} />;
   }
 

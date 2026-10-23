@@ -67,8 +67,19 @@ function chavesDoSeed(): string[] {
 async function listarBucket(prefixos: string[]): Promise<Map<string, number>> {
   const token = process.env.CLOUDFLARE_API_TOKEN;
   const conta = process.env.CLOUDFLARE_ACCOUNT_ID;
+
+  /*
+   * A listagem é só otimização: ela evita reenviar o que já está lá. O upload em
+   * si usa o wrangler, que tem credencial própria (OAuth). Sem token de API —
+   * bucket novo, por exemplo — segue em frente e manda tudo: `r2 object put`
+   * sobrescreve, então reenviar é desperdício de banda, não erro.
+   */
   if (!token || !conta) {
-    throw new Error('defina CLOUDFLARE_API_TOKEN e CLOUDFLARE_ACCOUNT_ID no ambiente');
+    console.warn(
+      'sem CLOUDFLARE_API_TOKEN/CLOUDFLARE_ACCOUNT_ID: não dá para conferir o que já está\n' +
+        'no bucket, então vou enviar tudo. Para pular o que já existe, defina os dois.',
+    );
+    return new Map();
   }
 
   const mapa = new Map<string, number>();

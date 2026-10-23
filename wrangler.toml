@@ -43,12 +43,20 @@ bucket_name = "jda-pwa-media-dev"
 # -------------------------------------------------------------------- staging
 [env.staging]
 name = "jda-pwa-staging"
+# O workers.dev continua de pé enquanto o subdomínio novo não é o único caminho.
+workers_dev = true
+
+# Subdomínio próprio: link de e-mail apontando para workers.dev é sinal ruim de
+# entrega (domínio diferente do remetente, e muito usado em golpe).
+[[env.staging.routes]]
+pattern = "teste.jornadacomeuanjo.com"
+custom_domain = true
 
 [env.staging.vars]
 # ENV=development em staging para que postbacks com test=true sejam processados
 # (ver CLAUDE.md §7, passo 2).
 ENV = "development"
-APP_URL = "https://jda-pwa-staging.leonardovcs2022.workers.dev"
+APP_URL = "https://teste.jornadacomeuanjo.com"
 MAIL_PROVIDER = "cloudflare"
 MAIL_FROM = "contato@mail.jornadacomeuanjo.com"
 MAIL_FROM_NAME = "Jornada com Meu Anjo"
@@ -73,6 +81,21 @@ bucket_name = "jda-pwa-media-staging"
 # ----------------------------------------------------------------- production
 [env.production]
 name = "jda-pwa"
+# Produção atende pelo domínio e só por ele.
+workers_dev = false
+
+[[env.production.routes]]
+pattern = "jornadacomeuanjo.com"
+custom_domain = true
+
+# O `www` existia como CNAME para a raiz e parou de responder quando a raiz virou
+# Custom Domain do Worker (o Worker não atende por um host que não é dele: dava
+# 522). Serve o mesmo app. Para canonizar `www` → raiz seria preciso uma Redirect
+# Rule no painel: asset estático não passa pelo Worker, então redirecionar por
+# código aqui não alcançaria a tela inicial.
+[[env.production.routes]]
+pattern = "www.jornadacomeuanjo.com"
+custom_domain = true
 
 [env.production.vars]
 ENV = "production"
@@ -91,7 +114,7 @@ enabled = true
 [[env.production.d1_databases]]
 binding = "DB"
 database_name = "jda-pwa-prod"
-database_id = "TROCAR_PELO_ID_DO_D1_PROD"
+database_id = "eddb43c3-75ea-43f3-a8cf-4371a833b573"
 migrations_dir = "migrations"
 
 [[env.production.r2_buckets]]

@@ -1,12 +1,31 @@
-# Estado do projeto — 22/10/2026
+# Estado do projeto — 23/10/2026
 
 Retrato para uma sessão nova continuar daqui. A spec é o [CLAUDE.md](../CLAUDE.md);
 este arquivo registra o que **não** cabe lá: o que já rodou, o que está só em
 staging, o que depende do Leo e as armadilhas que custaram caro.
 
-Último commit: o desta sessão — ajustes de e-mail e de login para o público 55+.
-`npm run typecheck && npm test` limpo, **166 testes** em 10 arquivos. Staging no ar
-em **https://jda-pwa-staging.leonardovcs2022.workers.dev**.
+`npm run typecheck && npm test` limpo, **166 testes** em 10 arquivos.
+
+## Os dois ambientes
+
+| | staging | produção |
+|---|---|---|
+| Domínio | `teste.jornadacomeuanjo.com` | `jornadacomeuanjo.com` + `www.` |
+| Também responde | `jda-pwa-staging.leonardovcs2022.workers.dev` | — |
+| Worker | `jda-pwa-staging` | `jda-pwa` |
+| D1 | `jda-pwa-staging` (`53e3ee12-…`) | `jda-pwa-prod` (`eddb43c3-75ea-43f3-a8cf-4371a833b573`) |
+| R2 | `jda-pwa-media-staging` | `jda-pwa-media` (34 áudios, 145 MB) |
+| Banco | 3 usuários de teste, 4 postbacks, 6 tokens | **seed só**: 10 produtos, 6 programas, 41 lições, 1 `payt_map`, **0 usuários** |
+| Indexável | não (`Disallow: /` + `noindex`) | sim, menos `/entrar`, `/acesso` e `/parar` |
+
+Produção subiu em 23/10 e **ainda não recebe cliente**: sem postback cadastrado,
+sem base importada e sem `PAYT_INTEGRATION_KEY`. A raiz serve a tela de Início.
+
+**O que estava na raiz antes:** uma página estacionada da Hostinger
+(`A jornadacomeuanjo.com → 2.57.91.91`, proxied) e um `CNAME www → raiz`. Os dois
+foram **apagados** para o Custom Domain poder assumir — Custom Domain recusa host
+com registro A/CNAME (`code: 100117`). Nada de e-mail foi tocado: MX, SPF, DKIM e
+DMARC continuam onde estavam.
 
 ---
 
@@ -87,11 +106,24 @@ RESEND_API_KEY           # só se MAIL_PROVIDER virar "resend"
 VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY / VAPID_SUBJECT   # fase 8
 ```
 
-### Produção — nenhum
+### Produção — cadastrados em 23/10
 
-O Worker de produção não existe ainda. Quando existir, todos acima precisam ser
-cadastrados com `--env production`, e **os valores devem ser diferentes dos de
-staging**.
+```
+ADMIN_API_KEY            # gerado direto no wrangler, nunca exibido
+CAMPAIGN_SIGNING_KEY     # idem
+```
+
+Os dois foram sorteados (`randomBytes(32)`) e enviados por pipe para o
+`wrangler secret put --env production`: **não existe cópia em lugar nenhum**, nem
+no `.dev.vars` (que é só de staging). Para rodar `grant`, campanha ou reprocesso
+em produção é preciso gerar outro e substituir — não há como recuperar estes.
+
+### Produção — ainda faltam
+
+```
+PAYT_INTEGRATION_KEY     # quando o Leo criar o postback de produção na Payt
+VAPID_*                  # fase 8
+```
 
 ---
 
@@ -168,6 +200,17 @@ longo de semanas, que é exatamente o motivo do plano de ondas (50, 100, 250, 50
 Hotmail/Outlook/Live. Antes de disparar as ondas grandes, vale considerar
 [cadastrar o domínio no SNDS da Microsoft](https://sendersupport.olc.protection.outlook.com/snds/)
 e no JMRP, e acompanhar o `rua` do DMARC (`suporte@jornadacomeuanjo.com`).
+
+### Quarta rodada (23/10, já pelo `teste.jornadacomeuanjo.com`)
+
+Código de login e anúncio para os dois endereços, **sem falha**, agora com os
+links no subdomínio próprio em vez do `workers.dev`. É o teste da hipótese de que
+o Outlook estava pesando o domínio do link: o conteúdo é o mesmo da rodada
+anterior, só o domínio mudou. **Resultado ainda não conferido.**
+
+Vale o aviso: domínio do link é **um** sinal entre vários. O peso maior continua
+sendo reputação de domínio novo, que só sobe com volume constante ao longo de
+semanas — por isso o plano de ondas e o `--provedores gmail`.
 
 ### Segunda e terceira rodadas (22/10)
 
@@ -347,6 +390,13 @@ dispara. Por isso a tela **não pode** se enviar sozinha por JavaScript — seri
 imitável por pré-visualizador — e por isso ela é igual para token válido, vencido
 e inventado, sem nem consultar o banco.
 
+**Custom Domain não convive com registro A/CNAME no mesmo host.** O deploy sobe o
+Worker, falha só na parte de domínio (`code: 100117`) e **não desfaz o que já
+mudou** — fica meio aplicado. Apagar o registro antigo e rodar o deploy de novo
+resolve. Vale para a raiz e para o `www`: o `www` era CNAME para a raiz e passou a
+dar **522** no momento em que a raiz virou Custom Domain, porque o Worker não
+atende por um host que não é dele.
+
 **`ORDER BY 0` não é constante no SQLite: é índice de coluna.** A ordenação por
 provedor monta um `CASE` e, quando não há provedor pedido, o termo precisa sair da
 cláusula — emitir `0` dá "1st ORDER BY term out of range". O sintoma foi o disparo
@@ -363,7 +413,26 @@ o usuário de todas as tabelas e mascarar o payload.
 
 ---
 
-## 8. Comandos que a próxima sessão vai querer
+## 8. O que falta para o lançamento
+
+Em ordem de dependência. O que está pronto não aparece aqui.
+
+| # | Falta | Depende de | Por quê trava |
+|---|---|---|---|
+| 1 | **Fase 5: Jornada** (Home, lista de dias, Player) | sessão | Produção está no ar, mas quem entrar só vê a lista de produtos liberados. **É isto que impede convidar cliente.** |
+| 2 | **Códigos do UP1 e do UP2** no `payt_map` | Leo | Sem eles o importador para, e comprador de upsell não recebe acesso em produção |
+| 3 | **Postback de produção** na Payt + `PAYT_INTEGRATION_KEY` de produção | Leo | Sem isso compra nova em produção não libera nada |
+| 4 | **CSV de vendas** e importação da base | Leo (itens 2 e 3) | É a base da campanha |
+| 5 | **`ADMIN_API_KEY` de produção em mãos** | — | Foi gerada sem cópia; `grant`, campanha e reprocesso em produção precisam dela (gerar outra e substituir) |
+| 6 | **Política de Privacidade e Termos** em produção, com CNPJ (§14) | — | O rodapé dos e-mails aponta a identificação para lá, e a campanha vai para a base |
+| 7 | **Identidade visual** (ícones ainda são placeholder) | Leo | A raiz já é pública: o ícone aparece |
+| 8 | **Campanha**, em ondas, começando por Gmail | 2, 4, 5, 6 e a fase 5 | O e-mail promete um app com a jornada funcionando |
+
+Fora da fila, se o Leo quiser: **`www` → raiz canonizado** (hoje os dois servem o
+app; canonizar é uma Redirect Rule no painel) e **SNDS/JMRP da Microsoft**, para
+ver de dentro o que o Outlook acha do domínio.
+
+## 9. Comandos que a próxima sessão vai querer
 
 ```bash
 npm run typecheck && npm test        # antes de dar qualquer fase por concluída
@@ -372,6 +441,12 @@ npm run dev                          # Vite + Worker, D1 e R2 locais
 npm run db:migrate:staging           # aplica migrations
 npm run seed:staging                 # gera e aplica o seed (idempotente)
 npm run deploy:staging               # build com CLOUDFLARE_ENV + wrangler deploy
+
+# Os mesmos existem para produção; são os que subiram o ambiente em 23/10:
+npm run db:migrate:production
+npm run seed:production
+npm run media:upload:production      # 34 áudios, 145 MB
+npm run deploy:production
 
 npm run payt:last:staging            # últimos 5 postbacks, com o JSON
 npm run payt:reprocess:staging X9P8DY5

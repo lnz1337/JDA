@@ -39,6 +39,26 @@ resolve o `wrangler.toml` e grava `dist/jda_pwa/wrangler.json`; o `wrangler depl
 publica esse arquivo. Passar `--env` no `wrangler deploy` é **ignorado** — quem manda
 é a variável no build. Use sempre `npm run deploy:staging` / `npm run deploy:production`.
 
+| Ambiente | Domínio | D1 | R2 |
+|---|---|---|---|
+| staging | `teste.jornadacomeuanjo.com` (+ `workers.dev`, por enquanto) | `jda-pwa-staging` | `jda-pwa-media-staging` |
+| produção | `jornadacomeuanjo.com` e `www.` | `jda-pwa-prod` | `jda-pwa-media` |
+
+Os dois são **Custom Domain do Worker**, declarados em `routes` no `wrangler.toml`
+— o wrangler cria o registro de DNS no deploy. Custom Domain **recusa host que já
+tenha registro A/CNAME** (`code: 100117`): o registro antigo sai primeiro.
+
+**Staging mora num subdomínio do domínio de verdade, não no `workers.dev`.** Link
+de e-mail apontando para `workers.dev` é sinal ruim de entrega: o domínio não bate
+com o do remetente e é muito usado em golpe. Pelo mesmo motivo a raiz precisa
+servir alguma coisa (§4, tela inicial) em vez de ficar estacionada.
+
+**Staging não é indexável**: `robots.txt` com `Disallow: /` e `X-Robots-Tag:
+noindex`, gerados no build (`vite.config.ts`), porque staging num subdomínio do
+domínio real é uma cópia do app esperando para aparecer na busca. O `_headers`
+vale só para asset estático — resposta de Worker (`/acesso`, `/parar`) leva o
+cabeçalho no `src/worker/index.ts`, em todos os ambientes.
+
 ## 3. Estrutura de pastas
 
 ```
@@ -129,6 +149,10 @@ mudança lá (um campo novo no JSON, por exemplo), pede em vez de editar.
 ## 4. Navegação (telas)
 
 ```
+jornadacomeuanjo.com sem sessão
+  └─ Início: nome do app, uma frase sobre a jornada, "Entrar no meu app", suporte
+      (com sessão, vai direto para a Home; links nossos caem direto em /entrar)
+
 Acesso pós-compra (link do e-mail/WhatsApp)
   └─ Onboarding: login por código → instalar na tela inicial → ativar push → escolher horário
       └─ Home (oração do dia + card de oferta contextual)
@@ -139,6 +163,12 @@ Acesso pós-compra (link do e-mail/WhatsApp)
 ```
 
 Bottom nav com 4 abas: Jornada, Loja, Mural, Perfil. Home é a tela inicial da aba Jornada.
+
+A tela de **Início** é pública e existe por dois motivos: domínio que não serve
+nada atrapalha a entrega do e-mail, e quem recebe o link precisa reconhecer onde
+está antes de digitar o e-mail. Ela descreve o que o app tem, **sem promessa de
+resultado** (§14). Quem chega por link nosso (`?e=` ou `?motivo=`) pula direto para
+o login: já sabe onde está.
 
 ## 5. Modelo de dados (D1)
 
