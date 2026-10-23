@@ -4,7 +4,7 @@ Retrato para uma sessão nova continuar daqui. A spec é o [CLAUDE.md](../CLAUDE
 este arquivo registra o que **não** cabe lá: o que já rodou, o que está só em
 staging, o que depende do Leo e as armadilhas que custaram caro.
 
-`npm run typecheck && npm test` limpo, **203 testes** em 11 arquivos.
+`npm run typecheck && npm test` limpo, **250 testes** em 14 arquivos.
 
 ## Os dois ambientes
 
@@ -39,7 +39,8 @@ DMARC continuam onde estavam.
 | 4 — Auth | **concluída**, com e-mail entregando. Revisada 22/10 para o público 55+: link de acesso direto (com tela de confirmação, para pré-visualizador de link não gastar o token), sessão de 1 ano, código em ação sensível, tela de código mais fácil |
 | 5 — Jornada | **concluída em 23/10**: Home com o cartão do dia, lista de dias com estado, player com Range/Media Session/retomada, conclusão e os eventos do funil |
 | 6 — Loja | **não começou** ← próxima |
-| 7 a 12 | não começaram |
+| 8 — Push | **concluída em 23/10** (fora de ordem, a pedido): instalação na tela inicial, lembrete diário e escolha do horário |
+| 7, 9 a 12 | não começaram |
 
 ### Fora do escopo das fases, já construído
 
@@ -111,15 +112,30 @@ Só os nomes. Os valores vivem no wrangler; `ADMIN_API_KEY` e
 
 ```
 PAYT_INTEGRATION_KEY     # só o /api/payt/postback
-ADMIN_API_KEY            # reprocesso, campanha, concessão manual
+ADMIN_API_KEY            # reprocesso, campanha, concessão manual, push de teste
 CAMPAIGN_SIGNING_KEY     # assina o link de "parar de receber"
+VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY / VAPID_SUBJECT
 ```
+
+### Push: o que existe em cada ambiente (23/10)
+
+`VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` e `VAPID_SUBJECT` estão nos **dois**
+ambientes, com **pares diferentes**, gerados sem a privada passar pela tela. O
+cron `*/5 * * * *` está declarado nos dois — environment do wrangler **não herda**
+o bloco de cima do `wrangler.toml`.
+
+**Trocar o par VAPID invalida todas as assinaturas já gravadas**: a chave pública
+entra no `subscribe` do navegador, e o serviço de push recusa um envio assinado
+por outra. Se um dia for preciso trocar, é com a tabela `push_subscriptions`
+limpa e todo mundo assinando de novo.
+
+A chave pública de staging, que não é segredo e ajuda a conferir no aparelho:
+`BPxwmcCZ9XOsUJAqJncm8O0dUB9DQgDnJgXnoiWElJXaP4LeaTtEqSlZkj2G_XeCL9Pv03fLT4kUitcES84VXaY`.
 
 ### Staging — ainda faltam
 
 ```
 RESEND_API_KEY           # só se MAIL_PROVIDER virar "resend"
-VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY / VAPID_SUBJECT   # fase 8
 ```
 
 ### Produção — cadastrados em 23/10
@@ -127,6 +143,7 @@ VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY / VAPID_SUBJECT   # fase 8
 ```
 ADMIN_API_KEY            # gerado direto no wrangler, nunca exibido
 CAMPAIGN_SIGNING_KEY     # idem
+VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY / VAPID_SUBJECT   # par próprio de produção
 ```
 
 Os dois foram sorteados (`randomBytes(32)`) e enviados por pipe para o
@@ -138,7 +155,6 @@ em produção é preciso gerar outro e substituir — não há como recuperar es
 
 ```
 PAYT_INTEGRATION_KEY     # quando o Leo criar o postback de produção na Payt
-VAPID_*                  # fase 8
 ```
 
 ---
@@ -422,6 +438,17 @@ aviso de saúde como citação na primeira linha do corpo, e ele aparecia duas v
 na faixa do topo (que a §14 exige) e no texto. O Worker tira o primeiro bloco
 quando ele é exatamente o aviso.
 
+**O service worker serve a versão antiga depois do deploy.** O shell do app está
+no precache; publicar não troca o que já está no aparelho até o SW atualizar. No
+teste do push isso custou uma investigação: o onboarding não aparecia porque o
+navegador servia o bundle anterior. Ao conferir mudança de client em aparelho que
+já abriu o app, **feche e reabra** (ou limpe o SW no navegador). Vale para o
+celular do Leo também.
+
+**Tabela nova = linha nova no `TABELAS` do `test/ajuda.ts`.** Aconteceu de novo
+com `push_envios`: o `DELETE FROM users` passou a falhar com violação de FK, e o
+sintoma (12 testes quebrados em arquivos sem relação) não aponta para a causa.
+
 **Custom Domain não convive com registro A/CNAME no mesmo host.** O deploy sobe o
 Worker, falha só na parte de domínio (`code: 100117`) e **não desfaz o que já
 mudou** — fica meio aplicado. Apagar o registro antigo e rodar o deploy de novo
@@ -485,6 +512,9 @@ npm run db:migrate:production
 npm run seed:production
 npm run media:upload:production      # 34 áudios, 145 MB
 npm run deploy:production
+
+npm run push:teste -- --email <email> --env staging     # push de teste nos aparelhos
+npm run conta:excluir -- --email <email> --env staging  # prévia; --confirmar apaga
 
 npm run payt:last:staging            # últimos 5 postbacks, com o JSON
 npm run payt:reprocess:staging X9P8DY5

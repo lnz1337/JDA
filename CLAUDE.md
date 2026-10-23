@@ -525,7 +525,12 @@ Registrar `offer_viewed` e `offer_clicked` em `events`. Uma oferta dispensada pe
 
 ## 11. Push
 
-- Pedir permissão **só depois** do app instalado e com explicação na tela. No iOS, push só funciona com o PWA adicionado à tela inicial: o onboarding precisa de um passo visual "Compartilhar → Adicionar à Tela de Início".
+- Pedir permissão **só depois** do app instalado e com explicação na tela, e **só no toque do botão**: permissão negada no impulso não volta mais — o navegador não pergunta de novo, e a pessoa teria que achar o ajuste no sistema.
+- No iOS, push só funciona com o PWA adicionado à tela inicial (16.4+), então **instalar vem antes de pedir** — pedir antes seria pedir o que o aparelho não tem como dar. No Android o push funciona no navegador também.
+- **Estado do aparelho fica no aparelho** (`localStorage` com `try/catch` + `pushManager.getSubscription()`): instalou, dispensou, permissão. **Horário e fuso são da conta** e ficam no banco, para quem troca de celular não perder o que escolheu.
+- O onboarding em tela cheia roda **uma vez por aparelho**; depois quem convida é um card na Home, dispensável por 7 dias. Cada tela tem **uma ação só** e o "Agora não" sempre visível. "Agora não" **encerra** o onboarding em vez de emendar o passo seguinte: emendar logo depois de um "não" é ignorar a resposta.
+- Ao escolher o horário, o app manda **na hora** um push de confirmação. É ele que prova a corrente inteira — permissão, assinatura, serviço de push e service worker — enquanto a pessoa ainda está na tela.
+- Permissão concedida e sem assinatura neste aparelho (reinstalou, limpou dados): **assina de novo em silêncio**. A pessoa já disse sim.
 - **Cron a cada 5 minutos**, não de hora em hora: envia a "oração do dia" para quem está na hora, no fuso de cada um. O horário padrão é 7h e quase todo mundo fica nele — uma execução por hora juntaria a base inteira numa só, e execução de Worker tem limite de tempo e de subrequisições. Cada execução pega um lote (`LOTE`, 300).
 - **A trava contra lembrete repetido é `push_envios`**, com `(user_id, tipo, data_local)` de chave: a linha entra **antes** do envio, com `INSERT OR IGNORE`, e só envia quem conseguiu inserir. Duas execuções sobrepostas disputam a mesma chave e só uma ganha. `data_local` é o dia **no fuso do usuário**: em Brasília o dia vira três horas antes do dia UTC.
 - Quem recebe: está na hora, tem assinatura de push, tem acesso à jornada e **ainda não concluiu o dia de hoje**. Sem matrícula, o lembrete convida para o dia 1 e **não matricula** — o relógio da jornada começa quando a pessoa entra no programa (§6). Para de lembrar 7 dias depois de o dia 19 abrir; o que vem depois é da fase 10.
