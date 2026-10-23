@@ -112,9 +112,23 @@ function ItemDoDia({ licao, diario }: { licao: LicaoNaLista; diario: boolean }) 
       )}
 
       {bloqueado && (
-        <span className="mt-1 block text-base font-medium text-noite-700">
-          {textoDeLiberacao(licao.dias_para_liberar)}
-        </span>
+        <>
+          <span className="mt-1 block text-base font-medium text-noite-700">
+            {textoDeLiberacao(licao.dias_para_liberar)}
+          </span>
+          {/*
+           * A frase do dia que ainda não abriu vem depois da data e mais suave:
+           * quem olha a lista está procurando o que fazer hoje, e o que vem é
+           * convite, não instrução. Suave aqui é opacidade, não o tom claro da
+           * paleta — ele cairia abaixo de 4,5:1 sobre o fundo do bloqueado, e
+           * letra apagada é o primeiro problema de quem lê com 60 anos.
+           */}
+          {licao.frase && (
+            <span className="mt-1 block text-base leading-relaxed text-noite-700/80">
+              {licao.frase}
+            </span>
+          )}
+        </>
       )}
     </>
   );
