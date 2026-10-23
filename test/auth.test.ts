@@ -734,3 +734,127 @@ describe('ação sensível', () => {
     expect(await res.json()).toEqual({ error: 'email_em_uso' });
   });
 });
+
+/**
+ * Exclusão pelo suporte, enquanto a tela de Perfil não existe (§14). A conta é
+ * anonimizada e não tem volta, então a rota mostra antes de apagar.
+ */
+describe('exclusão de conta pelo admin', () => {
+  const comChave = () => ({ 'x-admin-key': envTeste.ADMIN_API_KEY ?? '' });
+
+  async function criarConta(email = EMAIL): Promise<string> {
+    const id = await criarUsuario(email);
+    await env.DB.prepare(
+      `INSERT INTO entitlements (id, user_id, product_id, source, status, granted_at)
+       VALUES (?, ?, 'jornada-meu-anjo', 'manual', 'active', ?)`,
+    )
+      .bind(`e-${id}`, id, new Date().toISOString())
+      .run();
+    return id;
+  }
+
+  it('sem a chave de admin, não faz nada', async () => {
+    await criarConta();
+    const res = await chamar('/api/admin/excluir-conta', {
+      method: 'POST',
+      body: JSON.stringify({ email: EMAIL, confirmar: true }),
+    });
+
+    expect(res.status).toBe(401);
+    const u = await env.DB.prepare('SELECT deleted_at FROM users WHERE email = ?')
+      .bind(EMAIL)
+      .first<{ deleted_at: string | null }>();
+    expect(u?.deleted_at).toBeNull();
+  });
+
+  it('a chave da Payt não exclui conta', async () => {
+    await criarConta();
+    const res = await chamar('/api/admin/excluir-conta', {
+      method: 'POST',
+      headers: { 'x-admin-key': envTeste.PAYT_INTEGRATION_KEY ?? '' },
+      body: JSON.stringify({ email: EMAIL, confirmar: true }),
+    });
+    expect(res.status).toBe(401);
+  });
+
+  it('sem confirmar, só mostra o que seria apagado', async () => {
+    await criarConta();
+
+    const res = await chamar('/api/admin/excluir-conta', {
+      method: 'POST',
+      headers: comChave(),
+      body: JSON.stringify({ email: EMAIL }),
+    });
+
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({
+      previa: true,
+      produtos: ['Jornada com São Miguel'],
+      assinatura: null,
+      assinatura_ativa: false,
+    });
+
+    // Prévia não apaga: é esse o ponto.
+    const u = await env.DB.prepare('SELECT deleted_at, email FROM users WHERE email = ?')
+      .bind(EMAIL)
+      .first<{ deleted_at: string | null; email: string }>();
+    expect(u?.deleted_at).toBeNull();
+    expect(u?.email).toBe(EMAIL);
+  });
+
+  it('com confirmar, anonimiza a conta', async () => {
+    const id = await criarConta();
+
+    const res = await chamar('/api/admin/excluir-conta', {
+      method: 'POST',
+      headers: comChave(),
+      body: JSON.stringify({ email: EMAIL, confirmar: true }),
+    });
+
+    expect(await res.json()).toMatchObject({ excluido: true });
+
+    const u = await env.DB.prepare('SELECT email, name, deleted_at FROM users WHERE id = ?')
+      .bind(id)
+      .first<{ email: string | null; name: string | null; deleted_at: string | null }>();
+    expect(u?.email).toBeNull();
+    expect(u?.name).toBeNull();
+    expect(u?.deleted_at).toBeTruthy();
+
+    // O histórico de compra fica, sem dono (§14).
+    const e = await env.DB.prepare('SELECT COUNT(*) AS n FROM entitlements WHERE user_id = ?')
+      .bind(id)
+      .first<{ n: number }>();
+    expect(e?.n).toBe(1);
+  });
+
+  it('avisa quando há assinatura válida, porque a cobrança não para sozinha', async () => {
+    const id = await criarConta();
+    await env.DB.prepare(
+      `INSERT INTO subscriptions (code, user_id, plan, status, next_charge_at, updated_at)
+       VALUES ('sub-1', ?, 'mensal', 'active', ?, ?)`,
+    )
+      .bind(id, new Date(Date.now() + 30 * 86_400_000).toISOString(), new Date().toISOString())
+      .run();
+
+    const res = await chamar('/api/admin/excluir-conta', {
+      method: 'POST',
+      headers: comChave(),
+      body: JSON.stringify({ email: EMAIL }),
+    });
+
+    expect(await res.json()).toMatchObject({
+      assinatura_ativa: true,
+      assinatura: { status: 'active' },
+    });
+  });
+
+  it('e-mail que não existe não vira exclusão silenciosa', async () => {
+    const res = await chamar('/api/admin/excluir-conta', {
+      method: 'POST',
+      headers: comChave(),
+      body: JSON.stringify({ email: 'ninguem@exemplo.com.br', confirmar: true }),
+    });
+    expect(res.status).toBe(404);
+    expect(await res.json()).toEqual({ error: 'usuario_nao_encontrado' });
+  });
+});

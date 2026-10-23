@@ -549,6 +549,15 @@ Registrar `offer_viewed` e `offer_clicked` em `events`. Uma oferta dispensada pe
   do remetente e o `Reply-To` do suporte. O e-mail de campanha continua levando o
   link de "parar de receber" nesse mesmo rodapé.
 - **Excluir conta** no Perfil: anonimiza o usuário (`deleted_at`, limpa e-mail, telefone e nome) e oculta as intenções dele.
+  - **Até a tela de Perfil existir (fase 7), a exclusão é feita pelo suporte**:
+    `npm run conta:excluir -- --email X --env production`. Sem `--confirmar` ele
+    só mostra o que seria apagado — a exclusão não tem volta, e e-mail digitado
+    errado apaga a conta de outra pessoa.
+  - **Fase 7**: o fluxo de exclusão (script e tela) **avisa quando existe
+    assinatura válida**, porque excluir a conta aqui **não cancela a cobrança na
+    Payt** — a pessoa continuaria pagando por um acesso que deixou de existir.
+    Cancelar é no painel da Payt, antes. O script já dá esse aviso; a tela do
+    Perfil precisa dar também, e de forma que não dê para passar batido.
 - Suporte visível no Perfil (e-mail + WhatsApp).
 - **Campanha de e-mail** (aviso de novidade, promoção) leva link de "parar de receber" assinado por HMAC, sem exigir login; marca `users.marketing_opt_out_at`. Quem opta por sair **continua recebendo** código de login e e-mail de compra, que são transacionais. Cada envio fica em `campaign_sends`, com chave única por campanha e usuário: nunca reenvia.
 - Domínio de envio novo sobe volume em ondas (50, 100, 250, 500, 1.000/dia). O disparo recusa limite maior que o dobro da onda anterior e para sozinho acima de 5% de falha.

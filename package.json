@@ -28,6 +28,7 @@
     "payt:last:production": "node scripts/payt-last.ts production 5",
     "payt:reprocess:staging": "node scripts/payt-reprocess.ts",
     "grant:staging": "node scripts/grant.ts",
+    "conta:excluir": "node scripts/conta-excluir.ts",
     "import:compradores": "node scripts/import-compradores.ts",
     "campanha:anuncio": "node scripts/campanha-anuncio.ts",
     "exportar:sem-email": "node scripts/exportar-sem-email.ts",
