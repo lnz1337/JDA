@@ -1,6 +1,6 @@
 # Jornada de 19 dias com São Miguel Arcanjo
 
-Conteúdo da jornada liberada com o front. Este arquivo é a **fonte da verdade**: o script `gerar_seed.py` lê este markdown e gera `seed/jornada-19-dias.json`. Mantenha a estrutura de cada dia (título no `##`, campos em lista, roteiro após `### Roteiro do áudio`).
+Conteúdo da jornada liberada com o front. Este arquivo é a **fonte da verdade**: o script `gerar_seed.py` lê este markdown e gera `seed/jornada-19-dias.json`. Mantenha a estrutura de cada dia (título no `##`, campos em lista, roteiro após `### Roteiro do áudio`). O **Resumo** é a frase curta do cartão da Home e da lista de dias (até ~60 caracteres).
 
 ## Produção
 
@@ -40,6 +40,7 @@ Conteúdo da jornada liberada com o front. Este arquivo é a **fonte da verdade*
 ---
 
 ## Dia 1 — O chamado
+- **Resumo:** Hoje você começa a caminhar ao lado de São Miguel.
 - **Leitura:** Apocalipse 12,7-9
 - **Reflexão:** São Miguel aparece na Escritura como o defensor do povo de Deus nas horas de luta. Hoje você começa a caminhar ao lado dele, entregando o pedido que carrega no coração.
 - **Prática:** Escreva seu pedido mais importante em uma frase, num papel. Dobre e guarde dentro da Bíblia ou ao lado da cama. No dia 19 você vai voltar a ele.
@@ -105,6 +106,7 @@ Fique com Deus. Em nome do Pai, do Filho e do Espírito Santo. Amém.
 ---
 
 ## Dia 2 — Quem é como Deus?
+- **Resumo:** O nome de Miguel coloca cada problema no tamanho certo.
 - **Leitura:** Daniel 12,1
 - **Reflexão:** O nome Miguel, em hebraico, é uma pergunta: "Quem é como Deus?". É a resposta da humildade diante do orgulho. Nenhum problema é maior do que Deus.
 - **Prática:** Sempre que uma preocupação apertar hoje, repita três vezes em silêncio: "Quem é como Deus? Ninguém é como Deus."
@@ -168,6 +170,7 @@ Fique com Deus. Em nome do Pai, do Filho e do Espírito Santo. Amém.
 ---
 
 ## Dia 3 — O escudo da proteção
+- **Resumo:** O salmo da proteção para você e para a sua casa.
 - **Leitura:** Salmo 91 (90)
 - **Reflexão:** O salmo de quem mora sob a proteção do Altíssimo fala de Deus como abrigo e diz que Ele manda os seus anjos guardarem os nossos caminhos. É a oração de proteção mais antiga que a gente pode rezar.
 - **Prática:** Antes de dormir, reze o Salmo 91 devagar. Depois, faça o sinal da cruz na porta de entrada da sua casa, pedindo a proteção de Deus para todos que moram nela.
@@ -229,6 +232,7 @@ Fique com Deus. Em nome do Pai, do Filho e do Espírito Santo. Amém.
 ---
 
 ## Dia 4 — Entregar o peso
+- **Resumo:** Aprenda a entregar a Deus o que está pesado demais.
 - **Leitura:** Mateus 11,28-30
 - **Reflexão:** Jesus chama para perto quem está cansado e sobrecarregado, e promete descanso. Entregar não é desistir: é parar de carregar sozinho.
 - **Prática:** Escreva as três preocupações que mais pesam hoje. Reze sobre cada uma, dizendo: "Senhor, isto eu te entrego." Guarde a lista junto com o papel do dia 1.
@@ -304,6 +308,7 @@ Fique com Deus. Em nome do Pai, do Filho e do Espírito Santo. Amém.
 ---
 
 ## Dia 5 — O anjo que caminha com você
+- **Resumo:** O amigo invisível que está com você desde o primeiro dia.
 - **Leitura:** Êxodo 23,20 e Salmo 34 (33),8
 - **Reflexão:** A Igreja ensina que, da infância até a morte, cada pessoa é acompanhada pela proteção de um anjo da guarda. Padre Pio tinha uma devoção enorme ao seu anjo e falava com ele todos os dias.
 - **Prática:** Reze a oração do Santo Anjo ao acordar e antes de dormir. Ao sair de casa, peça: "Santo Anjo, vai à minha frente."
@@ -365,6 +370,7 @@ Fique com Deus. Em nome do Pai, do Filho e do Espírito Santo. Amém.
 ---
 
 ## Dia 6 — A oração do Papa Leão XIII
+- **Resumo:** A história do canto que você ouve todos os dias.
 - **Leitura:** Efésios 6,10-12
 - **Reflexão:** Segundo a tradição, o Papa Leão XIII escreveu a oração a São Miguel depois de uma forte experiência espiritual, no fim do século dezenove. Por décadas ela foi rezada ao final das missas no mundo inteiro. É essa a oração do canto que você ouve todos os dias.
 - **Prática:** Aprenda de cor a oração a São Miguel em português. Reze-a ao acordar.
@@ -434,6 +440,7 @@ Fique com Deus. Em nome do Pai, do Filho e do Espírito Santo. Amém.
 ---
 
 ## Dia 7 — Uma semana de gratidão
+- **Resumo:** Uma semana de jornada: hoje é dia de agradecer.
 - **Leitura:** Salmo 103 (102),1-5
 - **Reflexão:** O salmista pede à própria alma que não se esqueça de nenhum benefício de Deus. Quem agradece passa a enxergar o que já tem, e não só o que falta.
 - **Prática:** Escreva sete coisas pelas quais você é grato nesta semana, uma para cada dia da jornada. Guarde junto com os papéis anteriores.
@@ -499,6 +506,7 @@ Fique com Deus. Em nome do Pai, do Filho e do Espírito Santo. Amém.
 ---
 
 ## Dia 8 — Perdoar para ficar livre
+- **Resumo:** O primeiro passo da libertação: soltar a corrente da mágoa.
 - **Leitura:** Mateus 18,21-22
 - **Reflexão:** Pedro pergunta quantas vezes deve perdoar, e Jesus responde: setenta vezes sete. O perdão não apaga o que aconteceu, mas solta a corrente que nos prende a quem nos feriu.
 - **Prática:** Pense em uma pessoa que te feriu e reze por ela pelo nome, mesmo que seja difícil.
@@ -560,6 +568,7 @@ Fique com Deus. Em nome do Pai, do Filho e do Espírito Santo. Amém.
 ---
 
 ## Dia 9 — Vencer o medo
+- **Resumo:** Dar nome ao medo e entregá-lo a São Miguel.
 - **Leitura:** Isaías 41,10
 - **Reflexão:** Deus diz ao seu povo: não tenha medo, eu estou com você, eu te sustento. O medo perde força quando é nomeado e entregue.
 - **Prática:** Dê nome ao seu maior medo hoje, escreva-o e reze sobre ele com a oração a São Miguel.
@@ -627,6 +636,7 @@ Fique com Deus. Em nome do Pai, do Filho e do Espírito Santo. Amém.
 ---
 
 ## Dia 10 — Paz para a mente ansiosa
+- **Resumo:** Alguns minutos de paz para os pensamentos que não param.
 - **Leitura:** Filipenses 4,6-7
 - **Reflexão:** São Paulo ensina a levar tudo a Deus em oração, com ação de graças, e promete uma paz que ultrapassa o entendimento. A ansiedade se acalma no ritmo da oração.
 - **Prática:** Fique cinco minutos sem celular. Respire devagar e repita a cada respiração: "São Miguel, guarda a minha mente."
@@ -698,6 +708,7 @@ Fique com Deus. Em nome do Pai, do Filho e do Espírito Santo. Amém.
 ---
 
 ## Dia 11 — Pelo lar e pela família
+- **Resumo:** Hoje a oração é por cada pessoa da sua casa.
 - **Leitura:** Josué 24,15
 - **Reflexão:** "Eu e a minha casa serviremos ao Senhor." A família é o primeiro lugar onde São Miguel é chamado a defender a paz.
 - **Prática:** Reze por cada pessoa da sua família pelo nome. Se puder, abençoe cada cômodo da casa com o sinal da cruz.
@@ -759,6 +770,7 @@ Fique com Deus. Em nome do Pai, do Filho e do Espírito Santo. Amém.
 ---
 
 ## Dia 12 — O pão de cada dia
+- **Resumo:** Entregar a Deus as contas do mês, com fé e sabedoria.
 - **Leitura:** Mateus 6,25-34
 - **Reflexão:** Jesus fala dos pássaros e dos lírios do campo e ensina a buscar primeiro o Reino. Pedir o pão de cada dia é confiar a Deus as nossas necessidades, e também cuidar com sabedoria do que Ele nos dá.
 - **Prática:** Separe um momento calmo para olhar as contas do mês. Escreva o que entra e o que sai. Coloque a mão sobre o papel e entregue tudo em oração.
@@ -820,6 +832,7 @@ Fique com Deus. Em nome do Pai, do Filho e do Espírito Santo. Amém.
 ---
 
 ## Dia 13 — O trabalho das suas mãos
+- **Resumo:** Oferecer o seu trabalho a Deus e dar um passo concreto.
 - **Leitura:** Salmo 90 (89),17 e Colossenses 3,23
 - **Reflexão:** O salmista pede que Deus confirme a obra das nossas mãos. Oferecer o trabalho a Deus, ou a busca por ele, dá sentido e força ao esforço de cada dia.
 - **Prática:** Ofereça o seu dia de trabalho a Deus logo cedo. Dê hoje um passo concreto: enviar um currículo, fazer uma ligação, terminar a tarefa adiada.
@@ -879,6 +892,7 @@ Fique com Deus. Em nome do Pai, do Filho e do Espírito Santo. Amém.
 ---
 
 ## Dia 14 — Pelos que sofrem na saúde
+- **Resumo:** Uma oração por quem está doente e por quem cuida.
 - **Leitura:** Tiago 5,13-16
 - **Reflexão:** São Tiago ensina que a oração feita com fé sustenta o doente, e pede que a comunidade reze uns pelos outros. Rezar por quem está doente é também cuidar: estar perto, acompanhar, apoiar o tratamento.
 - **Prática:** Reze por uma pessoa doente pelo nome. Se puder, ligue ou visite essa pessoa hoje.
@@ -942,6 +956,7 @@ Fique com Deus. Em nome do Pai, do Filho e do Espírito Santo. Amém.
 ---
 
 ## Dia 15 — Mãos abertas
+- **Resumo:** A bênção que você recebe foi feita para circular.
 - **Leitura:** 2 Coríntios 9,6-8
 - **Reflexão:** Quem semeia com generosidade colhe com generosidade. A bênção que recebemos é feita para circular.
 - **Prática:** Faça hoje um gesto de generosidade: uma ajuda, uma doação, um tempo dado a alguém.
@@ -1001,6 +1016,7 @@ Fique com Deus. Em nome do Pai, do Filho e do Espírito Santo. Amém.
 ---
 
 ## Dia 16 — O tempo de Deus
+- **Resumo:** Reler o pedido do primeiro dia e confiar no tempo de Deus.
 - **Leitura:** Eclesiastes 3,1-8 e Habacuc 2,3
 - **Reflexão:** Há um tempo para cada coisa debaixo do céu. A espera não é abandono: é o tempo em que Deus trabalha no que ainda não vemos.
 - **Prática:** Releia o papel do dia 1. Reze: "Senhor, eu confio no teu tempo."
@@ -1066,6 +1082,7 @@ Fique com Deus. Em nome do Pai, do Filho e do Espírito Santo. Amém.
 ---
 
 ## Dia 17 — A voz no silêncio
+- **Resumo:** Um minuto de silêncio para ouvir o que Deus quer dizer.
 - **Leitura:** 1 Reis 19,11-13
 - **Reflexão:** Elias não encontrou Deus no vento forte, nem no terremoto, nem no fogo, mas numa brisa suave. Deus costuma falar no silêncio.
 - **Prática:** Fique dez minutos em silêncio, sem celular e sem barulho. Depois, anote o que veio ao seu coração.
@@ -1123,6 +1140,7 @@ Fique com Deus. Em nome do Pai, do Filho e do Espírito Santo. Amém.
 ---
 
 ## Dia 18 — A armadura de Deus
+- **Resumo:** As armas de São Miguel para as batalhas de cada dia.
 - **Leitura:** Efésios 6,13-18
 - **Reflexão:** São Paulo descreve a armadura de Deus: a verdade, a justiça, a fé, a Palavra, a oração. São Miguel luta com as armas de Deus, e nós também.
 - **Prática:** Escolha um hábito que te afasta de Deus ou te prejudica e decida cortá-lo, começando hoje.
@@ -1184,6 +1202,7 @@ Fique com Deus. Em nome do Pai, do Filho e do Espírito Santo. Amém.
 ---
 
 ## Dia 19 — Consagração a São Miguel
+- **Resumo:** O último dia: a sua consagração a São Miguel.
 - **Leitura:** Apocalipse 12,7-11 e Judas 9
 - **Reflexão:** Ao fim da jornada, você se consagra a São Miguel: escolhe tê-lo como protetor para a vida inteira. A jornada termina, mas a caminhada continua.
 - **Prática:** Reze a consagração a São Miguel. Releia todos os papéis guardados desde o dia 1 e escreva o que mudou em você. Presente de conclusão: o Hino de São Miguel, para rezar cantando.

@@ -14,6 +14,7 @@ PROGRAM_ID = "jornada-19"
 PRODUCT_ID = "jornada-meu-anjo"
 
 CAMPOS = {
+    "Resumo": "resumo",
     "Leitura": "leitura",
     "Reflexão": "reflexao",
     "Prática": "pratica",
@@ -83,6 +84,7 @@ def main() -> None:
                 "program_id": PROGRAM_ID,
                 "day": d["day"],
                 "title": d["title"],
+                "summary": d["resumo"],
                 "body_md": body_md(d),
                 "push_text": d["push_text"],
                 "audio_key": f"jornada/d{d['day']:02d}.mp3",
