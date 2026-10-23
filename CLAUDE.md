@@ -19,7 +19,7 @@ Toda a monetização roda pela **Payt** (checkout + postback). O app nunca proce
 |---|---|
 | Runtime | Um único Cloudflare Worker servindo API + assets estáticos (Workers Static Assets) |
 | API | Hono + TypeScript |
-| Front | Vite + React + TypeScript + `vite-plugin-pwa` (manifest + service worker) |
+| Front | Vite + React + TypeScript + `vite-plugin-pwa` (manifest + service worker). **Sem biblioteca de rota**: `client/lib/rota.ts` resolve por `pathname` em poucas linhas, porque o app tem poucas telas e precisa abrir rápido em celular antigo. Se uma fase pedir mais (rota aninhada, carregamento por rota), a troca fica contida nesse arquivo |
 | Build/dev | `@cloudflare/vite-plugin`: o Worker roda dentro do `vite dev` (mesma origem para API e client) e o build gera `dist/client` + `dist/jda_pwa` |
 | Testes | Vitest + `@cloudflare/vitest-plugin` (sucessor do `@cloudflare/vitest-pool-workers`, que foi descontinuado) |
 | Estilo | Tailwind |
@@ -69,8 +69,9 @@ cabeçalho no `src/worker/index.ts`, em todos os ambientes.
 │  │  ├─ services/       # entitlements.ts, payt.ts, push.ts, offers.ts, mail.ts
 │  │  └─ cron.ts
 │  ├─ client/            # React PWA
-│  │  ├─ screens/        # Onboarding, Home, Jornada, Player, Loja, Produto, Mural, Intencao, Perfil, Assinatura
-│  │  ├─ components/
+│  │  ├─ screens/        # Inicio, Entrar, Home, Programa, Licao, SemAcesso (Loja, Mural, Perfil nas fases seguintes)
+│  │  ├─ components/     # Player, TextoMd
+│  │  ├─ lib/            # api.ts, rota.ts (roteador próprio, por pathname)
 │  │  └─ sw/             # service worker custom (push + cache)
 │  └─ shared/            # tipos e constantes usados nos dois lados
 ├─ migrations/           # SQL D1 numerado
@@ -371,8 +372,34 @@ Toda rota de conteúdo (`/api/lessons/:id`, `/media/*`) chama `hasAccess`. Mídi
 ### Liberação por dia (`unlock_rule = 'daily'`)
 
 - Dia N liberado quando `diasDesde(enrollment.started_at, timezone do usuário) >= N - 1`.
+- `diasDesde` conta **virada de dia no fuso do usuário**, não período de 24 h: quem
+  começou às 23h abre o dia 2 à meia-noite e meia, não no dia seguinte às 23h.
 - Não exige concluir o dia anterior (quem atrasa não fica travado), mas a UI destaca o "dia de hoje".
-- `enrollment` é criado no primeiro acesso ao programa, não na compra.
+- `enrollment` é criado no primeiro acesso ao programa, não na compra. A Home
+  **não** matricula: desenhar a tela não é começar a jornada.
+- `GET /api/licoes/:id` confere o produto **e** o dia. Só o produto deixaria
+  adivinhar a URL e ler o dia 19 no dia 1.
+- Dia bloqueado sempre diz **quando abre** ("Libera amanhã", "Libera em X dias").
+  Cadeado sem explicação faz a pessoa achar que o acesso falhou e pedir suporte.
+
+### Player (fase 5)
+
+- **`Range` é obrigatório no `/media/*`**, não enfeite: o player de áudio do iOS
+  pede o arquivo em pedaços e **não toca** quem responde 200 com o arquivo inteiro.
+- A chave do R2 **nunca** vai para o client: a lição devolve `/media/<chave>`, e o
+  Worker confere que a chave pertence a uma lição antes de servir — senão bastaria
+  pedir `/media/qualquer-coisa` para ler o bucket.
+- **Media Session API** com título, contexto e `playbackState`, para o áudio seguir
+  com a tela apagada e aparecer nos controles da tela de bloqueio e do fone.
+- A posição de escuta fica em `localStorage`, por faixa: oração interrompida é
+  regra, não exceção. É conveniência, então toda leitura e escrita vai em
+  `try/catch` e a tela funciona sem ela.
+- **`lesson_started` sai do evento `play` do áudio, não do clique no botão**:
+  tocar pela tela de bloqueio ou pelo fone também é começar a oração.
+  `audio_completed` sai acima de 90% da faixa, e `lesson_completed` só quando o
+  progresso é **novo** — tocar "concluí" duas vezes não pode virar duas linhas no
+  funil D1 → D19.
+- A frase curta do dia vem do `summary`; faltando ele, do `**Intenção:**` do corpo.
 
 ## 7. Integração Payt (postback V1)
 

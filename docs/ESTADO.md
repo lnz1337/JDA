@@ -4,7 +4,7 @@ Retrato para uma sessão nova continuar daqui. A spec é o [CLAUDE.md](../CLAUDE
 este arquivo registra o que **não** cabe lá: o que já rodou, o que está só em
 staging, o que depende do Leo e as armadilhas que custaram caro.
 
-`npm run typecheck && npm test` limpo, **166 testes** em 10 arquivos.
+`npm run typecheck && npm test` limpo, **203 testes** em 11 arquivos.
 
 ## Os dois ambientes
 
@@ -37,8 +37,9 @@ DMARC continuam onde estavam.
 | 2 — Banco | **concluída** |
 | 3 — Postback Payt | **concluída e validada com a Payt de verdade** |
 | 4 — Auth | **concluída**, com e-mail entregando. Revisada 22/10 para o público 55+: link de acesso direto (com tela de confirmação, para pré-visualizador de link não gastar o token), sessão de 1 ano, código em ação sensível, tela de código mais fácil |
-| 5 — Jornada | **não começou** ← próxima |
-| 6 a 12 | não começaram |
+| 5 — Jornada | **concluída em 23/10**: Home com o cartão do dia, lista de dias com estado, player com Range/Media Session/retomada, conclusão e os eventos do funil |
+| 6 — Loja | **não começou** ← próxima |
+| 7 a 12 | não começaram |
 
 ### Fora do escopo das fases, já construído
 
@@ -46,6 +47,21 @@ A **campanha de anúncio do app** (importador da base, disparo em ondas, opt-out
 exportação de quem não tem e-mail) foi construída adiantada, a pedido. Está
 pronta e testada, mas **nunca foi disparada para ninguém além dos dois e-mails
 de teste**. O texto é do pipeline de conteúdo (`conteudo/emails/anuncio-app.md`).
+
+### O estado do usuário de teste (staging)
+
+O `leonardovcs2022@gmail.com` ficou pronto para um teste de ponta a ponta no
+celular: matrícula **recomeçada hoje**, progresso **zerado** e dois produtos
+ativos — `jornada-meu-anjo` e `manual-purificacao` (este concedido em 23/10 só
+para conferir produto avulso: `unlock_rule = 'all'`, "Parte 1 de 4" e o aviso de
+saúde no topo).
+
+Então, abrindo o app: dia 1 é hoje, dia 2 diz "Libera amanhã", nada concluído.
+
+Os eventos do funil em `events` (`lesson_started`, `audio_completed`,
+`lesson_completed`, um de cada) são do teste desta sessão e **não têm progresso
+correspondente**, porque o progresso foi zerado depois. Não é inconsistência de
+código: é resíduo de teste.
 
 ### O que ficou de fora de propósito
 
@@ -390,6 +406,22 @@ dispara. Por isso a tela **não pode** se enviar sozinha por JavaScript — seri
 imitável por pré-visualizador — e por isso ela é igual para token válido, vencido
 e inventado, sem nem consultar o banco.
 
+**Evento de "começou a ouvir" não pode nascer no clique do botão.** O
+`lesson_started` saía do `onClick` do Tocar, e sumiu num teste que deu play pelo
+elemento de áudio — que é exatamente o que acontece quando a pessoa toca pelos
+controles da tela de bloqueio ou do fone. Ele passou para o evento `play` do
+próprio `<audio>`, que pega todos os caminhos.
+
+**O `summary` das lições da jornada está vazio no seed.** O campo é do pipeline de
+conteúdo (§3) e é ele que deveria dar a frase curta do cartão da Home. Enquanto
+não vier, o app usa a linha `**Intenção:**` do corpo, que funciona bem — mas é
+cadeia de recurso, não a fonte certa. **Vale pedir ao pipeline que preencha.**
+
+**Texto de conteúdo repetia o aviso obrigatório.** O `manual-purificacao` trazia o
+aviso de saúde como citação na primeira linha do corpo, e ele aparecia duas vezes:
+na faixa do topo (que a §14 exige) e no texto. O Worker tira o primeiro bloco
+quando ele é exatamente o aviso.
+
 **Custom Domain não convive com registro A/CNAME no mesmo host.** O deploy sobe o
 Worker, falha só na parte de domínio (`code: 100117`) e **não desfaz o que já
 mudou** — fica meio aplicado. Apagar o registro antigo e rodar o deploy de novo
@@ -419,7 +451,7 @@ Em ordem de dependência. O que está pronto não aparece aqui.
 
 | # | Falta | Depende de | Por quê trava |
 |---|---|---|---|
-| 1 | **Fase 5: Jornada** (Home, lista de dias, Player) | sessão | Produção está no ar, mas quem entrar só vê a lista de produtos liberados. **É isto que impede convidar cliente.** |
+| 1 | ~~Fase 5: Jornada~~ | — | **Feita em 23/10.** Está só em staging: produção não recebeu deploy desde então, por pedido do Leo |
 | 2 | **Códigos do UP1 e do UP2** no `payt_map` | Leo | Sem eles o importador para, e comprador de upsell não recebe acesso em produção |
 | 3 | **Postback de produção** na Payt + `PAYT_INTEGRATION_KEY` de produção | Leo | Sem isso compra nova em produção não libera nada |
 | 4 | **CSV de vendas** e importação da base | Leo (itens 2 e 3) | É a base da campanha |
@@ -428,9 +460,15 @@ Em ordem de dependência. O que está pronto não aparece aqui.
 | 7 | **Identidade visual** (ícones ainda são placeholder) | Leo | A raiz já é pública: o ícone aparece |
 | 8 | **Campanha**, em ondas, começando por Gmail | 2, 4, 5, 6 e a fase 5 | O e-mail promete um app com a jornada funcionando |
 
+**Produção está uma versão atrás**: a fase 5 foi publicada só em staging, porque o
+Leo pediu para não publicar produção sem o aval dele. Quando ele der o aval, é
+`npm run deploy:production` — o banco de produção já tem as migrations e o seed, e
+o R2 já tem os áudios.
+
 Fora da fila, se o Leo quiser: **`www` → raiz canonizado** (hoje os dois servem o
-app; canonizar é uma Redirect Rule no painel) e **SNDS/JMRP da Microsoft**, para
-ver de dentro o que o Outlook acha do domínio.
+app; canonizar é uma Redirect Rule no painel), **SNDS/JMRP da Microsoft** para ver
+de dentro o que o Outlook acha do domínio, e **`summary` das lições da jornada**
+preenchido pelo pipeline de conteúdo (ver as armadilhas).
 
 ## 9. Comandos que a próxima sessão vai querer
 

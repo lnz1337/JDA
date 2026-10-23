@@ -1,29 +1,18 @@
 import { useCallback, useEffect, useState } from 'react';
-import { APP_NAME } from '../shared/constants';
 import { api, type Me } from './lib/api';
+import { irPara, useRota } from './lib/rota';
 import { Entrar } from './screens/Entrar';
+import { Home } from './screens/Home';
 import { Inicio } from './screens/Inicio';
+import { Licao } from './screens/Licao';
+import { Programa } from './screens/Programa';
 import { SemAcesso } from './screens/SemAcesso';
 
 type Estado = { fase: 'carregando' } | { fase: 'deslogado' } | { fase: 'logado'; me: Me };
 
-/**
- * Ainda não há roteador (fase 5 provavelmente traz um). Deslogado, só duas telas
- * importam: a apresentação em `/` e o login em `/entrar` — e é por `/entrar` que
- * chegam os links que já vêm com e-mail e motivo preenchidos.
- */
-function telaInicial(): 'inicio' | 'entrar' {
-  const p = location.pathname;
-  const parametros = new URLSearchParams(location.search);
-  // Veio de um link nosso (e-mail preenchido ou link de acesso que não serviu):
-  // mandar essa pessoa para a apresentação seria um passo a mais sem motivo.
-  if (p === '/entrar' || parametros.has('e') || parametros.has('motivo')) return 'entrar';
-  return 'inicio';
-}
-
 export function App() {
   const [estado, setEstado] = useState<Estado>({ fase: 'carregando' });
-  const [tela, setTela] = useState<'inicio' | 'entrar'>(telaInicial);
+  const rota = useRota();
 
   const carregar = useCallback(async () => {
     try {
@@ -37,77 +26,32 @@ export function App() {
     void carregar();
   }, [carregar]);
 
-  // "Voltar" precisa voltar de verdade: sem isto a URL vira `/` e a tela fica no
-  // login, que é o tipo de descompasso que faz a pessoa achar que travou.
-  useEffect(() => {
-    const aoVoltar = () => setTela(telaInicial());
-    addEventListener('popstate', aoVoltar);
-    return () => removeEventListener('popstate', aoVoltar);
-  }, []);
-
   const sair = useCallback(async () => {
     await api('/api/auth/sair', { method: 'POST' }).catch(() => undefined);
     setEstado({ fase: 'deslogado' });
+    irPara('/');
   }, []);
 
   if (estado.fase === 'carregando') {
     return (
       <main className="flex min-h-dvh items-center justify-center">
-        <p className="text-sm text-noite-300">carregando…</p>
+        <p className="text-lg text-noite-300">carregando…</p>
       </main>
     );
   }
 
   if (estado.fase === 'deslogado') {
-    if (tela === 'inicio') {
-      return (
-        <Inicio
-          aoEntrar={() => {
-            // Sem roteador, mas a URL precisa acompanhar: quem apertar "voltar"
-            // volta para a apresentação em vez de sair do app.
-            history.pushState({}, '', '/entrar');
-            setTela('entrar');
-          }}
-        />
-      );
-    }
-    return <Entrar aoEntrar={carregar} />;
+    // Deslogado só tem duas telas: a apresentação pública e o login.
+    if (rota.nome === 'entrar') return <Entrar aoEntrar={carregar} />;
+    return <Inicio aoEntrar={() => irPara('/entrar')} />;
   }
 
   if (!estado.me.temAcesso) {
     return <SemAcesso suporte={estado.me.suporte} aoSair={sair} />;
   }
 
-  const primeiro = estado.me.usuario.nome?.split(' ')[0];
+  if (rota.nome === 'programa') return <Programa id={rota.id} />;
+  if (rota.nome === 'licao') return <Licao id={rota.id} />;
 
-  return (
-    <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-6 px-6 py-12">
-      <header className="space-y-1">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-ouro-500">
-          {primeiro ? `Olá, ${primeiro}` : 'Olá'}
-        </p>
-        <h1 className="text-2xl font-semibold text-noite-900">{APP_NAME}</h1>
-      </header>
-
-      <section className="space-y-3">
-        <h2 className="text-sm font-semibold text-noite-900">Liberado para você</h2>
-        <ul className="space-y-2">
-          {estado.me.produtos.map((p) => (
-            <li
-              key={p.id}
-              className="rounded-2xl border border-noite-100 bg-white px-4 py-3 text-sm font-medium text-noite-900"
-            >
-              {p.name}
-            </li>
-          ))}
-        </ul>
-        {/* A jornada e o player entram na fase 5 (CLAUDE.md §16). */}
-        <p className="text-sm text-noite-300">A jornada começa aqui em breve.</p>
-      </section>
-
-      <button type="button" onClick={sair} className="mt-auto text-sm text-noite-700 underline">
-        Sair
-      </button>
-    </main>
-  );
+  return <Home me={estado.me} aoSair={sair} />;
 }

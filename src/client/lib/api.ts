@@ -27,3 +27,14 @@ export interface Me {
   temAcesso: boolean;
   suporte: string | null;
 }
+
+/** Eventos do funil que só o client sabe (§13). Falha de evento nunca atrapalha. */
+export function registrarEvento(
+  nome: 'lesson_started' | 'audio_completed',
+  props: { lesson_id?: string; dia?: number; programa?: string } = {},
+): void {
+  void api('/api/eventos', {
+    method: 'POST',
+    body: JSON.stringify({ nome, ...props }),
+  }).catch(() => undefined);
+}

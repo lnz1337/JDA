@@ -5,6 +5,8 @@ import { admin } from './routes/admin';
 import { acesso, auth, me } from './routes/auth';
 import { campanha, parar } from './routes/campanha';
 import { health } from './routes/health';
+import { eventos, jornada, licoes } from './routes/jornada';
+import { media } from './routes/media';
 import { payt } from './routes/payt';
 
 const app = new Hono<AppBindings>();
@@ -26,6 +28,10 @@ app.use('/parar', async (c, next) => {
 
 app.route('/api/auth', auth);
 app.route('/api/me', me);
+app.route('/api/programas', jornada);
+app.route('/api/licoes', licoes);
+app.route('/api/eventos', eventos);
+app.route('/media', media);
 app.route('/api/admin', admin);
 app.route('/api/campanha', campanha);
 app.route('/parar', parar);
