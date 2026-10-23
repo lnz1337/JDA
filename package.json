@@ -38,6 +38,7 @@
     "deploy:production": "npm run build:production && wrangler deploy"
   },
   "dependencies": {
+    "@block65/webcrypto-web-push": "2.0.0",
     "hono": "^4.13.13",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",

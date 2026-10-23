@@ -8,6 +8,7 @@ import { health } from './routes/health';
 import { eventos, jornada, licoes } from './routes/jornada';
 import { media } from './routes/media';
 import { payt } from './routes/payt';
+import { push } from './routes/push';
 
 const app = new Hono<AppBindings>();
 
@@ -32,6 +33,7 @@ app.route('/api/programas', jornada);
 app.route('/api/licoes', licoes);
 app.route('/api/eventos', eventos);
 app.route('/media', media);
+app.route('/api/push', push);
 app.route('/api/admin', admin);
 app.route('/api/campanha', campanha);
 app.route('/parar', parar);
