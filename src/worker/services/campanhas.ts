@@ -36,6 +36,8 @@ export interface Destinatario {
   email: string;
   nome: string | null;
   produtos: string;
+  /** Compra mais recente (ISO), para a ordem das ondas. */
+  compra?: string | null;
 }
 
 export interface RelatorioCampanha {
@@ -50,6 +52,7 @@ export interface RelatorioCampanha {
   limite: number;
   ondaAnterior: number;
   dryRun: boolean;
+  provedores: string[];
   erros: string[];
 }
 
@@ -91,30 +94,89 @@ export async function ondaAnterior(db: D1Database, campanha: string): Promise<nu
 }
 
 /**
+ * Provedores que dá para priorizar numa onda, e os domínios de cada um.
+ *
+ * Serve para subir reputação onde ela já existe antes de encostar em quem é
+ * mais severo: o Gmail entrega na caixa de entrada desde o primeiro dia, e o
+ * Outlook manda para o lixo eletrônico enquanto o domínio é novo (SCL 5, mesmo
+ * com SPF, DKIM e DMARC passando).
+ */
+export const PROVEDORES: Record<string, string[]> = {
+  gmail: ['gmail.com', 'googlemail.com'],
+  outlook: [
+    'outlook.com', 'outlook.com.br', 'hotmail.com', 'hotmail.com.br',
+    'live.com', 'live.com.br', 'msn.com',
+  ],
+  yahoo: ['yahoo.com', 'yahoo.com.br', 'ymail.com', 'rocketmail.com'],
+  icloud: ['icloud.com', 'me.com', 'mac.com'],
+  uol: ['uol.com.br', 'bol.com.br'],
+  terra: ['terra.com.br'],
+  ig: ['ig.com.br'],
+};
+
+/**
+ * Monta a prioridade por provedor. Os domínios vão como parâmetro; só a posição
+ * do CASE é interpolada, e ela vem de chave validada contra o PROVEDORES.
+ */
+function ordemPorProvedor(provedores: string[]): { sql: string; valores: string[] } {
+  const desconhecidos = provedores.filter((p) => !(p in PROVEDORES));
+  if (desconhecidos.length > 0) {
+    throw new Error(
+      `provedor desconhecido: ${desconhecidos.join(', ')}. ` +
+        `Conhecidos: ${Object.keys(PROVEDORES).join(', ')}.`,
+    );
+  }
+  // Vazio não vira `0`: inteiro solto no ORDER BY do SQLite é índice de coluna,
+  // não constante, e `ORDER BY 0` é erro de intervalo.
+  if (provedores.length === 0) return { sql: '', valores: [] };
+
+  const dominio = "lower(substr(u.email, instr(u.email, '@') + 1))";
+  const valores: string[] = [];
+  const casos = provedores.map((p, i) => {
+    const dominios = PROVEDORES[p] ?? [];
+    valores.push(...dominios);
+    return `WHEN ${dominio} IN (${dominios.map(() => '?').join(',')}) THEN ${i}`;
+  });
+
+  // Quem não está na lista vai para o fim, sem sair da seleção.
+  return { sql: `CASE ${casos.join(' ')} ELSE ${provedores.length} END`, valores };
+}
+
+/**
  * Quem ainda não recebeu: tem e-mail, não optou por sair, tem pelo menos um
  * produto ativo e não está em `campaign_sends`.
+ *
+ * A ordem é **compra mais recente primeiro** — quem comprou ontem lembra da
+ * marca e reclama menos de receber — e, se vier `provedores`, o provedor manda
+ * na ordem e a data desempata dentro de cada um.
  */
 export async function destinatarios(
   db: D1Database,
   campanha: string,
   limite: number,
+  provedores: string[] = [],
 ): Promise<Destinatario[]> {
+  const ordem = ordemPorProvedor(provedores);
+
   const { results } = await db
     .prepare(
       `SELECT u.id AS user_id, u.email, u.name AS nome,
               (SELECT GROUP_CONCAT(p.name, '|')
                  FROM entitlements e JOIN products p ON p.id = e.product_id
-                WHERE e.user_id = u.id AND e.status = 'active') AS produtos
+                WHERE e.user_id = u.id AND e.status = 'active') AS produtos,
+              (SELECT MAX(e.granted_at)
+                 FROM entitlements e
+                WHERE e.user_id = u.id AND e.status = 'active') AS compra
          FROM users u
         WHERE u.deleted_at IS NULL
           AND u.email IS NOT NULL
           AND u.marketing_opt_out_at IS NULL
           AND EXISTS (SELECT 1 FROM entitlements e WHERE e.user_id = u.id AND e.status = 'active')
           AND NOT EXISTS (SELECT 1 FROM campaign_sends c WHERE c.campaign = ? AND c.user_id = u.id)
-        ORDER BY u.created_at
+        ORDER BY ${ordem.sql ? `${ordem.sql}, ` : ''}compra DESC, u.created_at DESC
         LIMIT ?`,
     )
-    .bind(campanha, limite)
+    .bind(campanha, ...ordem.valores, limite)
     .all<Destinatario>();
 
   return results;
@@ -162,6 +224,8 @@ export interface OpcoesEnvio {
   dryRun: boolean;
   /** Manda tudo para este endereço, sem tocar na base. */
   testePara?: string | null;
+  /** Provedores na frente da fila, na ordem dada (ver PROVEDORES). */
+  provedores?: string[];
 }
 
 export async function enviarCampanha(
@@ -213,7 +277,7 @@ export async function enviarCampanha(
           produtos: 'Jornada com São Miguel',
         },
       ]
-    : await destinatarios(env.DB, campanha, limite);
+    : await destinatarios(env.DB, campanha, limite, opcoes.provedores ?? []);
 
   let enviados = 0;
   let falhas = 0;
@@ -288,6 +352,7 @@ export async function enviarCampanha(
     limite,
     ondaAnterior: anterior,
     dryRun,
+    provedores: opcoes.provedores ?? [],
     erros: erros.slice(0, 20),
   };
 }

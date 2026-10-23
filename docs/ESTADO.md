@@ -5,7 +5,7 @@ este arquivo registra o que **não** cabe lá: o que já rodou, o que está só 
 staging, o que depende do Leo e as armadilhas que custaram caro.
 
 Último commit: o desta sessão — ajustes de e-mail e de login para o público 55+.
-`npm run typecheck && npm test` limpo, **151 testes** em 9 arquivos. Staging no ar
+`npm run typecheck && npm test` limpo, **166 testes** em 10 arquivos. Staging no ar
 em **https://jda-pwa-staging.leonardovcs2022.workers.dev**.
 
 ---
@@ -17,7 +17,7 @@ em **https://jda-pwa-staging.leonardovcs2022.workers.dev**.
 | 1 — Scaffold | **concluída** |
 | 2 — Banco | **concluída** |
 | 3 — Postback Payt | **concluída e validada com a Payt de verdade** |
-| 4 — Auth | **concluída**, com e-mail entregando. Revisada 22/10 para o público 55+: link de acesso direto, sessão de 1 ano, código em ação sensível, tela de código mais fácil |
+| 4 — Auth | **concluída**, com e-mail entregando. Revisada 22/10 para o público 55+: link de acesso direto (com tela de confirmação, para pré-visualizador de link não gastar o token), sessão de 1 ano, código em ação sensível, tela de código mais fácil |
 | 5 — Jornada | **não começou** ← próxima |
 | 6 a 12 | não começaram |
 
@@ -169,14 +169,19 @@ Hotmail/Outlook/Live. Antes de disparar as ondas grandes, vale considerar
 [cadastrar o domínio no SNDS da Microsoft](https://sendersupport.olc.protection.outlook.com/snds/)
 e no JMRP, e acompanhar o `rua` do DMARC (`suporte@jornadacomeuanjo.com`).
 
-### Segunda rodada (22/10, depois dos modelos novos)
+### Segunda e terceira rodadas (22/10)
 
-Quatro envios pelo staging, sem falha: código de login e anúncio para
-`leonardovcs2022@gmail.com` e `anacacancelli@outlook.com`. **A pasta de cada um
-ainda não foi conferida** — o Leo ia dizer. O que mudou desde a primeira rodada é
-só o conteúdo (HTML completo, letra grande, rodapé sem CNPJ, link que já entra);
-SPF, DKIM e DMARC são os mesmos, então uma mudança de pasta aqui é reputação ou
-conteúdo, não autenticação.
+Seis envios pelo staging, sem falha nenhuma: código de login e anúncio para
+`leonardovcs2022@gmail.com` e `anacacancelli@outlook.com`, mais o reenvio do
+anúncio para os dois com a tela de confirmação já no ar. **A pasta de cada um
+ainda não foi conferida.** O que mudou desde a primeira rodada é só o conteúdo
+(HTML completo, letra grande, rodapé sem CNPJ, link que já entra); SPF, DKIM e
+DMARC são os mesmos, então mudança de pasta aqui é reputação ou conteúdo, não
+autenticação.
+
+Um dos tokens da segunda rodada apareceu como **usado** antes do reenvio. Pode
+ter sido o Leo testando o link, ou um leitor de link do provedor — que é
+exatamente o motivo de o GET ter deixado de consumir o token.
 
 ### DNS do envio
 
@@ -208,6 +213,12 @@ evita veredito de "sem SPF" em verificador ingênuo.
    `npm run import:compradores -- vendas.csv --colunas`, **mostra o mapeamento de
    colunas e confirma antes de importar**.
 
+   Desde 22/10 o importador também procura uma **coluna de data da venda** e a
+   grava no `granted_at` do entitlement — é por ela que a campanha ordena as
+   ondas. Se o CSV não trouxer data que dê para ler, ele avisa quantas linhas
+   ficaram com a data da importação, e para essas a ordem não diz nada. Vale
+   conferir no `--colunas` qual coluna ele escolheu antes de importar de verdade.
+
 ### Segurança
 
 3. **Trocar a `PAYT_INTEGRATION_KEY`.** Ela apareceu em claro numa sessão de
@@ -216,48 +227,70 @@ evita veredito de "sem SPF" em verificador ingênuo.
    `npx wrangler secret put PAYT_INTEGRATION_KEY --env staging`. Nenhum arquivo
    depende dela.
 
-### DNS, no painel (o token não tem permissão de DNS)
+### DNS
 
-4. **Tirar o `rua=mailto:suporte@…` do `_dmarc.mail.jornadacomeuanjo.com`**,
-   deixando `v=DMARC1; p=none;`. Pedido em 22/10 e **não feito**: o token OAuth do
-   wrangler tem `zone (read)`, não escreve registro de DNS.
+4. ~~Tirar o `rua` do `_dmarc.mail`~~ **feito em 22/10, pela API**:
+   `_dmarc.mail.jornadacomeuanjo.com` agora é `v=DMARC1; p=none;`. O apex
+   continua `v=DMARC1; p=reject;`, por decisão do Leo.
 
-5. **Ativar o DMARC Management** (painel → domínio → Email → DMARC Management).
-   Ele **só funciona em domínio apex**: cobre `jornadacomeuanjo.com`, não
-   `mail.`. Ao achar o `_dmarc` que já existe, ele **acrescenta** um `rua` da
-   Cloudflare e **não mexe na política** — o `p=reject` do apex continua. Depois
-   de ativar, copiar esse mesmo endereço de `rua` para o `_dmarc.mail` à mão, que
-   é como o subdomínio de envio entra no relatório.
+5. **Ativar o DMARC Management — só pelo painel.** Não existe API: as rotas
+   `/zones/{zone}/dmarc_management`, `/zones/{zone}/email/dmarc` e
+   `/zones/{zone}/dmarc_reports` respondem `7000 No route for that URI`, e a
+   documentação do produto só traz o caminho do painel.
+
+   Caminho: painel → conta → `jornadacomeuanjo.com` → **Email → DMARC
+   Management → Enable DMARC Management**. Ele **só funciona em domínio apex**
+   (cobre `jornadacomeuanjo.com`, nunca `mail.`). Achando o `_dmarc` que já
+   existe, ele **acrescenta** um `rua` da Cloudflare e **não mexe na política** —
+   o `p=reject` do apex continua de pé.
+
+   **Depois de ativar**, falta copiar esse mesmo `rua` para o `_dmarc.mail`, que
+   é como o subdomínio de envio entra no relatório. Com um token de DNS → Edit:
+
+   ```bash
+   # 1) ler o rua que a Cloudflare pôs no apex
+   curl -s -H "Authorization: Bearer $CF_TOKEN" \
+     "https://api.cloudflare.com/client/v4/zones/ec2afa685c14f4f2b58d6fb87a52b4e3/dns_records?type=TXT&name=_dmarc.jornadacomeuanjo.com"
+   # 2) gravar no _dmarc.mail (id do registro: 2b5d717f04ef204667b97c61a7d5b326)
+   curl -s -X PATCH -H "Authorization: Bearer $CF_TOKEN" -H 'content-type: application/json' \
+     --data '{"content":"v=DMARC1; p=none; rua=mailto:<o endereço da Cloudflare>"}' \
+     "https://api.cloudflare.com/client/v4/zones/ec2afa685c14f4f2b58d6fb87a52b4e3/dns_records/2b5d717f04ef204667b97c61a7d5b326"
+   ```
 
 6. **Teste de resposta ao suporte** ainda não foi feito: responder um dos e-mails
    recebidos e confirmar que chega no Gmail pelo Email Routing.
 
 ### Pipeline de conteúdo (pedir, não editar)
 
-7. **`conteudo/emails/anuncio-app.md` ainda descreve o login antigo.** O arquivo é
-   de outra sessão (CLAUDE.md §3), que em 22/10 já tirou os dados da empresa do
-   rodapé (commit `b1b87b9`). Falta:
-   - o bloco "Para entrar é simples" descreve três passos com código de 6
-     números, mas o link do e-mail **já entra** — o texto contradiz o botão;
-   - o cabeçalho descreve `{{link_acesso}}` como `/entrar?e={email}`; hoje é
-     `/acesso?t={token}`.
+7. ~~`anuncio-app.md` descreve o login antigo~~ **resolvido pelo pipeline** em
+   `b1b87b9` (rodapé sem dados da empresa) e `f6b9e11` (o texto agora explica o
+   acesso direto por um toque, o que acontece se o link vencer, e o pedido de
+   código na primeira abertura pela tela inicial do iPhone).
 
-   **O rodapé do arquivo é descartado na leitura** (`emails/anuncio.ts`): quem
-   monta o rodapé é o renderizador, igual nos três e-mails, senão o "parar de
-   receber" sai duas vezes. Com isso, o `· jornadacomeuanjo.com · Política de
-   Privacidade` que o pipeline pôs lá **não aparece no e-mail**. Se o Leo quiser
-   esse link no rodapé, é uma linha no `motivo` em `montarAnuncio`.
+   O que continua valendo: **o rodapé do arquivo é descartado na leitura**
+   (`emails/anuncio.ts`), porque quem monta o rodapé é o renderizador, igual nos
+   três e-mails — senão o "parar de receber" sai duas vezes. Com isso, o
+   `· jornadacomeuanjo.com · Política de Privacidade` que o pipeline pôs lá **não
+   aparece no e-mail**. Se o Leo quiser esse link no rodapé, é uma linha no
+   `motivo` em `montarAnuncio`.
 
 8. **Identidade visual.** Ícones em `public/icons/` são placeholder gerados por
    script (fundo azul com cruz dourada).
 
 ### Limitação de ferramenta
 
-9. **A credencial da Cloudflare desta máquina não escreve DNS.** O wrangler está
-   logado por OAuth (`C:\Users\lenzi\AppData\Roaming\xdg.config\.wrangler`), com
+9. **A credencial padrão desta máquina não escreve DNS.** O wrangler está logado
+   por OAuth (`C:\Users\lenzi\AppData\Roaming\xdg.config\.wrangler`), com
    workers, d1, pages, `email_routing` e `email_sending` em escrita, mas `zone`
-   só em leitura — nenhum escopo de `dns_records`. Qualquer mudança de DNS é no
-   painel, ou com um API token criado à parte com "Zone → DNS → Edit".
+   só em leitura — nenhum escopo de `dns_records`. Para DNS é preciso um API
+   token criado à parte com "Zone → DNS → Edit"; foi assim que o `_dmarc.mail`
+   mudou em 22/10. **Esse token não está gravado em arquivo nenhum** (nem no
+   `.dev.vars`): quem for mexer em DNS pede de novo ao Leo.
+
+   Ids úteis da zona, que não são segredo: zone
+   `ec2afa685c14f4f2b58d6fb87a52b4e3`, registro `_dmarc.mail`
+   `2b5d717f04ef204667b97c61a7d5b326`, conta
+   `5b1faf97555fc2afb38ea4fd2cdb642e`.
 
 ---
 
@@ -309,12 +342,18 @@ prefixo: toda consulta `name LIKE 'email_%'` passou a pegar um evento que não �
 envio. Evento de conta leva prefixo `conta_` (`conta_excluida`,
 `conta_email_trocado`). Quem achou isso foi um teste que lia o último `email_%`.
 
-**Link de e-mail de uso único e leitor de links não se dão bem.** Outlook e Gmail
-abrem links de e-mail para checagem, e isso pode consumir um token de uso único
-antes da pessoa. Por isso a reivindicação é um `UPDATE ... WHERE used_at IS NULL`
-conferido pelo número de linhas, e por isso o caminho de "já usado" cai na tela de
-login com o e-mail preenchido em vez de numa página de erro. **Se aparecer relato
-de "o link não funcionou na primeira vez", é aqui.**
+**Link de e-mail de uso único e leitor de links não se dão bem.** Outlook, Gmail e
+WhatsApp abrem links de mensagem para checagem, e isso consome um token de uso
+único antes da pessoa. A solução é o GET não consumir nada: ele só mostra uma tela
+com um botão, e o token morre no POST do botão, que verificador de link não
+dispara. Por isso a tela **não pode** se enviar sozinha por JavaScript — seria
+imitável por pré-visualizador — e por isso ela é igual para token válido, vencido
+e inventado, sem nem consultar o banco.
+
+**`ORDER BY 0` não é constante no SQLite: é índice de coluna.** A ordenação por
+provedor monta um `CASE` e, quando não há provedor pedido, o termo precisa sair da
+cláusula — emitir `0` dá "1st ORDER BY term out of range". O sintoma foi o disparo
+inteiro respondendo 400, longe da linha do problema.
 
 **O DMARC Management da Cloudflare só vale para domínio apex.** Não dá para ativar
 em `mail.jornadacomeuanjo.com`; o que dá é copiar o `rua` dele para o
@@ -341,6 +380,7 @@ npm run payt:last:staging            # últimos 5 postbacks, com o JSON
 npm run payt:reprocess:staging X9P8DY5
 npm run grant:staging <email> <produto>
 npm run campanha:anuncio -- --env staging --limite 1 --teste-para <email> --dry-run
+npm run campanha:anuncio -- --env production --limite 50 --provedores gmail   # 1ª onda: só Gmail
 ```
 
 As credenciais da Cloudflare saem de `CLOUDFLARE_API_TOKEN` e

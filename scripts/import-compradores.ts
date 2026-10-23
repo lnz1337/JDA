@@ -17,6 +17,7 @@
  */
 import { readFileSync } from 'node:fs';
 import { lerCsv } from './lib/csv.ts';
+import { dataDaVendaParaIso } from './lib/data-venda.ts';
 import { consultar, sql } from './lib/d1.ts';
 import { ulid } from 'ulid';
 
@@ -40,6 +41,13 @@ const CANDIDATOS = {
   produtoCodigo: ['product_code', 'codigo_produto', 'produto_codigo', 'sku', 'product_sku'],
   produtoNome: ['product_name', 'produto', 'nome_produto', 'product'],
   status: ['status', 'situacao', 'situação', 'payment_status', 'status_pagamento'],
+  // A data da venda vira o granted_at do entitlement: é por ela que a campanha
+  // ordena as ondas (mais recente primeiro). Sem ela, toda a base importada
+  // ficaria com o horário da importação e a ordem não diria nada.
+  data: [
+    'data_pagamento', 'paid_at', 'data_da_venda', 'data_venda', 'data_aprovacao',
+    'approved_at', 'created_at', 'data', 'date',
+  ],
 };
 
 const PAGOS = new Set(['paid', 'pago', 'aprovado', 'approved', 'completo', 'complete']);
@@ -106,6 +114,8 @@ interface Venda {
   produtoCodigo: string;
   produtoNome: string;
   status: string;
+  /** ISO UTC, ou null se o CSV não trouxer data que dê para ler. */
+  data: string | null;
 }
 
 const vendas: Venda[] = linhas.map((l) => ({
@@ -116,6 +126,7 @@ const vendas: Venda[] = linhas.map((l) => ({
   produtoCodigo: (mapa.produtoCodigo ? l[mapa.produtoCodigo] : '')?.trim() ?? '',
   produtoNome: (mapa.produtoNome ? l[mapa.produtoNome] : '')?.trim() ?? '',
   status: (mapa.status ? l[mapa.status] : '')?.trim().toLowerCase() ?? '',
+  data: dataDaVendaParaIso(mapa.data ? l[mapa.data] : null),
 }));
 
 const pagas = vendas.filter((v) => PAGOS.has(v.status));
@@ -127,6 +138,17 @@ if (statusDesconhecidos.length > 0) {
   console.error(`\nPAREI: status que eu não sei classificar: ${statusDesconhecidos.join(', ')}`);
   console.error('Me diga se cada um conta como pago ou não antes de importar.');
   process.exit(1);
+}
+
+// Sem data não dá para ordenar onda por data de compra: avisa em vez de fingir.
+const semData = pagas.filter((v) => !v.data).length;
+if (semData > 0) {
+  console.warn(
+    `\nAVISO: ${semData} venda(s) sem data que eu consiga ler` +
+      `${mapa.data ? ` (coluna ${mapa.data})` : ' (nenhuma coluna de data encontrada)'}.` +
+      '\nElas entram com a data da importação, e a ordem das ondas por data de compra' +
+      '\nnão diz nada para essas linhas. Rode com --colunas para conferir.',
+  );
 }
 
 // --- produtos ------------------------------------------------------------
@@ -205,7 +227,7 @@ for (const v of importaveis) {
 
   consultar(
     `INSERT INTO entitlements (id, user_id, product_id, source, transaction_id, status, granted_at)
-     VALUES (${sql(ulid())}, ${sql(userId)}, ${sql(productId)}, 'payt', ${sql(v.transacao)}, 'active', ${sql(agora)})
+     VALUES (${sql(ulid())}, ${sql(userId)}, ${sql(productId)}, 'payt', ${sql(v.transacao)}, 'active', ${sql(v.data ?? agora)})
      ON CONFLICT (user_id, product_id, transaction_id) DO UPDATE SET
        status = 'active', revoked_at = NULL`,
     ambiente,

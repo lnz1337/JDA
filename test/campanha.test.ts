@@ -2,7 +2,7 @@ import { createExecutionContext, waitOnExecutionContext } from 'cloudflare:test'
 import { env } from 'cloudflare:workers';
 import { beforeEach, describe, expect, it } from 'vitest';
 import app from '../src/worker/index';
-import { linkParar } from '../src/worker/services/campanhas';
+import { destinatarios, linkParar } from '../src/worker/services/campanhas';
 import { prepararBanco } from './ajuda';
 import { envTeste } from './env-de-teste';
 
@@ -297,6 +297,93 @@ describe('texto da campanha', () => {
     expect(results).toHaveLength(2);
     expect(new Set(results.map((r) => r.user_id)).size).toBe(2);
     expect(new Set(results.map((r) => r.token_hash)).size).toBe(2);
+  });
+});
+
+describe('ordem das ondas', () => {
+  /** Cria um comprador com e-mail e data de compra escolhidos. */
+  async function comprador(email: string, compra: string): Promise<string> {
+    const id = `u-${email}`;
+    await env.DB.prepare('INSERT INTO users (id, email, name, created_at) VALUES (?, ?, ?, ?)')
+      .bind(id, email, 'Pessoa', '2026-01-01T00:00:00.000Z')
+      .run();
+    await env.DB.prepare(
+      `INSERT INTO entitlements (id, user_id, product_id, source, status, granted_at)
+       VALUES (?, ?, 'jornada-meu-anjo', 'payt', 'active', ?)`,
+    )
+      .bind(`e-${email}`, id, compra)
+      .run();
+    return id;
+  }
+
+  async function fila(provedores: string[] = []): Promise<string[]> {
+    const lista = await destinatarios(env.DB, CAMPANHA, 50, provedores);
+    return lista.map((d) => d.email);
+  }
+
+  beforeEach(async () => {
+    await comprador('antigo@gmail.com', '2024-03-01T00:00:00.000Z');
+    await comprador('novo@hotmail.com', '2026-10-01T00:00:00.000Z');
+    await comprador('meio@gmail.com', '2025-06-01T00:00:00.000Z');
+    await comprador('recente@terra.com.br', '2026-10-15T00:00:00.000Z');
+  });
+
+  it('sem provedor, vai da compra mais recente para a mais antiga', async () => {
+    expect(await fila()).toEqual([
+      'recente@terra.com.br',
+      'novo@hotmail.com',
+      'meio@gmail.com',
+      'antigo@gmail.com',
+    ]);
+  });
+
+  it('com --provedores gmail, o Gmail vem na frente e a data desempata dentro dele', async () => {
+    expect(await fila(['gmail'])).toEqual([
+      'meio@gmail.com',
+      'antigo@gmail.com',
+      // Quem não é do provedor pedido continua na fila, atrás.
+      'recente@terra.com.br',
+      'novo@hotmail.com',
+    ]);
+  });
+
+  it('aceita mais de um provedor, na ordem pedida', async () => {
+    expect(await fila(['outlook', 'gmail'])).toEqual([
+      'novo@hotmail.com',
+      'meio@gmail.com',
+      'antigo@gmail.com',
+      'recente@terra.com.br',
+    ]);
+  });
+
+  it('provedor desconhecido para o disparo, com a lista do que vale', async () => {
+    await expect(fila(['gmial'])).rejects.toThrow(/gmial.*Conhecidos:.*gmail/s);
+
+    const res = await chamar('/api/campanha/enviar', {
+      method: 'POST',
+      headers: comChave(),
+      body: JSON.stringify({ campanha: CAMPANHA, limite: 1, dry_run: true, provedores: ['gmial'] }),
+    });
+    expect(res.status).toBe(400);
+    expect(((await res.json()) as { error: string }).error).toContain('provedor desconhecido');
+  });
+
+  it('o disparo respeita a ordem: a primeira onda só pega Gmail', async () => {
+    const res = await chamar('/api/campanha/enviar', {
+      method: 'POST',
+      headers: comChave(),
+      body: JSON.stringify({ campanha: CAMPANHA, limite: 2, provedores: ['gmail'] }),
+    });
+
+    expect(res.status).toBe(200);
+    const { results } = await env.DB.prepare(
+      'SELECT user_id FROM campaign_sends ORDER BY user_id',
+    ).all<{ user_id: string }>();
+
+    expect(results.map((r) => r.user_id).sort()).toEqual([
+      'u-antigo@gmail.com',
+      'u-meio@gmail.com',
+    ]);
   });
 });
 

@@ -4,6 +4,7 @@
  *   node scripts/campanha-anuncio.ts --env production --limite 50
  *   ... --dry-run                 só mostra o que faria
  *   ... --teste-para eu@ex.com    manda só para esse endereço, sem tocar na base
+ *   ... --provedores gmail        põe o Gmail na frente da fila (lista por vírgula)
  *
  * A seleção, o controle de onda e o corte por taxa de falha ficam no Worker
  * (services/campanhas.ts): é lá que estão o banco e o envio.
@@ -27,6 +28,10 @@ const limite = Number(valor('--limite') ?? 0);
 const testePara = valor('--teste-para');
 const dryRun = argv.includes('--dry-run');
 const campanha = valor('--campanha') ?? 'anuncio-app';
+const provedores = (valor('--provedores') ?? '')
+  .split(',')
+  .map((p) => p.trim().toLowerCase())
+  .filter(Boolean);
 const chave = exigirSegredo('ADMIN_API_KEY');
 
 if (!Number.isFinite(limite) || limite <= 0) {
@@ -41,7 +46,8 @@ if (!base) {
 
 console.log(
   `campanha=${campanha} ambiente=${ambiente} limite=${limite}` +
-    `${dryRun ? ' [dry-run]' : ''}${testePara ? ` [teste para ${testePara}]` : ''}`,
+    `${dryRun ? ' [dry-run]' : ''}${testePara ? ` [teste para ${testePara}]` : ''}` +
+    `${provedores.length > 0 ? ` [provedores: ${provedores.join(' > ')}]` : ''}`,
 );
 
 const res = await fetch(`${base}/api/campanha/enviar`, {
@@ -52,6 +58,7 @@ const res = await fetch(`${base}/api/campanha/enviar`, {
     limite,
     dry_run: dryRun,
     ...(testePara ? { teste_para: testePara } : {}),
+    ...(provedores.length > 0 ? { provedores } : {}),
   }),
 });
 

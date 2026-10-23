@@ -385,11 +385,21 @@ describe('sessão', () => {
  * acabou de comprar: o e-mail de boas-vindas e o de anúncio levam este link.
  */
 describe('link de acesso direto', () => {
+  /** O toque no botão da tela de confirmação. */
+  function tocar(token: string, init: RequestInit = {}) {
+    return chamar('/acesso', {
+      ...init,
+      method: 'POST',
+      headers: { 'content-type': 'application/x-www-form-urlencoded', ...(init.headers ?? {}) },
+      body: `t=${encodeURIComponent(token)}`,
+    });
+  }
+
   it('abre a sessão e manda para a Home', async () => {
     const id = await criarUsuario();
     const token = await criarLinkDeAcesso(env.DB, id);
 
-    const res = await chamar(`/acesso?t=${token}`);
+    const res = await tocar(token);
 
     expect(res.status).toBe(302);
     expect(res.headers.get('location')).toBe('/');
@@ -428,12 +438,79 @@ describe('link de acesso direto', () => {
     expect(dias).toBeLessThanOrEqual(LINK_ACESSO_DIAS);
   });
 
+  /*
+   * Outlook, Gmail e WhatsApp abrem o link sozinhos para checagem. Se o GET
+   * gastasse o token, o link morreria antes de a pessoa tocar nele — por isso o
+   * GET só mostra a tela e quem gasta é o POST do botão.
+   */
+  it('o GET não gasta o token, por mais vezes que seja aberto', async () => {
+    const id = await criarUsuario();
+    const token = await criarLinkDeAcesso(env.DB, id);
+
+    for (let i = 0; i < 3; i += 1) {
+      const res = await chamar(`/acesso?t=${token}`);
+      expect(res.status).toBe(200);
+      expect(res.headers.get('set-cookie')).toBeNull();
+    }
+
+    const linha = await env.DB.prepare('SELECT used_at FROM access_links').first<{
+      used_at: string | null;
+    }>();
+    expect(linha?.used_at).toBeNull();
+    expect(
+      await env.DB.prepare('SELECT COUNT(*) AS n FROM sessions').first<{ n: number }>(),
+    ).toMatchObject({ n: 0 });
+
+    // E depois do passeio dos robôs, o toque da pessoa ainda entra.
+    expect((await tocar(token)).headers.get('location')).toBe('/');
+  });
+
+  it('a tela do GET é a mesma para token válido, inválido e vencido', async () => {
+    const id = await criarUsuario();
+    const valido = await criarLinkDeAcesso(env.DB, id);
+
+    const vencido = await criarLinkDeAcesso(env.DB, id);
+    await env.DB.prepare('UPDATE access_links SET expires_at = ? WHERE token_hash <> ?')
+      .bind('2020-01-01T00:00:00.000Z', await (await import('../src/worker/lib/cripto')).sha256Hex(valido))
+      .run();
+
+    const corpos = await Promise.all(
+      [valido, vencido, 'naoexiste'].map(async (t) =>
+        (await chamar(`/acesso?t=${t}`)).text().then((h) => h.replace(t, 'TOKEN')),
+      ),
+    );
+
+    expect(corpos[0]).toBe(corpos[1]);
+    expect(corpos[0]).toBe(corpos[2]);
+    // Nem o e-mail nem o motivo aparecem antes do toque.
+    expect(corpos[0]).not.toContain(EMAIL);
+    expect(corpos[0]).not.toMatch(/link_usado|link_expirado|link_invalido/);
+  });
+
+  it('a tela não depende de JavaScript nem se envia sozinha', async () => {
+    const id = await criarUsuario();
+    const token = await criarLinkDeAcesso(env.DB, id);
+
+    const html = await (await chamar(`/acesso?t=${token}`)).text();
+
+    expect(html).toContain('<form method="post" action="/acesso"');
+    expect(html).toContain('Toque no botão para entrar no app');
+    expect(html).not.toMatch(/<script|onload=|submit\(\)/i);
+  });
+
+  it('token com aspas não escapa do atributo', async () => {
+    const html = await (await chamar('/acesso?t=%22%3E%3Cscript%3Ealert(1)%3C%2Fscript%3E')).text();
+
+    expect(html).not.toContain('<script');
+    expect(html).toContain('&quot;&gt;&lt;script&gt;');
+  });
+
   it('é de uso único: na segunda vez cai no login com o e-mail preenchido', async () => {
     const id = await criarUsuario();
     const token = await criarLinkDeAcesso(env.DB, id);
 
-    await chamar(`/acesso?t=${token}`);
-    const segunda = await chamar(`/acesso?t=${token}`);
+    await tocar(token);
+    const segunda = await tocar(token);
 
     expect(segunda.status).toBe(302);
     const destino = new URL(segunda.headers.get('location') ?? '', BASE);
@@ -452,7 +529,7 @@ describe('link de acesso direto', () => {
       .bind('2020-01-01T00:00:00.000Z')
       .run();
 
-    const res = await chamar(`/acesso?t=${token}`);
+    const res = await tocar(token);
 
     const destino = new URL(res.headers.get('location') ?? '', BASE);
     expect(destino.searchParams.get('motivo')).toBe('link_expirado');
@@ -464,7 +541,7 @@ describe('link de acesso direto', () => {
 
   it('token desconhecido não vaza e-mail nenhum', async () => {
     await criarUsuario();
-    const res = await chamar('/acesso?t=naoexiste');
+    const res = await tocar('naoexiste');
 
     const destino = new URL(res.headers.get('location') ?? '', BASE);
     expect(destino.pathname).toBe('/entrar');
@@ -479,7 +556,7 @@ describe('link de acesso direto', () => {
       .bind(new Date().toISOString(), id)
       .run();
 
-    const res = await chamar(`/acesso?t=${token}`);
+    const res = await tocar(token);
     expect(new URL(res.headers.get('location') ?? '', BASE).searchParams.get('motivo')).toBe(
       'link_invalido',
     );

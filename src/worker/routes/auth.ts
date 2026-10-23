@@ -22,6 +22,7 @@ import {
 import modeloAcao from '../emails/codigo-acao.md?raw';
 import modeloCodigo from '../emails/codigo-login.md?raw';
 import { renderizarEmail } from '../emails/render';
+import { escaparHtml, pagina } from '../lib/pagina';
 import type { AppBindings } from '../lib/types';
 import {
   ACOES_SENSIVEIS,
@@ -147,24 +148,61 @@ export const auth = new Hono<AppBindings>()
   });
 
 /**
- * O link que o e-mail leva. Não é rota de API: devolve um redirecionamento,
- * porque quem clica é uma pessoa no navegador.
+ * O link que o e-mail leva. Não é rota de API: quem chega aqui é uma pessoa no
+ * navegador que o cliente de e-mail abriu.
  *
- * Deu certo, vai para a Home já logado. Não deu, vai para a tela de login com o
- * e-mail preenchido e o motivo — nunca uma página de erro.
+ * **O GET não consome o token.** Outlook, Gmail e WhatsApp abrem link de
+ * mensagem sozinhos para checagem de segurança, e um token de uso único gasto
+ * por um robô deixa a pessoa de fora. Então o GET só mostra uma tela com um
+ * botão, e quem gasta o token é o POST do botão — que nenhum verificador de link
+ * dispara, porque verificador não preenche formulário.
+ *
+ * A tela do GET é **igual** para token válido, vencido ou inventado: ela nem
+ * consulta o banco. Dizer "este link venceu" antes do toque transformaria a
+ * página num verificador de token, e de quebra vazaria o e-mail da conta.
+ *
+ * Sem JavaScript: a tela precisa funcionar no navegador que o e-mail abrir, e
+ * envio automático por script é exatamente o que um pré-visualizador consegue
+ * imitar.
  */
-export const acesso = new Hono<AppBindings>().get('/', async (c) => {
-  const r = await entrarComLink(c.env.DB, c.req.query('t') ?? '');
+export const acesso = new Hono<AppBindings>()
+  .get('/', (c) => {
+    const token = escaparHtml(c.req.query('t') ?? '');
 
-  if (!r.ok) {
-    const params = new URLSearchParams({ motivo: r.motivo });
-    if (r.email) params.set('e', r.email);
-    return c.redirect(`/entrar?${params.toString()}`, 302);
-  }
+    return c.html(
+      pagina(
+        'Olá!',
+        `<p>Toque no botão para entrar no app.</p>
+<form method="post" action="/acesso">
+  <input type="hidden" name="t" value="${token}">
+  <button type="submit">Entrar no meu app</button>
+</form>`,
+      ),
+    );
+  })
 
-  gravarCookie(c, r.sessionId);
-  return c.redirect('/', 302);
-});
+  /*
+   * Sem token de CSRF de propósito: o POST não tem efeito próprio além de abrir
+   * sessão com um token que só quem recebeu o e-mail tem, e o que um formulário
+   * de outro site conseguiria é logar a vítima na conta de quem montou o
+   * formulário — gastando o próprio token para isso. Exigir CSRF aqui custaria
+   * estado numa tela que precisa abrir de qualquer navegador de e-mail.
+   */
+  .post('/', async (c) => {
+    const corpo = await c.req.parseBody().catch(() => ({}) as Record<string, unknown>);
+    const token = typeof corpo.t === 'string' ? corpo.t : '';
+
+    const r = await entrarComLink(c.env.DB, token);
+
+    if (!r.ok) {
+      const params = new URLSearchParams({ motivo: r.motivo });
+      if (r.email) params.set('e', r.email);
+      return c.redirect(`/entrar?${params.toString()}`, 302);
+    }
+
+    gravarCookie(c, r.sessionId);
+    return c.redirect('/', 302);
+  });
 
 async function exigirSessao(c: Context<AppBindings>): Promise<string | null> {
   const sessao = await usuarioDaSessao(c.env.DB, getCookie(c, COOKIE_SESSAO));
