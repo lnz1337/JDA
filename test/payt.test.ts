@@ -202,6 +202,93 @@ describe('integration_key não é guardada', () => {
   });
 });
 
+/*
+ * A Política de Privacidade diz que o app não pede CPF, endereço nem data de
+ * nascimento, e o app de fato não usa nada disso. Guardar no payload contrariaria
+ * o que está publicado e só aumentaria o estrago de um vazamento.
+ */
+describe('dado pessoal que o app não usa não é guardado', () => {
+  const comDadosPessoais = {
+    ...pedidoPago,
+    customer: {
+      ...(pedidoPago as { customer: Record<string, unknown> }).customer,
+      doc: '123.456.789-09',
+      birthdate: '1958-03-12',
+      address: {
+        street: 'Rua das Flores',
+        number: '42',
+        complement: 'ap 3',
+        neighborhood: 'Centro',
+        city: 'Belo Horizonte',
+        state: 'MG',
+        zipcode: '30110-000',
+      },
+    },
+  };
+
+  it('mascara CPF, nascimento e endereço do cliente', async () => {
+    await postar(comChave(comDadosPessoais));
+
+    const linha = await env.DB.prepare('SELECT payload_json FROM payt_events').first<{
+      payload_json: string;
+    }>();
+    const bruto = linha?.payload_json ?? '';
+    const guardado = JSON.parse(bruto) as {
+      customer: { doc: string; birthdate: string; address: string };
+    };
+
+    expect(guardado.customer.doc).toBe('***');
+    expect(guardado.customer.birthdate).toBe('***');
+    // O endereço inteiro vira um `***`: o bloco é o dado, não cada linha dele.
+    expect(guardado.customer.address).toBe('***');
+
+    // Nenhum pedaço do dado sobrou em lugar nenhum do JSON.
+    for (const vazado of ['123.456.789-09', '1958-03-12', 'Rua das Flores', '30110-000']) {
+      expect(bruto, `vazou ${vazado}`).not.toContain(vazado);
+    }
+  });
+
+  it('mantém o que a política lista e o app usa', async () => {
+    await postar(comChave(comDadosPessoais));
+
+    const linha = await env.DB.prepare('SELECT payload_json FROM payt_events').first<{
+      payload_json: string;
+    }>();
+    const guardado = JSON.parse(linha?.payload_json ?? '{}') as {
+      customer: { email: string; name: string; code: string };
+      product: { code: string; price: number };
+      status: string;
+    };
+
+    expect(guardado.customer.email).toBeTruthy();
+    expect(guardado.customer.name).toBeTruthy();
+    expect(guardado.customer.code).toBeTruthy();
+    expect(guardado.product.code).toBeTruthy();
+    expect(guardado.status).toBe('paid');
+  });
+
+  it('campo vazio continua vazio, em vez de parecer que havia dado', async () => {
+    // O postback real veio com `doc: ""` — mascarar isso inventaria informação.
+    await postar(comChave({ ...comDadosPessoais, customer: { ...comDadosPessoais.customer, doc: '' } }));
+
+    const linha = await env.DB.prepare('SELECT payload_json FROM payt_events').first<{
+      payload_json: string;
+    }>();
+    expect((JSON.parse(linha?.payload_json ?? '{}') as { customer: { doc: string } }).customer.doc)
+      .toBe('');
+  });
+
+  it('a compra continua liberando o acesso', async () => {
+    // Mascarar é só na gravação: o processamento lê o payload original.
+    await postar(comChave(comDadosPessoais));
+
+    const r = await env.DB.prepare(
+      "SELECT COUNT(*) AS n FROM entitlements WHERE status = 'active'",
+    ).first<{ n: number }>();
+    expect(r?.n).toBeGreaterThan(0);
+  });
+});
+
 describe('postback real da Payt', () => {
   it('extrai transação, status e os 5 produtos do formato real', async () => {
     await postar(comChave(realPedidoPago));

@@ -83,6 +83,66 @@ function chaveDoPostback(dados: unknown, headerChave: string | undefined, segred
   return chaveBate(typeof noCorpo === 'string' ? noCorpo : headerChave, segredo);
 }
 
+/**
+ * Campos pessoais que a Payt manda dentro do cliente e que o app **não usa**.
+ *
+ * A Política de Privacidade diz, com todas as letras, que o app não pede CPF,
+ * endereço nem data de nascimento, e lista o que vem da compra: nome, e-mail,
+ * telefone, produto, valor, forma e situação do pagamento e número do pedido.
+ * Guardar CPF no `payload_json` contrariaria o que está publicado — e guardar o
+ * que não se usa é só aumentar o estrago de um vazamento.
+ *
+ * O formato real traz `customer.doc` (visto no primeiro postback). Os nomes de
+ * endereço são previsão: produto físico ainda não passou por aqui, e é melhor a
+ * lista já cobrir do que descobrir depois do primeiro pedido com entrega.
+ */
+const CAMPOS_PESSOAIS = new Set([
+  'doc', 'document', 'documento', 'cpf', 'cnpj', 'rg', 'ie',
+  'birth', 'birthday', 'birthdate', 'birth_date', 'nascimento', 'data_nascimento',
+  'address', 'endereco', 'street', 'rua', 'logradouro', 'number', 'numero',
+  'complement', 'complemento', 'neighborhood', 'bairro', 'city', 'cidade',
+  'state', 'estado', 'uf', 'zipcode', 'zip_code', 'zip', 'cep', 'postal_code',
+  'country', 'pais',
+]);
+
+/** Blocos onde esses campos aparecem. Fora deles, `number` é outra coisa. */
+const BLOCOS_DE_PESSOA = ['customer', 'buyer', 'cliente', 'address', 'shipping', 'delivery'];
+
+function mascararPessoais(valor: unknown): unknown {
+  if (Array.isArray(valor)) return valor.map(mascararPessoais);
+  if (valor === null || typeof valor !== 'object') return valor;
+
+  const saida: Record<string, unknown> = {};
+  for (const [chave, v] of Object.entries(valor as Record<string, unknown>)) {
+    if (CAMPOS_PESSOAIS.has(chave.toLowerCase())) {
+      // Vazio continua vazio: mascarar "" faria parecer que havia dado ali.
+      saida[chave] = v === '' || v === null || v === undefined ? v : '***';
+    } else {
+      saida[chave] = mascararPessoais(v);
+    }
+  }
+  return saida;
+}
+
+/**
+ * O payload como ele vai para o banco. O processamento continua usando o
+ * original — o que é mascarado aqui é exatamente o que o app não lê.
+ */
+export function paraGuardar(dados: Record<string, unknown>): Record<string, unknown> {
+  const copia: Record<string, unknown> = { ...dados };
+
+  // A chave nunca vai para o banco: o payload fica inspecionável, o segredo não
+  // fica guardado nem aparece no `npm run payt:last:staging`.
+  if ('integration_key' in copia) copia.integration_key = '***';
+
+  for (const bloco of BLOCOS_DE_PESSOA) {
+    const v = copia[bloco];
+    if (v && typeof v === 'object') copia[bloco] = mascararPessoais(v);
+  }
+
+  return copia;
+}
+
 export const payt = new Hono<AppBindings>().post('/postback', async (c) => {
   const cru = await c.req.text();
   const dados = entender(cru, c.req.header('content-type') ?? '');
@@ -95,11 +155,7 @@ export const payt = new Hono<AppBindings>().post('/postback', async (c) => {
     return c.json({ error: 'integration_key_invalida' }, 401);
   }
 
-  // A chave nunca vai para o banco: o payload fica inspecionável, o segredo não
-  // fica guardado nem aparece no `npm run payt:last:staging`.
-  const paraGravar: Record<string, unknown> = { ...(dados as Record<string, unknown>) };
-  if ('integration_key' in paraGravar) paraGravar.integration_key = '***';
-  const payloadJson = JSON.stringify(paraGravar);
+  const payloadJson = JSON.stringify(paraGuardar(dados as Record<string, unknown>));
 
   const resumo = extrairResumo(dados);
   const dedupeKey = await sha256Hex(textoDedupe(resumo));
