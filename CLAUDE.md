@@ -513,6 +513,13 @@ Registrar `offer_viewed` e `offer_clicked` em `events`. Uma oferta dispensada pe
 - **Rezar** por uma intenção: todo usuário logado (1 vez por intenção; incrementa `prayer_count`).
 - **Publicar** intenção: só com assinatura válida. Máximo de 1 por dia, 280 caracteres.
 - Exibir só o **primeiro nome** e a data. Nunca e-mail, telefone ou sobrenome.
+- **O formulário avisa antes, não depois** (fase 9), junto do campo de texto:
+  > Sua intenção aparece para os outros usuários com o seu primeiro nome. Não
+  > escreva sobrenome, telefone ou dados de saúde de outras pessoas.
+
+  O mural é o único lugar do app onde o usuário escreve em público, e o risco não
+  é o dado dele: é o da mãe doente, que não escolheu aparecer ali. Moderação
+  depois não desfaz o que já foi lido, então o aviso fica **antes** de escrever.
 - Moderação: lista de palavras bloqueadas vira `pending`; botão "denunciar" e 3 denúncias deixam `hidden`; o admin aprova ou oculta.
 - Notificação para o autor: "X pessoas rezaram pela sua intenção" (push agregado, no máximo 1 por dia).
 
