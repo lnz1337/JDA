@@ -9,6 +9,7 @@
 import { z } from 'zod';
 import { APP_NAME, LINK_ACESSO_DIAS } from '../../shared/constants';
 import modeloBoasVindas from '../emails/boas-vindas.md?raw';
+import modeloConteudoLiberado from '../emails/conteudo-liberado.md?raw';
 import { renderizarEmail } from '../emails/render';
 import { agoraIso, paytParaIso } from '../lib/datas';
 import { novoId } from '../lib/ids';
@@ -16,6 +17,7 @@ import type { AppBindings } from '../lib/types';
 import { criarLinkDeAcesso } from './auth';
 import { concederEntitlement, revogarPorTransacao } from './entitlements';
 import { enviarEmail } from './mail';
+import { assinaturasDoUsuario, enviarERegistrar } from './push';
 
 /** payment_status que revoga acesso na hora. */
 const REVOGAM = new Set(['refunded', 'chargeback', 'one_click_buy_refunded']);
@@ -333,6 +335,83 @@ export interface ResultadoProcessamento {
 }
 
 /**
+ * Avisa quem **já era cliente** de que a compra liberou (§7, volta da compra).
+ *
+ * Quem acabou de nascer no banco recebe o e-mail de boas-vindas, que já diz
+ * isso. Quem já tinha conta não recebia nada: comprava, voltava para o app e,
+ * se o postback demorasse — Pix e boleto demoram —, ficava sem saber quando
+ * liberou. A tela promete "avisamos quando liberar"; isto aqui é a promessa.
+ *
+ * Push **e** e-mail, não um ou outro: quem comprou no computador não tem push
+ * neste celular, e quem nunca ligou o lembrete não tem push em lugar nenhum.
+ */
+async function avisarConteudoLiberado(
+  env: AppBindings['Bindings'],
+  userId: string,
+  produtoIds: string[],
+  email: string | undefined,
+  nomeCompleto: string | undefined,
+): Promise<void> {
+  const db = env.DB;
+  // Um pedido pode trazer vários produtos, mas a mensagem é para ser lida na
+  // tela de bloqueio: nomear o primeiro e deixar o resto para o app.
+  const primeiro = produtoIds[0];
+  if (!primeiro) return;
+
+  const produto = await db
+    .prepare('SELECT name FROM products WHERE id = ?')
+    .bind(primeiro)
+    .first<{ name: string }>();
+  const nomeProduto = produto?.name ?? 'Seu novo conteúdo';
+
+  for (const assinatura of await assinaturasDoUsuario(db, userId)) {
+    await enviarERegistrar(
+      env,
+      userId,
+      assinatura,
+      {
+        titulo: 'Pronto!',
+        corpo: `${nomeProduto} já está no seu app.`,
+        url: `/produto/${primeiro}?origem=push`,
+        tag: 'conteudo-liberado',
+      },
+      { tipo: 'conteudo_liberado' },
+    );
+  }
+
+  if (!email) return;
+
+  const primeiroNome = nomeCompleto?.trim().split(' ')[0] ?? '';
+  const token = await criarLinkDeAcesso(db, userId);
+  const corpo = renderizarEmail(
+    modeloConteudoLiberado,
+    {
+      app: APP_NAME,
+      nome: primeiroNome ? `, ${primeiroNome}` : '',
+      nome_ou_ola: primeiroNome || 'Olá',
+      produto: nomeProduto,
+      link_acesso: `${env.APP_URL}/acesso?t=${token}`,
+      validade_link: String(LINK_ACESSO_DIAS),
+      suporte: env.SUPPORT_EMAIL ?? '',
+    },
+    { motivo: `Você recebeu este e-mail porque sua compra do ${nomeProduto} foi confirmada.` },
+  );
+
+  await enviarEmail(
+    env,
+    'conteudo_liberado',
+    {
+      para: email,
+      assunto: corpo.assunto,
+      texto: corpo.texto,
+      html: corpo.html,
+      ...(env.SUPPORT_EMAIL ? { responderPara: env.SUPPORT_EMAIL } : {}),
+    },
+    userId,
+  );
+}
+
+/**
  * Aplica a tabela da §7. Lança em erro de verdade — quem chama grava a mensagem
  * em payt_events.error, sem derrubar a resposta do postback.
  */
@@ -448,6 +527,12 @@ export async function processarPostback(
       },
       usuario.userId,
     );
+  }
+
+  // Já era cliente: o e-mail de boas-vindas não vale (ele diz "bem-vindo"), mas
+  // a pessoa precisa saber que liberou — é o que a tela da loja prometeu.
+  if (!usuario.novo) {
+    await avisarConteudoLiberado(env, usuario.userId, ids, email, p.customer?.name ?? undefined);
   }
 
   return {

@@ -6,7 +6,9 @@ import { irPara, useRota } from './lib/rota';
 import { Entrar } from './screens/Entrar';
 import { Home } from './screens/Home';
 import { Inicio } from './screens/Inicio';
+import { AvisoDaCompra } from './components/AvisoDaCompra';
 import { abaDaRota, BarraDeAbas } from './components/BarraDeAbas';
+import { useVoltaDaCompra } from './lib/compra';
 import { Licao } from './screens/Licao';
 import { Loja } from './screens/Loja';
 import { Onboarding, deveRodarOnboarding, marcarOnboardingFeito } from './screens/Onboarding';
@@ -25,6 +27,12 @@ export function App() {
   const rota = useRota();
   /** `null` enquanto não se sabe: consultar o `pushManager` é assíncrono. */
   const [semAssinatura, setSemAssinatura] = useState<boolean | null>(null);
+  /*
+   * A volta do checkout (§7). Fica aqui e não na tela do produto porque, no
+   * iPhone, o checkout abre fora do app e voltar pelo ícone é uma abertura
+   * nova — que pode cair na Home, não na página de onde a pessoa saiu.
+   */
+  const volta = useVoltaDaCompra();
 
   const carregar = useCallback(async () => {
     try {
@@ -130,7 +138,14 @@ export function App() {
 
   // Sem aba (lição, instalar, lembrete), a tela ocupa tudo: ali a pessoa está
   // numa tarefa só, e a barra competiria com os controles do player.
-  if (!aba) return tela;
+  if (!aba) {
+    return (
+      <>
+        {tela}
+        <AvisoDaCompra volta={volta} />
+      </>
+    );
+  }
 
   return (
     <>
@@ -141,6 +156,7 @@ export function App() {
        */}
       <div className="[&>main]:pb-28">{tela}</div>
       <BarraDeAbas ativa={aba} />
+      <AvisoDaCompra volta={volta} />
     </>
   );
 

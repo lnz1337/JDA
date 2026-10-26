@@ -261,6 +261,36 @@ export const me = new Hono<AppBindings>()
   })
 
   /**
+   * Só os produtos liberados, para o polling de depois da compra (§7).
+   *
+   * Existe separado do `/api/me` porque é chamado a cada 5 segundos por até 2
+   * minutos enquanto a pessoa volta do checkout: carregar usuário, suporte e
+   * nome do produto nesse laço seria pagar o banco inteiro por um sim ou não.
+   */
+  .get('/entitlements', async (c) => {
+    const userId = await exigirSessao(c);
+    if (!userId) return c.json({ error: 'nao_autenticado' }, 401);
+
+    /*
+     * O que a pessoa comprou **e** o que veio dentro do que ela comprou: quem
+     * compra o pacote espera ver as partes liberadas, e é por elas que a tela
+     * do produto pergunta.
+     */
+    const { results } = await c.env.DB.prepare(
+      `SELECT product_id FROM entitlements WHERE user_id = ? AND status = 'active'
+        UNION
+       SELECT bi.product_id
+         FROM entitlements e
+         JOIN bundle_items bi ON bi.bundle_id = e.product_id
+        WHERE e.user_id = ? AND e.status = 'active'`,
+    )
+      .bind(userId, userId)
+      .all<{ product_id: string }>();
+
+    return c.json({ produtos: results.map((l) => l.product_id) });
+  })
+
+  /**
    * Horário do lembrete e fuso do aparelho (§11). Ficam na conta, não no
    * aparelho: quem troca de celular não perde o horário que escolheu.
    */
