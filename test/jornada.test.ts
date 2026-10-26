@@ -376,6 +376,38 @@ describe('eventos do client', () => {
     });
   });
 
+  it('push_ativado separa o toque da reassinatura silenciosa', async () => {
+    await prepararUsuario({ inicio: inicioNoDia(1) });
+
+    for (const origem of ['botao', 'automatico']) {
+      const res = await chamar('/api/eventos', {
+        method: 'POST',
+        headers: { cookie: COOKIE },
+        body: JSON.stringify({ nome: 'push_ativado', origem }),
+      });
+      expect(res.status).toBe(200);
+    }
+
+    const { results } = await env.DB.prepare(
+      "SELECT props_json FROM events WHERE name = 'push_ativado' ORDER BY created_at",
+    ).all<{ props_json: string }>();
+    expect(results.map((l) => JSON.parse(l.props_json).origem).sort()).toEqual([
+      'automatico',
+      'botao',
+    ]);
+  });
+
+  it('recusa origem que não existe', async () => {
+    await prepararUsuario({ inicio: inicioNoDia(1) });
+
+    const res = await chamar('/api/eventos', {
+      method: 'POST',
+      headers: { cookie: COOKIE },
+      body: JSON.stringify({ nome: 'push_ativado', origem: 'telepatia' }),
+    });
+    expect(res.status).toBe(400);
+  });
+
   it('recusa etapa que não está na lista', async () => {
     await prepararUsuario({ inicio: inicioNoDia(1) });
 

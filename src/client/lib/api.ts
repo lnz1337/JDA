@@ -55,6 +55,8 @@ export function registrarEvento(
     lesson_id?: string;
     dia?: number;
     programa?: string;
+    /** `push_ativado`: 'botao' (a pessoa tocou) ou 'automatico' (reassinou só). */
+    origem?: string;
     /** `push_erro_cliente`: onde parou, o que explodiu e o status, se houver. */
     etapa?: string;
     erro?: string;

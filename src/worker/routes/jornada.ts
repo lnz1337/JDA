@@ -37,6 +37,16 @@ const EVENTOS_DO_CLIENT = [
   'push_erro_cliente',
 ] as const;
 
+/**
+ * De onde veio a ativação do lembrete.
+ *
+ * 'botao' é o toque em "Quero o lembrete"; 'automatico' é o
+ * `garantirAssinatura`, que reassina em silêncio quem já tinha dito sim e
+ * perdeu a assinatura (reinstalou, limpou os dados do site). Sem separar as
+ * duas, o funil não distingue quem escolheu de quem foi recuperado.
+ */
+const ORIGENS_DE_ATIVACAO = ['botao', 'automatico'] as const;
+
 /** Os passos do `ligarLembrete`, na ordem em que ele tenta cada um. */
 const ETAPAS_DE_PUSH = ['permissao', 'service_worker', 'chave', 'assinar', 'gravar'] as const;
 
@@ -45,6 +55,8 @@ const EventoSchema = z.object({
   lesson_id: z.string().trim().max(120).optional(),
   dia: z.number().int().min(1).max(99).optional(),
   programa: z.string().trim().max(120).optional(),
+  /** Fase 8: só o `push_ativado` usa este. */
+  origem: z.enum(ORIGENS_DE_ATIVACAO).optional(),
   /** Fase 8: só o `push_erro_cliente` usa os três de baixo. */
   etapa: z.enum(ETAPAS_DE_PUSH).optional(),
   erro: z.string().trim().max(300).optional(),

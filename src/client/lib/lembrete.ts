@@ -124,7 +124,7 @@ export async function ligarLembrete(
     etapa = 'gravar';
     await enviarAssinatura(assinatura);
 
-    registrarEvento('push_ativado');
+    registrarEvento('push_ativado', { origem: 'botao' });
     return { estado: 'ligado' };
   } catch (e) {
     return { estado: 'erro', falha: relatar(etapa, e) };
@@ -159,6 +159,13 @@ export async function garantirAssinatura(): Promise<void> {
 
     etapa = 'gravar';
     await enviarAssinatura(nova);
+
+    /*
+     * Conta como ativação porque este aparelho **passou a** ter assinatura.
+     * O reenvio de assinatura que já existia (acima) não entra: ele acontece
+     * a cada abertura do app, e viraria um funil de ativações falsas.
+     */
+    registrarEvento('push_ativado', { origem: 'automatico' });
   } catch (e) {
     relatar(etapa, e);
   }
