@@ -1,4 +1,4 @@
-# Estado do projeto — 23/10/2026
+# Estado do projeto — 26/10/2026
 
 Retrato para uma sessão nova continuar daqui. A spec é o [CLAUDE.md](../CLAUDE.md);
 este arquivo registra o que **não** cabe lá: o que já rodou, o que está só em
@@ -15,7 +15,7 @@ staging, o que depende do Leo e as armadilhas que custaram caro.
 | Worker | `jda-pwa-staging` | `jda-pwa` |
 | D1 | `jda-pwa-staging` (`53e3ee12-…`) | `jda-pwa-prod` (`eddb43c3-75ea-43f3-a8cf-4371a833b573`) |
 | R2 | `jda-pwa-media-staging` | `jda-pwa-media` (34 áudios, 145 MB) |
-| Banco | 3 usuários de teste, 4 postbacks, 6 tokens | **seed só**: 10 produtos, 6 programas, 41 lições, 1 `payt_map`, **0 usuários** |
+| Banco | 3 usuários de teste, 4 postbacks, 8 tokens, 2 matrículas, **0 assinaturas de push** | **seed só**: 10 produtos, 6 programas, 41 lições, 1 `payt_map`, **0 usuários** |
 | Indexável | não (`Disallow: /` + `noindex`) | sim, menos `/entrar`, `/acesso` e `/parar` |
 
 Produção subiu em 23/10 e **ainda não recebe cliente**: sem postback cadastrado,
@@ -26,6 +26,100 @@ sem base importada e sem `PAYT_INTEGRATION_KEY`. A raiz serve a tela de Início.
 foram **apagados** para o Custom Domain poder assumir — Custom Domain recusa host
 com registro A/CNAME (`code: 100117`). Nada de e-mail foi tocado: MX, SPF, DKIM e
 DMARC continuam onde estavam.
+
+---
+
+## O que está aberto
+
+Cinco coisas esperando, nenhuma delas código a escrever agora.
+
+### 1. Teste do segundo login no iPhone (item 6 da fase 8)
+
+No iPhone, o app aberto pelo ícone **não enxerga o cookie do Safari**, e a pessoa
+precisa pedir código de novo. **O Leo vai conferir no aparelho dele se isso ainda
+acontece no iOS atual** — se não acontecer mais, não há nada a fazer.
+
+Se acontecer, a ordem combinada é:
+
+- **A) Entrega por CacheStorage**: logado no Safari, o app grava um token de uso
+  único numa entrada do Cache; o app aberto pelo ícone lê, troca por sessão e
+  apaga a entrada. O token segue as regras do `/acesso` (hash no banco, preso ao
+  usuário, 7 dias, reivindicação atômica).
+- **B) O mesmo token no `start_url`**, com manifest dinâmico servido **só** para o
+  Safari do iPhone — manifest que varia quebra a WebAPK do Android, então o
+  Android continua com o estático.
+
+Fica o que funcionar no aparelho de verdade. Se nenhum funcionar, fica o login por
+código, que já funciona.
+
+### 2. Os testes da fase 8 no celular do Leo
+
+**Ainda não aconteceram**: `push_subscriptions` está vazia em staging, e
+`push_envios` também — o cron roda de 5 em 5 minutos desde 23/10 sem ninguém para
+quem mandar. Enquanto não houver um aparelho assinado, o push nunca foi exercitado
+fora do teste automatizado.
+
+**Antes de testar, feche e reabra o app**: o service worker guarda a versão
+anterior, e abrir por cima mostra o app de antes (ver as armadilhas).
+
+Android, que é a maioria do público:
+
+1. Abrir `teste.jornadacomeuanjo.com` no Chrome e entrar.
+2. Deve aparecer "Coloque o Meu Anjo na tela do seu celular" com o botão
+   **Colocar na tela inicial** (prompt nativo). Instalar.
+3. Abrir pelo ícone → "Quer um lembrete para rezar todo dia?" → **Quero o
+   lembrete** → permitir.
+4. Escolher um horário → **tem que chegar um push na hora**: "Pronto! Hoje às 18h
+   eu te lembro da oração do dia."
+5. Tocar na notificação → o app abre.
+6. Na Home deve aparecer "Lembrete às 18h · mudar".
+
+iPhone:
+
+1. Safari → entrar → devem aparecer os 4 passos com os ícones desenhados.
+   **Conferir se o Compartilhar está na barra ou dentro do `⋯`** no iOS dele, e se
+   o texto acerta.
+2. Instalar, abrir pelo ícone (aqui entra o item 1 desta lista).
+3. Lembrete → permitir → horário → **o push de confirmação precisa chegar**.
+4. Com o app fechado, a notificação tem que abrir a oração do dia.
+
+Para disparar um push a qualquer momento, sem esperar a hora:
+
+```bash
+npm run push:teste -- --email leonardovcs2022@gmail.com --env staging
+```
+
+### 3. Produção está duas fases atrás
+
+As fases **5 (jornada) e 8 (push)** estão só em staging, por pedido do Leo: ele
+avisa quando publicar. Quando avisar:
+
+```bash
+npm run deploy:production
+npm run seed:production     # senão as frases curtas dos dias ficam vazias lá
+```
+
+O banco de produção já tem migrations e seed, e o R2 já tem os áudios — mas o seed
+de lá é anterior ao `summary` dos 19 dias.
+
+### 4. Em que pasta caíram os e-mails de 22 e 23/10
+
+Seis envios saíram sem falha, mas **ninguém conferiu a caixa**. A última rodada é
+o teste da hipótese de que o Outlook pesava o domínio do link (`workers.dev` →
+`teste.jornadacomeuanjo.com`), com o mesmo conteúdo de antes. Sem essa resposta
+não dá para saber se a mudança ajudou. Detalhe em "Resultado do teste de e-mail".
+
+### 5. Adiado por decisão do Leo, para quando o app estiver completo
+
+**Não é para começar agora.** Mas **a campanha para a base não sai antes disso**:
+
+- **Páginas `/privacidade` e `/termos`.** O texto já está escrito, em
+  `conteudo/legal/privacidade.md` e `conteudo/legal/termos.md` (do pipeline de
+  conteúdo). Falta servir no app. A Política é o que a §14 exige e é para onde o
+  rodapé dos e-mails manda quem procura a identificação da empresa.
+- **Registro de acesso**: IP, data e hora em toda entrada, apagados depois de 6
+  meses. A Política já declara que o IP é guardado no login — hoje ele só entra em
+  `login_codes.ip`, no pedido de código, não em toda entrada.
 
 ---
 
@@ -51,27 +145,38 @@ de teste**. O texto é do pipeline de conteúdo (`conteudo/emails/anuncio-app.md
 
 ### O estado do usuário de teste (staging)
 
-O `leonardovcs2022@gmail.com` ficou pronto para um teste de ponta a ponta no
-celular: matrícula **recomeçada hoje**, progresso **zerado** e dois produtos
-ativos — `jornada-meu-anjo` e `manual-purificacao` (este concedido em 23/10 só
-para conferir produto avulso: `unlock_rule = 'all'`, "Parte 1 de 4" e o aviso de
-saúde no topo).
+O `leonardovcs2022@gmail.com` tem dois produtos ativos — `jornada-meu-anjo` e
+`manual-purificacao` (este concedido em 23/10 só para conferir produto avulso:
+`unlock_rule = 'all'`, "Parte 1 de 4" e o aviso de saúde no topo).
 
-Então, abrindo o app: dia 1 é hoje, dia 2 diz "Libera amanhã", nada concluído.
+A **matrícula começou em 23/10** e o progresso está **zerado**. Como o dia libera
+pelo calendário, o "dia de hoje" anda sozinho: em 26/10 ele é o **dia 4**, com 1 a
+3 como "liberado" e 5 em diante bloqueados. Se o teste precisar começar do dia 1,
+é mover o `started_at`:
+
+```bash
+# volta a matrícula para hoje, para testar o primeiro dia de novo
+npx wrangler d1 execute DB --env staging --remote \
+  --command "UPDATE enrollments SET started_at = '<agora em ISO>' WHERE user_id = '2407c08c9845df0fca7d856d322626e3'"
+```
 
 Os eventos do funil em `events` (`lesson_started`, `audio_completed`,
-`lesson_completed`, um de cada) são do teste desta sessão e **não têm progresso
+`lesson_completed`, um de cada) são resíduo do teste de 23/10 e **não têm progresso
 correspondente**, porque o progresso foi zerado depois. Não é inconsistência de
-código: é resíduo de teste.
+código.
+
+**Nenhum aparelho assinou push ainda** (`push_subscriptions` vazia), então o
+lembrete nunca saiu de verdade — ver "O que está aberto".
 
 ### O que ficou de fora de propósito
 
-- **Fase 5 em diante**: nada da jornada, player, loja, mural, push ou admin.
-  O client hoje tem só: login, tela de "sem acesso" e uma lista dos produtos
-  liberados. `App.tsx` diz "A jornada começa aqui em breve".
+- **Loja, assinatura, mural, ofertas e admin** (fases 6, 7, 9, 10 e 11): o client
+  tem Início, login, Home com o cartão do dia, lista de dias, player e as telas de
+  instalar/lembrete/horário. Não há onde comprar nem onde publicar intenção.
+- **Bottom nav com 4 abas** (§4): só existe a Jornada, então não há abas ainda.
+- **Perfil**: por isso a troca de horário é a linha "Lembrete às 7h · mudar" na
+  Home, e a exclusão de conta é pelo suporte (`npm run conta:excluir`).
 - **Login por WhatsApp** para `fake_email` (§8): continua fase 2, como a spec diz.
-- **Produção**: o Worker de produção **nunca foi publicado**. Não há D1, R2 nem
-  secrets lá. `wrangler.toml` ainda tem `TROCAR_PELO_ID_DO_D1_PROD`.
 
 ---
 
@@ -89,9 +194,12 @@ conceder acesso a partir de um payload que foi recusado por motivo legítimo.
 **`vitest` roda em dois projetos.** `node` (validação do gerador de seed, que usa
 `node:fs`) e `workers` (o resto). O validador não roda no runtime do Workers.
 
-**O client não tem roteador.** `App.tsx` é uma máquina de estados simples
-(carregando → deslogado → logado). `/entrar?e=...` é lido do `location.search`.
-Quando a fase 5 trouxer abas, provavelmente vai precisar de um.
+**O roteador é nosso, não é biblioteca.** `client/lib/rota.ts` resolve por
+`pathname` em umas 40 linhas (`/`, `/entrar`, `/programa/:id`, `/licao/:id`,
+`/instalar`, `/lembrete`), com `pushState` e um evento próprio. São poucas telas e
+o app precisa abrir rápido em celular antigo. Se uma fase pedir rota aninhada ou
+carregamento por rota, a troca fica contida nesse arquivo — o resto do app só usa
+`useRota` e `irPara`.
 
 **Node 24 roda `.ts` direto.** Os scripts em `scripts/` são TypeScript sem build,
 executados por `node scripts/x.ts`. Por isso `allowImportingTsExtensions` no
@@ -165,7 +273,7 @@ PAYT_INTEGRATION_KEY     # quando o Leo criar o postback de produção na Payt
 
 | E-mail | Acesso | Como |
 |---|---|---|
-| `leonardovcs2022@gmail.com` | `jornada-meu-anjo` | `grant:staging`, `source = 'manual'` |
+| `leonardovcs2022@gmail.com` | `jornada-meu-anjo` + `manual-purificacao` | `grant:staging`, `source = 'manual'` |
 | `anacacancelli@outlook.com` | `jornada-meu-anjo` | idem (criado 22/10 para medir entrega no Outlook) |
 | `lenzincamara@hotmail.com` | `jornada-meu-anjo` | idem — **não use mais para medir entrega** |
 
@@ -183,6 +291,11 @@ assunto do anúncio sem nome — é o caminho que a base antiga sem nome vai usa
 O `grant:staging` **não cria usuário**: ele responde `usuario_nao_encontrado` se
 o e-mail não existe. A linha da Ana foi inserida à mão antes do grant.
 
+Existe uma quarta linha em `users`, **já anonimizada**: foi uma conta descartável
+(`excluir-teste@exemplo.invalido`) criada em 23/10 só para exercitar o
+`conta:excluir` de ponta a ponta. Ela não conta como usuário de teste — tem
+`deleted_at` preenchido e nada mais.
+
 ### `product_payt_map` no staging
 
 ```
@@ -198,9 +311,13 @@ limpeza derrubaria esse mapeamento a cada rodada.
 
 ### Tokens de acesso em staging
 
-A tabela `access_links` tem 2 tokens, dos e-mails de anúncio de teste (um por
-destinatário). São de uso único: se a pessoa já clicou, o link cai na tela de
-login com o e-mail preenchido — que é o comportamento esperado, não um defeito.
+A tabela `access_links` tem 8 tokens: dois dos e-mails de anúncio de teste (um por
+destinatário) e o resto gerado à mão nas sessões de teste, para entrar no app sem
+esperar e-mail. São de uso único: se já foi clicado, o link cai na tela de login
+com o e-mail preenchido — comportamento esperado, não defeito.
+
+Para entrar como alguém em staging sem esperar e-mail, o caminho é inserir um
+token (o hash é `sha256` do token em claro) e abrir `/acesso?t=<token>`.
 
 ### Outros dados
 
@@ -231,7 +348,8 @@ longo de semanas, que é exatamente o motivo do plano de ondas (50, 100, 250, 50
 **Consequência prática para a campanha**: uma fatia relevante da base usa
 Hotmail/Outlook/Live. Antes de disparar as ondas grandes, vale considerar
 [cadastrar o domínio no SNDS da Microsoft](https://sendersupport.olc.protection.outlook.com/snds/)
-e no JMRP, e acompanhar o `rua` do DMARC (`suporte@jornadacomeuanjo.com`).
+e no JMRP, e acompanhar os relatórios no DMARC Management da Cloudflare (o `rua`
+não vai mais para o suporte).
 
 ### Quarta rodada (23/10, já pelo `teste.jornadacomeuanjo.com`)
 
@@ -263,9 +381,22 @@ exatamente o motivo de o GET ter deixado de consumir o token.
 `mail.jornadacomeuanjo.com` e `jornadacomeuanjo.com` estão habilitados no Email
 Sending. Em `mail.` existem SPF, DKIM (`cf-bounce._domainkey`) e DMARC.
 
-**O DMARC de `mail.` foi mudado de `p=reject` para `p=none`** nesta sessão: a
-Cloudflare cria em `p=reject`, e domínio de envio novo com `p=reject` descarta
-e-mail legítimo no primeiro desalinhamento, sem deixar rastro de diagnóstico.
+**O DMARC de `mail.` é `p=none`**: a Cloudflare cria em `p=reject`, e domínio de
+envio novo com `p=reject` descarta e-mail legítimo no primeiro desalinhamento, sem
+deixar rastro de diagnóstico. O apex fica em `p=reject`, por decisão do Leo.
+
+Como os dois registros estão hoje:
+
+| Registro | Conteúdo |
+|---|---|
+| `_dmarc.jornadacomeuanjo.com` | `v=DMARC1; p=reject; rua=mailto:e11046c0725a4827b21a40ecd2139f43@dmarc-reports.cloudflare.net;` |
+| `_dmarc.mail.jornadacomeuanjo.com` | `v=DMARC1; p=none; rua=mailto:e11046c0725a4827b21a40ecd2139f43@dmarc-reports.cloudflare.net;` |
+
+O `rua` é o do **DMARC Management da Cloudflare**, ativado em 22/10 — caixa de
+suporte recebendo XML de relatório só atrapalha o atendimento. O `p=reject` do
+apex sobreviveu à ativação: o DMARC Management acrescenta o `rua` e não mexe na
+política. Os dois domínios relatam para o mesmo endereço, então o envio do app
+(`mail.`) e qualquer uso indevido do apex aparecem no mesmo lugar.
 
 **O SPF de `mail.` não existia** e foi criado. Na prática o SPF é checado no
 envelope (`cf-bounce.mail.…`, que já tinha), mas o registro no domínio do `From`
@@ -302,56 +433,26 @@ evita veredito de "sem SPF" em verificador ingênuo.
    `npx wrangler secret put PAYT_INTEGRATION_KEY --env staging`. Nenhum arquivo
    depende dela.
 
-### DNS
+### E-mail
 
-4. ~~Tirar o `rua` do `_dmarc.mail`~~ **feito em 22/10, pela API**:
-   `_dmarc.mail.jornadacomeuanjo.com` agora é `v=DMARC1; p=none;`. O apex
-   continua `v=DMARC1; p=reject;`, por decisão do Leo.
-
-5. ~~Ativar o DMARC Management e copiar o `rua`~~ **feito em 22/10.** O Leo ativou
-   pelo painel e a cópia do `rua` saiu pela API. Como está agora:
-
-   | Registro | Conteúdo |
-   |---|---|
-   | `_dmarc.jornadacomeuanjo.com` | `v=DMARC1; p=reject; rua=mailto:e11046c0725a4827b21a40ecd2139f43@dmarc-reports.cloudflare.net;` |
-   | `_dmarc.mail.jornadacomeuanjo.com` | `v=DMARC1; p=none; rua=mailto:e11046c0725a4827b21a40ecd2139f43@dmarc-reports.cloudflare.net;` |
-
-   O `p=reject` do apex sobreviveu à ativação, como a documentação promete: o
-   DMARC Management **acrescenta** o `rua` e não mexe na política.
-
-   **O DMARC Management não tem API** — `/zones/{zone}/dmarc_management`,
-   `/zones/{zone}/email/dmarc` e `/zones/{zone}/dmarc_reports` respondem `7000 No
-   route for that URI`. Ativar é sempre painel → conta → domínio → **Email →
-   DMARC Management**, e **só em domínio apex**: `mail.` nunca aparece lá, por
-   isso o `rua` dele é copiado à mão.
-
-   **O primeiro relatório demora até 24 h** para aparecer no painel. Os dois
-   domínios mandam relatório para o mesmo endereço, então dá para ver o envio do
-   app (`mail.`) e qualquer uso indevido do domínio principal no mesmo lugar.
-
-6. **Teste de resposta ao suporte** ainda não foi feito: responder um dos e-mails
+4. **Teste de resposta ao suporte** ainda não foi feito: responder um dos e-mails
    recebidos e confirmar que chega no Gmail pelo Email Routing.
 
 ### Pipeline de conteúdo (pedir, não editar)
 
-7. ~~`anuncio-app.md` descreve o login antigo~~ **resolvido pelo pipeline** em
-   `b1b87b9` (rodapé sem dados da empresa) e `f6b9e11` (o texto agora explica o
-   acesso direto por um toque, o que acontece se o link vencer, e o pedido de
-   código na primeira abertura pela tela inicial do iPhone).
-
-   O que continua valendo: **o rodapé do arquivo é descartado na leitura**
+5. **O rodapé do `anuncio-app.md` é descartado na leitura**
    (`emails/anuncio.ts`), porque quem monta o rodapé é o renderizador, igual nos
    três e-mails — senão o "parar de receber" sai duas vezes. Com isso, o
    `· jornadacomeuanjo.com · Política de Privacidade` que o pipeline pôs lá **não
    aparece no e-mail**. Se o Leo quiser esse link no rodapé, é uma linha no
    `motivo` em `montarAnuncio`.
 
-8. **Identidade visual.** Ícones em `public/icons/` são placeholder gerados por
+6. **Identidade visual.** Ícones em `public/icons/` são placeholder gerados por
    script (fundo azul com cruz dourada).
 
 ### Limitação de ferramenta
 
-9. **A credencial padrão desta máquina não escreve DNS.** O wrangler está logado
+7. **A credencial padrão desta máquina não escreve DNS.** O wrangler está logado
    por OAuth (`C:\Users\lenzi\AppData\Roaming\xdg.config\.wrangler`), com
    workers, d1, pages, `email_routing` e `email_sending` em escrita, mas `zone`
    só em leitura — nenhum escopo de `dns_records`. Para DNS é preciso um API
@@ -428,11 +529,6 @@ elemento de áudio — que é exatamente o que acontece quando a pessoa toca pel
 controles da tela de bloqueio ou do fone. Ele passou para o evento `play` do
 próprio `<audio>`, que pega todos os caminhos.
 
-**O `summary` das lições da jornada está vazio no seed.** O campo é do pipeline de
-conteúdo (§3) e é ele que deveria dar a frase curta do cartão da Home. Enquanto
-não vier, o app usa a linha `**Intenção:**` do corpo, que funciona bem — mas é
-cadeia de recurso, não a fonte certa. **Vale pedir ao pipeline que preencha.**
-
 **Texto de conteúdo repetia o aviso obrigatório.** O `manual-purificacao` trazia o
 aviso de saúde como citação na primeira linha do corpo, e ele aparecia duas vezes:
 na faixa do topo (que a §14 exige) e no texto. O Worker tira o primeiro bloco
@@ -478,24 +574,22 @@ Em ordem de dependência. O que está pronto não aparece aqui.
 
 | # | Falta | Depende de | Por quê trava |
 |---|---|---|---|
-| 1 | ~~Fase 5: Jornada~~ | — | **Feita em 23/10.** Está só em staging: produção não recebeu deploy desde então, por pedido do Leo |
-| 2 | **Códigos do UP1 e do UP2** no `payt_map` | Leo | Sem eles o importador para, e comprador de upsell não recebe acesso em produção |
-| 3 | **Postback de produção** na Payt + `PAYT_INTEGRATION_KEY` de produção | Leo | Sem isso compra nova em produção não libera nada |
-| 4 | **CSV de vendas** e importação da base | Leo (itens 2 e 3) | É a base da campanha |
-| 5 | **`ADMIN_API_KEY` de produção em mãos** | — | Foi gerada sem cópia; `grant`, campanha e reprocesso em produção precisam dela (gerar outra e substituir) |
-| 6 | **Política de Privacidade e Termos** em produção, com CNPJ (§14) | — | O rodapé dos e-mails aponta a identificação para lá, e a campanha vai para a base |
-| 7 | **Identidade visual** (ícones ainda são placeholder) | Leo | A raiz já é pública: o ícone aparece |
-| 8 | **Campanha**, em ondas, começando por Gmail | 2, 4, 5, 6 e a fase 5 | O e-mail promete um app com a jornada funcionando |
+| 1 | **Testar as fases 5 e 8 no celular** | Leo | Nada do push foi exercitado em aparelho de verdade ainda |
+| 2 | **Publicar as fases 5 e 8 em produção** | Leo (item 1) | Produção está duas fases atrás |
+| 3 | **Códigos do UP1 e do UP2** no `payt_map` | Leo | Sem eles o importador para, e comprador de upsell não recebe acesso em produção |
+| 4 | **Postback de produção** na Payt + `PAYT_INTEGRATION_KEY` de produção | Leo | Sem isso compra nova em produção não libera nada |
+| 5 | **CSV de vendas** e importação da base | Leo (itens 3 e 4) | É a base da campanha |
+| 6 | **`ADMIN_API_KEY` de produção em mãos** | — | Foi gerada sem cópia; `grant`, campanha e reprocesso em produção precisam dela (gerar outra e substituir) |
+| 7 | **`/privacidade` e `/termos` servidas pelo app** | — | Adiado pelo Leo para quando o app estiver completo, mas **a campanha não sai antes**: o rodapé dos e-mails aponta a identificação para lá |
+| 8 | **Registro de acesso** (IP, data e hora, apagado em 6 meses) | — | Adiado junto com o item 7, e pela mesma razão: a Política já declara que isso existe |
+| 9 | **Identidade visual** (ícones ainda são placeholder) | Leo | A raiz já é pública: o ícone aparece |
+| 10 | **Campanha**, em ondas, começando por Gmail | 3, 5, 6, 7 e 8 | O e-mail promete um app funcionando, e manda quem procura a Política para uma página que ainda não existe |
 
-**Produção está uma versão atrás**: a fase 5 foi publicada só em staging, porque o
-Leo pediu para não publicar produção sem o aval dele. Quando ele der o aval, é
-`npm run deploy:production` — o banco de produção já tem as migrations e o seed, e
-o R2 já tem os áudios.
+**Produção está duas fases atrás** (5 e 8): ver "O que está aberto", no topo.
 
 Fora da fila, se o Leo quiser: **`www` → raiz canonizado** (hoje os dois servem o
-app; canonizar é uma Redirect Rule no painel), **SNDS/JMRP da Microsoft** para ver
-de dentro o que o Outlook acha do domínio, e **`summary` das lições da jornada**
-preenchido pelo pipeline de conteúdo (ver as armadilhas).
+app; canonizar é uma Redirect Rule no painel) e **SNDS/JMRP da Microsoft**, para
+ver de dentro o que o Outlook acha do domínio.
 
 ## 9. Comandos que a próxima sessão vai querer
 
