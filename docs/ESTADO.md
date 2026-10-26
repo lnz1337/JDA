@@ -4,7 +4,7 @@ Retrato para uma sessão nova continuar daqui. A spec é o [CLAUDE.md](../CLAUDE
 este arquivo registra o que **não** cabe lá: o que já rodou, o que está só em
 staging, o que depende do Leo e as armadilhas que custaram caro.
 
-`npm run typecheck && npm test` limpo, **250 testes** em 14 arquivos.
+`npm run typecheck && npm test` limpo, **284 testes** em 17 arquivos.
 
 ## Os dois ambientes
 
@@ -15,7 +15,7 @@ staging, o que depende do Leo e as armadilhas que custaram caro.
 | Worker | `jda-pwa-staging` | `jda-pwa` |
 | D1 | `jda-pwa-staging` (`53e3ee12-…`) | `jda-pwa-prod` (`eddb43c3-75ea-43f3-a8cf-4371a833b573`) |
 | R2 | `jda-pwa-media-staging` | `jda-pwa-media` (34 áudios, 145 MB) |
-| Banco | 3 usuários de teste, 4 postbacks, 8 tokens, 2 matrículas, **0 assinaturas de push** | **seed só**: 10 produtos, 6 programas, 41 lições, 1 `payt_map`, **0 usuários** |
+| Banco | 3 usuários de teste, 4 postbacks, 8 tokens, 2 matrículas, **1 assinatura de push** (iPhone do Leo, serviço da Apple) | **seed só**: 10 produtos, 6 programas, 41 lições, 1 `payt_map`, **0 usuários** |
 | Indexável | não (`Disallow: /` + `noindex`) | sim, menos `/entrar`, `/acesso` e `/parar` |
 
 Produção subiu em 23/10 e **ainda não recebe cliente**: sem postback cadastrado,
@@ -31,15 +31,18 @@ DMARC continuam onde estavam.
 
 ## O que está aberto
 
-Cinco coisas esperando, nenhuma delas código a escrever agora.
+Cinco itens: o primeiro se resolveu sozinho e fica aqui só como registro; os
+quatro seguintes continuam esperando, nenhum deles código a escrever agora.
 
-### 1. Teste do segundo login no iPhone (item 6 da fase 8)
+### 1. Segundo login no iPhone: não se reproduziu (26/10)
 
-No iPhone, o app aberto pelo ícone **não enxerga o cookie do Safari**, e a pessoa
-precisa pedir código de novo. **O Leo vai conferir no aparelho dele se isso ainda
-acontece no iOS atual** — se não acontecer mais, não há nada a fazer.
+**Resolvido por observação, sem código.** No teste de 26/10 o app aberto pelo
+ícone manteve a sessão por várias aberturas: o `GET /api/me` responde 200 sem
+nenhum `/api/auth/codigo` antes dele. O único login por código do dia veio depois
+de um `POST /api/auth/sair` que o Leo mesmo pediu.
 
-Se acontecer, a ordem combinada é:
+É **um aparelho, num dia**, não uma prova geral — se aparecer em outro iPhone, a
+ordem combinada continua valendo:
 
 - **A) Entrega por CacheStorage**: logado no Safari, o app grava um token de uso
   único numa entrada do Cache; o app aberto pelo ícone lê, troca por sessão e
@@ -50,14 +53,33 @@ Se acontecer, a ordem combinada é:
   Android continua com o estático.
 
 Fica o que funcionar no aparelho de verdade. Se nenhum funcionar, fica o login por
-código, que já funciona.
+código, que já funciona. **Nada disso foi construído**, e não é para construir
+enquanto não houver um aparelho em que o problema aconteça.
 
-### 2. Os testes da fase 8 no celular do Leo
+### 2. Os testes da fase 8: iPhone **feito**, Android pendente
 
-**Ainda não aconteceram**: `push_subscriptions` está vazia em staging, e
-`push_envios` também — o cron roda de 5 em 5 minutos desde 23/10 sem ninguém para
-quem mandar. Enquanto não houver um aparelho assinado, o push nunca foi exercitado
-fora do teste automatizado.
+**iPhone, 26/10: funciona de ponta a ponta.** A assinatura gravou
+(`web.push.apple.com`), o push de confirmação chegou no aparelho, e o banco
+registra o envio: `push_subscriptions.last_success_at` três segundos depois do
+`created_at`, e um `push_enviado` com `{"servico":"apple","tipo":"confirmacao"}`.
+No Worker:
+
+```
+13:00:13  POST /api/push/assinatura   200
+13:00:15  POST /api/push/confirmacao  200
+```
+
+Levou um bug pelo caminho: um **BOM dentro do `VAPID_PUBLIC_KEY`** derrubava o
+`subscribe` no Safari. Está nas armadilhas, e é a que mais vale ler.
+
+**Falta o Android**, que é a maioria do público — nada do fluxo foi exercitado em
+Chrome de verdade (prompt nativo de instalação, `beforeinstallprompt`, serviço de
+push do Google). O roteiro abaixo continua valendo inteiro para ele.
+
+**Falta também**, no iPhone: tocar na notificação **com o app fechado** e conferir
+que ela abre a oração do dia (passo 4 do roteiro do iPhone), e o lembrete diário
+chegando no horário pelo cron — até agora só o push de confirmação foi exercitado.
+O `push_envios` continua vazio.
 
 **Antes de testar, feche e reabra o app**: o service worker guarda a versão
 anterior, e abrir por cima mostra o app de antes (ver as armadilhas).
@@ -133,7 +155,7 @@ não dá para saber se a mudança ajudou. Detalhe em "Resultado do teste de e-ma
 | 4 — Auth | **concluída**, com e-mail entregando. Revisada 22/10 para o público 55+: link de acesso direto (com tela de confirmação, para pré-visualizador de link não gastar o token), sessão de 1 ano, código em ação sensível, tela de código mais fácil |
 | 5 — Jornada | **concluída em 23/10**: Home com o cartão do dia, lista de dias com estado, player com Range/Media Session/retomada, conclusão e os eventos do funil |
 | 6 — Loja | **não começou** ← próxima |
-| 8 — Push | **concluída em 23/10** (fora de ordem, a pedido): instalação na tela inicial, lembrete diário e escolha do horário |
+| 8 — Push | **concluída em 23/10** (fora de ordem, a pedido): instalação na tela inicial, lembrete diário e escolha do horário. **Testada no iPhone em 26/10**, com três correções: etapa da falha registrada, ordem do toque no Safari e o BOM do segredo VAPID. Android ainda não |
 | 7, 9 a 12 | não começaram |
 
 ### Fora do escopo das fases, já construído
@@ -165,8 +187,9 @@ Os eventos do funil em `events` (`lesson_started`, `audio_completed`,
 correspondente**, porque o progresso foi zerado depois. Não é inconsistência de
 código.
 
-**Nenhum aparelho assinou push ainda** (`push_subscriptions` vazia), então o
-lembrete nunca saiu de verdade — ver "O que está aberto".
+**O iPhone do Leo está assinado** desde 26/10 (serviço da Apple) e recebeu o push
+de confirmação. O **lembrete diário** pelo cron ainda não foi exercitado
+(`push_envios` vazio), nem nenhum aparelho Android — ver "O que está aberto".
 
 ### O que ficou de fora de propósito
 
@@ -562,6 +585,46 @@ em `mail.jornadacomeuanjo.com`; o que dá é copiar o `rua` dele para o
 `_dmarc.mail` à mão. Ativar no apex **não** muda a política que já está lá — ele
 só acrescenta um `rua`.
 
+**`wrangler secret put` por pipe no PowerShell grava BOM dentro do segredo.** O
+`VAPID_PUBLIC_KEY` do staging tinha um U+FEFF no começo — 88 caracteres em vez de
+87 — e o `subscribe` do Safari morria com `InvalidCharacterError: The string
+contains invalid characters`, mensagem que não aponta para segredo nenhum. O
+`atob` do navegador é estrito; o `Buffer.from(..., 'base64')` do Node **ignora** o
+BOM, então conferir a chave pelo Node não acusa nada — foi o que atrasou o
+diagnóstico. Pior: como o padding sai do tamanho da string
+(`padEnd(Math.ceil(len/4)*4, '=')`), com 88 a conta dá 88 e o `=` que falta não é
+acrescentado, então **tirar só o caractere não bastaria** — a limpeza tem que vir
+antes de medir. A normalização ficou no `vapidDe` (`services/push.ts`), único
+ponto onde os três valores são lidos, porque o mesmo pipe gravou a chave privada e
+o `VAPID_SUBJECT` — e assunto com BOM faria o `assuntoVapidValido` recusar o
+`mailto:`. Nenhum segredo precisou ser trocado: o valor é o mesmo, só deixa de
+chegar sujo. **Vale para produção**, cujo par VAPID foi gravado do mesmo jeito.
+Quando for gravar segredo por pipe no Windows, confira o tamanho depois.
+
+**`catch` mudo em fluxo que só roda no celular custa uma sessão inteira.** O
+`ligarLembrete` tinha `catch { return 'erro' }`, e a tela dizia "não consegui
+ligar o lembrete agora" — sem Mac não há inspetor para o Safari do iPhone, então
+não havia como saber se parou na permissão, no service worker, na chave, no
+`subscribe` ou na gravação. Quem resolveu foi marcar a etapa antes de cada passo e
+gravar `push_erro_cliente` com a etapa e o erro no formato `nome: mensagem`; em
+staging a tela mostra essa linha. O **`name` da exceção** é o que informa
+(`InvalidCharacterError` apontou direto para o `atob`), e ele é lido sem
+`instanceof Error`, porque em WebKit antigo `DOMException` não herda de `Error`.
+
+**O `wrangler tail` mostra o que não aconteceu.** O diagnóstico saiu de ver
+`GET /api/push/chave` com 200 e **nenhum** `POST /api/push/assinatura` depois: isso
+já descartava sessão, chave e validação do Worker, e deixava a falha no aparelho.
+Vale ouvir o tail antes de mexer em código quando o bug é de celular.
+
+**Permissão concedida não quer dizer assinado, e a rota `/lembrete` confundia os
+dois.** Ela mandava para o `PassoHorario` quando a permissão estava concedida, e
+escolher a hora sem assinatura não liga nada — o `/api/push/confirmacao`
+respondia `sem_assinatura` (404). Somava com duas outras: o `passoAtual` só
+oferece o lembrete com a permissão em `default`, e o "Continuar" da tela de falha
+chamava o mesmo `aoPular` do "Agora não", que dispensa o convite por sete dias
+logo depois de a pessoa tentar. Três becos no mesmo caminho: quem falhava na
+assinatura não tinha mais onde tocar.
+
 **O e-mail de teste de compra era aleatório** e podia ser de uma pessoa real.
 Virou regra no CLAUDE.md (§16): sempre endereço próprio. A limpeza exigiu apagar
 o usuário de todas as tabelas e mascarar o payload.
@@ -574,7 +637,7 @@ Em ordem de dependência. O que está pronto não aparece aqui.
 
 | # | Falta | Depende de | Por quê trava |
 |---|---|---|---|
-| 1 | **Testar as fases 5 e 8 no celular** | Leo | Nada do push foi exercitado em aparelho de verdade ainda |
+| 1 | **Testar as fases 5 e 8 no Android** | Leo | O iPhone passou em 26/10; no Android nada foi exercitado, e é a maioria do público |
 | 2 | **Publicar as fases 5 e 8 em produção** | Leo (item 1) | Produção está duas fases atrás |
 | 3 | **Códigos do UP1 e do UP2** no `payt_map` | Leo | Sem eles o importador para, e comprador de upsell não recebe acesso em produção |
 | 4 | **Postback de produção** na Payt + `PAYT_INTEGRATION_KEY` de produção | Leo | Sem isso compra nova em produção não libera nada |
