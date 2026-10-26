@@ -4,7 +4,7 @@ import { APP_NAME } from '../../shared/constants';
 import { api, type Me } from '../lib/api';
 import { permissaoDeNotificacao } from '../lib/dispositivo';
 import { irPara } from '../lib/rota';
-import { CHAVES, dispensar, type Passo, passoAtual } from './Onboarding';
+import { CHAVES, dispensar, type Passo, passoAtual, precisaAssinarDeNovo } from './Onboarding';
 
 /**
  * A primeira tela de quem está dentro: o cartão do dia, grande, com o que fazer
@@ -107,6 +107,25 @@ export function Home({ me, aoSair }: { me: Me; aoSair: () => void }) {
  */
 function ConviteDoAparelho() {
   const [passo, setPasso] = useState<Passo>(() => passoAtual());
+
+  /*
+   * O `passoAtual` é síncrono e não consulta o `pushManager`, então ele não vê
+   * o caso de quem permitiu a notificação e **não conseguiu assinar**. Essas
+   * pessoas não caíam em passo nenhum: a tela de falha mandava tentar de novo
+   * pela tela inicial, e aqui não havia nada. A checagem é assíncrona, por isso
+   * vem depois da primeira renderização.
+   */
+  useEffect(() => {
+    if (passo === 'instalar' || passo === 'lembrete') return;
+
+    let vivo = true;
+    void precisaAssinarDeNovo().then((precisa) => {
+      if (vivo && precisa) setPasso('lembrete');
+    });
+    return () => {
+      vivo = false;
+    };
+  }, [passo]);
 
   if (passo !== 'instalar' && passo !== 'lembrete') return null;
 

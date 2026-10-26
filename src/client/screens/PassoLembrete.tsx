@@ -17,9 +17,17 @@ import {
 export function PassoLembrete({
   aoLigar,
   aoPular,
+  aoSeguir,
 }: {
   aoLigar: () => void;
+  /** A pessoa disse "Agora não": o convite some por uma semana. */
   aoPular: () => void;
+  /**
+   * Não deu para ligar. Só encerra a tela, **sem** dispensar: falha não é
+   * recusa, e esconder o convite de quem acabou de falhar era o que não deixava
+   * tentar de novo.
+   */
+  aoSeguir: () => void;
 }) {
   const [pedindo, setPedindo] = useState(false);
   const [resultado, setResultado] = useState<ResultadoLembrete | null>(null);
@@ -49,7 +57,7 @@ export function PassoLembrete({
         </p>
         <button
           type="button"
-          onClick={aoPular}
+          onClick={aoSeguir}
           className="min-h-[64px] w-full rounded-xl bg-noite-900 px-4 py-4 text-xl font-semibold text-white"
         >
           Continuar
@@ -89,7 +97,7 @@ export function PassoLembrete({
         )}
         <button
           type="button"
-          onClick={aoPular}
+          onClick={resultado.estado === 'negado' ? aoPular : aoSeguir}
           className="min-h-[64px] w-full rounded-xl bg-noite-900 px-4 py-4 text-xl font-semibold text-white"
         >
           Continuar

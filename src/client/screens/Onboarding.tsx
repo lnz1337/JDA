@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import {
+  assinaturaAtual,
   ehCelular,
   ehIOS,
   ehStandalone,
@@ -66,6 +67,27 @@ export function passoAtual(): Passo {
 }
 
 /**
+ * Permissão concedida e este aparelho **sem assinatura**: o `subscribe` falhou,
+ * ou a assinatura expirou, ou os dados do site foram limpos.
+ *
+ * Era o caso sem saída. O `passoAtual` só oferece o lembrete com a permissão em
+ * `default`, então quem permitia e falhava na assinatura não via mais convite
+ * nenhum — e a tela de falha mandava "tentar de novo pela tela inicial", onde
+ * não havia nada para tocar.
+ *
+ * Fica separado do `passoAtual` porque consultar o `pushManager` é assíncrono, e
+ * o `passoAtual` é lido durante a renderização.
+ */
+export async function precisaAssinarDeNovo(): Promise<boolean> {
+  if (!ehCelular() || !suportaPush()) return false;
+  if (permissaoDeNotificacao() !== 'granted') return false;
+  // "Agora não" continua valendo: o convite volta daqui a uma semana.
+  if (dispensadoRecentemente(CHAVES.lembreteDispensado)) return false;
+
+  return (await assinaturaAtual()) === null;
+}
+
+/**
  * O onboarding em tela cheia deve rodar neste aparelho?
  *
  * Só na primeira vez. Depois dele, quem lembra é o card da Home — tomar a tela
@@ -125,6 +147,12 @@ export function Onboarding({ aoTerminar }: { aoTerminar: () => void }) {
           dispensar(CHAVES.lembreteDispensado);
           aoTerminar();
         }}
+        /*
+         * Falha não é "Agora não": dispensar aqui escondia o convite por sete
+         * dias justamente de quem precisava tentar de novo. Só encerra a tela;
+         * quem oferece de novo é o card da Home.
+         */
+        aoSeguir={aoTerminar}
       />
     );
   }

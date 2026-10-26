@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api, type Me, registrarEvento } from './lib/api';
-import { permissaoDeNotificacao } from './lib/dispositivo';
+import { assinaturaAtual, permissaoDeNotificacao } from './lib/dispositivo';
 import { garantirAssinatura } from './lib/lembrete';
 import { irPara, useRota } from './lib/rota';
 import { Entrar } from './screens/Entrar';
@@ -20,6 +20,8 @@ export function App() {
   const [estado, setEstado] = useState<Estado>({ fase: 'carregando' });
   const [onboarding, setOnboarding] = useState(deveRodarOnboarding);
   const rota = useRota();
+  /** `null` enquanto não se sabe: consultar o `pushManager` é assíncrono. */
+  const [semAssinatura, setSemAssinatura] = useState<boolean | null>(null);
 
   const carregar = useCallback(async () => {
     try {
@@ -46,6 +48,26 @@ export function App() {
   useEffect(() => {
     if (estado.fase === 'logado') void garantirAssinatura();
   }, [estado.fase]);
+
+  /*
+   * Este aparelho está assinado? É o que decide o que a rota `/lembrete` mostra.
+   * Refaz a cada troca de rota porque o `garantirAssinatura` acima pode ter
+   * assinado no caminho.
+   */
+  useEffect(() => {
+    if (estado.fase !== 'logado') {
+      setSemAssinatura(null);
+      return;
+    }
+
+    let vivo = true;
+    void assinaturaAtual().then((a) => {
+      if (vivo) setSemAssinatura(a === null);
+    });
+    return () => {
+      vivo = false;
+    };
+  }, [estado.fase, rota.nome]);
 
   useEffect(() => {
     const parametros = new URLSearchParams(location.search);
@@ -101,11 +123,28 @@ export function App() {
   if (rota.nome === 'instalar') return <PassoInstalar aoPular={() => irPara('/')} />;
 
   if (rota.nome === 'lembrete') {
-    // Permissão ainda não dada: pedir vem antes de escolher a hora.
-    return permissaoDeNotificacao() === 'granted' ? (
+    /*
+     * Permissão concedida não quer dizer assinado. Esta rota ia direto para o
+     * horário, e escolher a hora sem assinatura não liga nada: era por isso que
+     * o push de confirmação respondia `sem_assinatura`. Com a permissão dada e
+     * sem assinatura, o que falta é justamente o `ligarLembrete`.
+     */
+    if (semAssinatura === null) {
+      return (
+        <main className="flex min-h-dvh items-center justify-center">
+          <p className="text-lg text-noite-300">carregando…</p>
+        </main>
+      );
+    }
+
+    return permissaoDeNotificacao() === 'granted' && !semAssinatura ? (
       <PassoHorario aoTerminar={() => irPara('/')} />
     ) : (
-      <PassoLembrete aoLigar={() => irPara('/lembrete')} aoPular={() => irPara('/')} />
+      <PassoLembrete
+        aoLigar={() => irPara('/lembrete')}
+        aoPular={() => irPara('/')}
+        aoSeguir={() => irPara('/')}
+      />
     );
   }
 
