@@ -15,7 +15,7 @@ staging, o que depende do Leo e as armadilhas que custaram caro.
 | Worker | `jda-pwa-staging` | `jda-pwa` |
 | D1 | `jda-pwa-staging` (`53e3ee12-…`) | `jda-pwa-prod` (`eddb43c3-75ea-43f3-a8cf-4371a833b573`) |
 | R2 | `jda-pwa-media-staging` | `jda-pwa-media` (34 áudios, 145 MB) |
-| Banco | 3 usuários de teste, 4 postbacks, 8 tokens, 2 matrículas, **1 assinatura de push** (iPhone do Leo, serviço da Apple) | **seed só**: 10 produtos, 6 programas, 41 lições, 1 `payt_map`, **0 usuários** |
+| Banco | 3 usuários de teste, 8 postbacks, 9 tokens, 3 matrículas, **1 assinatura de push** (iPhone do Leo, serviço da Apple) | **seed só**: 10 produtos, 6 programas, 41 lições, 1 `payt_map`, **0 usuários** |
 | Indexável | não (`Disallow: /` + `noindex`) | sim, menos `/entrar`, `/acesso` e `/parar` |
 
 Produção subiu em 23/10 e **ainda não recebe cliente**: sem postback cadastrado,
@@ -181,10 +181,25 @@ de teste**. O texto é do pipeline de conteúdo (`conteudo/emails/anuncio-app.md
 
 ### O estado do usuário de teste (staging)
 
-O `leonardovcs2022@gmail.com` tem dois produtos ativos — `jornada-meu-anjo` e
-`manual-purificacao` (este concedido em 23/10 só para conferir produto avulso:
-`unlock_rule = 'all'`, "Parte 1 de 4" e o aviso de saúde no topo).
+O `leonardovcs2022@gmail.com` tem **um produto ativo**: `jornada-meu-anjo`.
 
+Os outros dois passaram por aqui e foram revogados, o que deixa o banco bom
+para testar reembolso de novo:
+
+| Produto | Fonte | O que aconteceu |
+|---|---|---|
+| `oracao-sao-miguel` | `payt` (tx `82JJPJX`) | comprado e reembolsado em 26/10, no teste da fase 6 |
+| `manual-purificacao` | `manual` | concedido à mão em 23/10 para conferir produto avulso; **revogado em 26/10** |
+
+O `manual-purificacao` foi revogado a pedido do Leo porque confundia: como
+concessão manual não tem `transaction_id`, ela sobreviveu ao reembolso do
+pacote que a contém, e a Home seguia mostrando "também liberado para você".
+Está nas armadilhas. Com ele fora, `/api/programas` devolve só a jornada e
+`/api/licoes/manual-purificacao-l01` responde 403.
+
+Sobrou uma **matrícula órfã** em `manual-purificacao`: matrícula e progresso
+não são revogados junto com o acesso (nem devem ser — quem recompra não perde
+o que já rezou). Ela não aparece em lugar nenhum enquanto o acesso não voltar.
 A **matrícula começou em 23/10** e o progresso está **zerado**. Como o dia libera
 pelo calendário, o "dia de hoje" anda sozinho: em 26/10 ele é o **dia 4**, com 1 a
 3 como "liberado" e 5 em diante bloqueados. Se o teste precisar começar do dia 1,
