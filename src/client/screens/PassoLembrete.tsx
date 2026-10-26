@@ -1,6 +1,11 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { suportaPush } from '../lib/dispositivo';
-import { ligarLembrete, type ResultadoLembrete } from '../lib/lembrete';
+import {
+  ligarLembrete,
+  prepararLembrete,
+  type PreparoPush,
+  type ResultadoLembrete,
+} from '../lib/lembrete';
 
 /**
  * Pedir a permissão de notificação (CLAUDE.md §11).
@@ -18,6 +23,18 @@ export function PassoLembrete({
 }) {
   const [pedindo, setPedindo] = useState(false);
   const [resultado, setResultado] = useState<ResultadoLembrete | null>(null);
+
+  /*
+   * O preparo começa quando a tela aparece, não no toque: no Safari do iPhone a
+   * assinatura pode precisar nascer dentro do gesto, e ir à rede entre o
+   * "Permitir" e o `subscribe` gastaria esse gesto. Quando a pessoa termina de
+   * responder o alerta do sistema, isto aqui já resolveu.
+   *
+   * No `useRef` e não no `useState`: o preparo é um efeito que acompanha a tela,
+   * e o botão não depende dele para aparecer.
+   */
+  const preparo = useRef<Promise<PreparoPush | null> | null>(null);
+  if (!preparo.current) preparo.current = prepararLembrete();
 
   // iPhone abaixo do 16.4: não há PushManager, e insistir seria prometer o que
   // o aparelho não faz.
@@ -43,7 +60,7 @@ export function PassoLembrete({
 
   async function ligar() {
     setPedindo(true);
-    const r = await ligarLembrete();
+    const r = await ligarLembrete(preparo.current ?? prepararLembrete());
     setResultado(r);
     setPedindo(false);
     if (r.estado === 'ligado') aoLigar();

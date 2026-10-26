@@ -20,6 +20,7 @@ import {
   registroPronto,
   suportaPush,
 } from './dispositivo';
+import { comLimite } from './limite';
 
 export type ResultadoLembrete =
   | { estado: 'ligado' }
@@ -41,8 +42,65 @@ function relatar(etapa: EtapaPush, e: unknown): FalhaPush {
   return falha;
 }
 
-/** Pede a permissão e assina. Chamar **dentro** do clique. */
-export async function ligarLembrete(): Promise<ResultadoLembrete> {
+/**
+ * O que o `subscribe` precisa, carregado **antes** do toque.
+ *
+ * No Safari do iPhone a assinatura pode ter de nascer ainda dentro do gesto, e
+ * buscar a chave entre o `requestPermission` e o `subscribe` gasta esse gesto.
+ * Então service worker, assinatura existente e chave vêm na abertura da tela.
+ */
+export interface PreparoPush {
+  registro: ServiceWorkerRegistration;
+  chave: string;
+  /** Assinatura que este aparelho já tem, se houver. */
+  existente: PushSubscription | null;
+}
+
+/**
+ * Oito segundos por passo. É folgado para celular antigo em rede ruim e curto o
+ * bastante para a tela não ficar presa num `serviceWorker.ready` que não volta.
+ */
+const LIMITE_MS = 8_000;
+
+/**
+ * Carrega o preparo. **Nunca rejeita**: devolve `null` e relata a falha, porque
+ * quem chama é o `useEffect` da tela, que não tem onde tratar exceção.
+ */
+export async function prepararLembrete(limiteMs = LIMITE_MS): Promise<PreparoPush | null> {
+  if (!suportaPush()) return null;
+
+  let etapa: EtapaPush = 'service_worker';
+  try {
+    const registro = await comLimite(registroPronto(), limiteMs, etapa);
+
+    etapa = 'assinar';
+    const existente = await comLimite(assinaturaDoRegistro(registro), limiteMs, etapa);
+
+    etapa = 'chave';
+    const { chave } = await comLimite(
+      api<{ chave: string }>('/api/push/chave'),
+      limiteMs,
+      etapa,
+    );
+
+    return { registro, chave, existente };
+  } catch (e) {
+    relatar(etapa, e);
+    return null;
+  }
+}
+
+/**
+ * Pede a permissão e assina. Chamar **dentro** do clique.
+ *
+ * Recebe o preparo como **promessa**, não como valor: quando a pessoa toca, o
+ * preparo da abertura normalmente já terminou — e esperar uma promessa que já
+ * resolveu custa um microtask, não uma ida à rede. Entre a permissão e o
+ * `subscribe` não há nenhuma chamada nova.
+ */
+export async function ligarLembrete(
+  preparo: Promise<PreparoPush | null>,
+): Promise<ResultadoLembrete> {
   if (!suportaPush()) return { estado: 'indisponivel' };
 
   let etapa: EtapaPush = 'permissao';
@@ -53,15 +111,15 @@ export async function ligarLembrete(): Promise<ResultadoLembrete> {
       return { estado: 'negado' };
     }
 
-    etapa = 'service_worker';
-    const registro = await registroPronto();
-
-    etapa = 'chave';
-    const { chave } = await api<{ chave: string }>('/api/push/chave');
+    const pronto = await preparo;
+    if (!pronto) {
+      // O preparo falhou e já se relatou. Insistir aqui seria repetir o passo
+      // que acabou de falhar, agora sem o gesto para gastar.
+      return { estado: 'erro', falha: { etapa: 'chave', erro: 'TempoEsgotado: preparo' } };
+    }
 
     etapa = 'assinar';
-    const assinatura =
-      (await assinaturaDoRegistro(registro)) ?? (await assinarPush(registro, chave));
+    const assinatura = pronto.existente ?? (await assinarPush(pronto.registro, pronto.chave));
 
     etapa = 'gravar';
     await enviarAssinatura(assinatura);
@@ -84,25 +142,20 @@ export async function ligarLembrete(): Promise<ResultadoLembrete> {
 export async function garantirAssinatura(): Promise<void> {
   if (!suportaPush() || permissaoDeNotificacao() !== 'granted') return;
 
-  let etapa: EtapaPush = 'service_worker';
-  try {
-    const registro = await registroPronto();
+  const pronto = await prepararLembrete();
+  if (!pronto) return;
 
-    etapa = 'assinar';
-    const existente = await assinaturaDoRegistro(registro);
-    if (existente) {
+  let etapa: EtapaPush = 'gravar';
+  try {
+    if (pronto.existente) {
       // Mesmo existindo, reenvia: o banco pode ter perdido a linha (conta nova
       // neste aparelho, por exemplo), e gravar de novo é barato.
-      etapa = 'gravar';
-      await enviarAssinatura(existente);
+      await enviarAssinatura(pronto.existente);
       return;
     }
 
-    etapa = 'chave';
-    const { chave } = await api<{ chave: string }>('/api/push/chave');
-
     etapa = 'assinar';
-    const nova = await assinarPush(registro, chave);
+    const nova = await assinarPush(pronto.registro, pronto.chave);
 
     etapa = 'gravar';
     await enviarAssinatura(nova);
