@@ -1,6 +1,28 @@
 import { useState } from 'react';
-import { api } from '../lib/api';
+import { api, ErroApi } from '../lib/api';
+import { descreverErro } from '../lib/diagnostico';
 import { fusoDoAparelho, salvarHorario } from '../lib/lembrete';
+
+/**
+ * A linha técnica que staging mostra quando o push de confirmação falha.
+ *
+ * O que interessa é o status do **serviço de push**, não o nosso 502: a Apple
+ * recusa com 403 `BadJwtToken` quando o `VAPID_SUBJECT` não é mailto: nem
+ * https, e isso é configuração, não aparelho com problema.
+ */
+function diagnosticoDoEnvio(e: unknown): string {
+  const { erro, status } = descreverErro(e);
+  const partes = [status === undefined ? erro : `${erro} · HTTP ${status}`];
+
+  if (e instanceof ErroApi) {
+    const doServico = e.corpo.status;
+    const detalhe = e.corpo.detalhe;
+    if (typeof doServico === 'number') partes.push(`serviço: ${doServico}`);
+    if (typeof detalhe === 'string' && detalhe) partes.push(detalhe);
+  }
+
+  return partes.join(' · ');
+}
 
 const OPCOES = [
   { hora: 7, rotulo: '7h, ao acordar' },
@@ -26,11 +48,13 @@ const OUTRAS = Array.from({ length: 24 }, (_, h) => h).filter(
 export function PassoHorario({ aoTerminar }: { aoTerminar: () => void }) {
   const [salvando, setSalvando] = useState(false);
   const [aviso, setAviso] = useState<string | null>(null);
+  const [diagnostico, setDiagnostico] = useState<string | null>(null);
   const [mostrarOutras, setMostrarOutras] = useState(false);
 
   async function escolher(hora: number) {
     setSalvando(true);
     setAviso(null);
+    setDiagnostico(null);
 
     try {
       await salvarHorario(hora, fusoDoAparelho());
@@ -42,12 +66,13 @@ export function PassoHorario({ aoTerminar }: { aoTerminar: () => void }) {
 
     try {
       await api('/api/push/confirmacao', { method: 'POST', body: JSON.stringify({ hora }) });
-    } catch {
+    } catch (e) {
       // O horário está salvo; o que falhou foi o aviso de teste.
       setAviso(
         'O horário está guardado, mas não consegui ligar o lembrete neste aparelho. ' +
           'Você pode tentar de novo pela tela inicial do app.',
       );
+      if (__DIAGNOSTICO__) setDiagnostico(diagnosticoDoEnvio(e));
       setSalvando(false);
       return;
     }
@@ -106,6 +131,12 @@ export function PassoHorario({ aoTerminar }: { aoTerminar: () => void }) {
       {aviso && (
         <p className="rounded-2xl border-2 border-ouro-300 bg-ouro-300/15 px-5 py-4 text-lg leading-relaxed text-noite-900">
           {aviso}
+          {/* Só em staging: sem Mac não há inspetor para o Safari do iPhone. */}
+          {diagnostico && (
+            <span className="mt-3 block rounded-xl bg-noite-100 px-4 py-3 font-mono text-sm leading-snug text-noite-700">
+              {diagnostico}
+            </span>
+          )}
           <button
             type="button"
             onClick={aoTerminar}

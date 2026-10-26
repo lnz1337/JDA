@@ -76,9 +76,53 @@ function vapidDe(env: Ambiente) {
   };
 }
 
+/**
+ * O `sub` do JWT tem que ser `mailto:` ou `https`.
+ *
+ * A Apple recusa o envio com **403 `BadJwtToken`** quando não é, e e-mail sem o
+ * `mailto:` na frente é o erro fácil de cometer no `wrangler secret put`.
+ * Conferir o formato aqui é mais barato que descobrir pelo aparelho.
+ */
+const ASSUNTO_VALIDO = /^(?:mailto:[^\s@]+@[^\s@]+|https:\/\/\S+)$/;
+
+export function assuntoVapidValido(assunto: string): boolean {
+  return ASSUNTO_VALIDO.test(assunto);
+}
+
 export function vapidConfigurado(env: Ambiente): boolean {
   const v = vapidDe(env);
-  return Boolean(v.subject && v.publicKey && v.privateKey);
+  return Boolean(v.publicKey && v.privateKey) && assuntoVapidValido(v.subject);
+}
+
+/** Limite do motivo no relatório: ele é curto, o corpo da resposta pode não ser. */
+const LIMITE_MOTIVO = 160;
+
+/**
+ * O motivo que o serviço de push deu, quando dá.
+ *
+ * A Apple responde `{"reason":"BadJwtToken"}`. Sem ler isso, o relatório
+ * guardava só "HTTP 403", que não separa chave errada de assunto errado. URL
+ * sai do texto: o endpoint é credencial de entrega, não dado de relatório (§11).
+ */
+async function motivoDaResposta(res: Response): Promise<string> {
+  try {
+    const texto = (await res.text()).trim();
+    if (!texto) return '';
+
+    let motivo = texto;
+    try {
+      const json = JSON.parse(texto) as { reason?: unknown; error?: unknown };
+      const campo = json.reason ?? json.error;
+      if (typeof campo === 'string' && campo) motivo = campo;
+    } catch {
+      /* não era JSON: fica o texto cru, cortado */
+    }
+
+    return motivo.replace(/\b(?:https?|wss?):\/\/\S*/gi, '[url]').slice(0, LIMITE_MOTIVO);
+  } catch {
+    // Corpo já consumido ou conexão caiu: o status sozinho ainda informa.
+    return '';
+  }
 }
 
 /** Cifra e entrega. Não mexe no banco: quem chama decide o que fazer com o erro. */
@@ -99,7 +143,14 @@ export async function enviarPush(
   }
 
   if (!vapidConfigurado(env)) {
-    return { ok: false, servico, removerAssinatura: false, erro: 'VAPID não configurado' };
+    /*
+     * Dizer qual metade falta. "VAPID não configurado" mandava conferir os três
+     * secrets, e o assunto torto é o que a Apple devolve como 403 genérico.
+     */
+    const erro = assuntoVapidValido(vapidDe(env).subject)
+      ? 'VAPID sem par de chaves'
+      : 'VAPID_SUBJECT precisa ser mailto: ou https';
+    return { ok: false, servico, removerAssinatura: false, erro };
   }
 
   try {
@@ -128,12 +179,13 @@ export async function enviarPush(
      * desinstalado, dados limpos. Insistir só queima cota, então a assinatura
      * sai do banco (§11).
      */
+    const motivo = await motivoDaResposta(res);
     return {
       ok: false,
       servico,
       status: res.status,
       removerAssinatura: res.status === 404 || res.status === 410,
-      erro: `HTTP ${res.status}`,
+      erro: motivo ? `HTTP ${res.status}: ${motivo}` : `HTTP ${res.status}`,
     };
   } catch (erro) {
     return {

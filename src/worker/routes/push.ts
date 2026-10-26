@@ -104,6 +104,8 @@ export const push = new Hono<AppBindings>()
     const quando = corpo.data.hora > agora ? 'Hoje' : 'Amanhã';
 
     let algumFoi = false;
+    /** A última falha, para a tela ter o que mostrar em staging. */
+    let falha: { status?: number; erro: string } | null = null;
     for (const assinatura of assinaturas) {
       const r = await enviarERegistrar(
         c.env,
@@ -118,9 +120,21 @@ export const push = new Hono<AppBindings>()
         { tipo: 'confirmacao' },
       );
       if (r.ok) algumFoi = true;
+      else falha = { status: r.status, erro: r.erro };
     }
 
-    if (!algumFoi) return c.json({ error: 'envio_falhou' }, 502);
+    if (!algumFoi) {
+      /*
+       * O status e o motivo do serviço de push voltam no corpo. Um 403
+       * `BadJwtToken` da Apple é configuração do `VAPID_SUBJECT`, não aparelho
+       * com problema, e sem isso a tela só podia dizer "não consegui". O motivo
+       * já vem sem URL de `enviarPush`: endpoint não é dado de relatório (§11).
+       */
+      return c.json(
+        { error: 'envio_falhou', status: falha?.status, detalhe: falha?.erro },
+        502,
+      );
+    }
     return c.json({ ok: true, quando: quando.toLowerCase() });
   })
 

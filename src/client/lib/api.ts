@@ -3,6 +3,12 @@ export class ErroApi extends Error {
   constructor(
     readonly codigo: string,
     readonly status: number,
+    /**
+     * O corpo inteiro da resposta. O `/api/push/confirmacao` manda nele o
+     * status e o motivo que o serviço de push devolveu (um 403 `BadJwtToken` da
+     * Apple, por exemplo), e só o `codigo` perderia isso.
+     */
+    readonly corpo: Record<string, unknown> = {},
   ) {
     super(codigo);
   }
@@ -15,8 +21,9 @@ export async function api<T>(caminho: string, init?: RequestInit): Promise<T> {
   });
 
   if (!res.ok) {
-    const corpo = (await res.json().catch(() => ({}))) as { error?: string };
-    throw new ErroApi(corpo.error ?? `http_${res.status}`, res.status);
+    const corpo = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+    const codigo = typeof corpo.error === 'string' ? corpo.error : `http_${res.status}`;
+    throw new ErroApi(codigo, res.status, corpo);
   }
   return (await res.json()) as T;
 }
