@@ -4,7 +4,7 @@ Retrato para uma sessão nova continuar daqui. A spec é o [CLAUDE.md](../CLAUDE
 este arquivo registra o que **não** cabe lá: o que já rodou, o que está só em
 staging, o que depende do Leo e as armadilhas que custaram caro.
 
-`npm run typecheck && npm test` limpo, **284 testes** em 17 arquivos.
+`npm run typecheck && npm test` limpo, **341 testes** em 22 arquivos.
 
 ## Os dois ambientes
 
@@ -31,8 +31,8 @@ DMARC continuam onde estavam.
 
 ## O que está aberto
 
-Cinco itens: o primeiro se resolveu sozinho e fica aqui só como registro; os
-quatro seguintes continuam esperando, nenhum deles código a escrever agora.
+Seis itens: o primeiro se resolveu sozinho e fica aqui só como registro; os
+cinco seguintes continuam esperando.
 
 ### 1. Segundo login no iPhone: não se reproduziu (26/10)
 
@@ -111,7 +111,31 @@ Para disparar um push a qualquer momento, sem esperar a hora:
 npm run push:teste -- --email leonardovcs2022@gmail.com --env staging
 ```
 
-### 3. Produção está duas fases atrás
+### 3. A Loja precisa dos dados comerciais e de um teste de compra
+
+A fase 6 está construída e no ar em staging, mas **não foi exercitada com uma
+compra de verdade**. Faltam duas coisas, nesta ordem.
+
+**a) Os dados que só o Leo tem**, para o `seed/catalogo.json`: de cada bundle
+(`oracao-sao-miguel` e `jornada-cura-padre-pio`), o **link de checkout normal**
+da Payt — não o de upsell de um clique, que só vale dentro do funil —, o preço
+e o `product.code` para o `payt_map`. Enquanto o `checkout_url` for nulo, a
+página do produto mostra tudo e **não mostra botão de compra**, de propósito.
+
+**b) O teste de ponta a ponta no staging.** O ambiente já está montado à mão
+(ver "Staging: o que existe lá e não vai para produção"): o `LJ7KEP` aponta
+para o `oracao-sao-miguel` e o `checkout_url` dele é o do "60 Receitas".
+
+> **Atenção ao preço na tela**: a loja mostra R$ 197,00, que é o preço do
+> catálogo, e o checkout de teste cobra R$ 29,90, que é o do produto que não é
+> nosso. A diferença é do teste, não do código.
+
+O que o teste tem que mostrar: a compra libera o pacote, o app percebe sozinho
+na volta, chega push e e-mail de "já está no seu app", e **o postback revela se
+a Payt devolve as UTMs** — é o que falta para o `purchase_from_app` existir de
+verdade (ver as armadilhas). Depois, o reembolso tem que revogar o acesso.
+
+### 4. Produção está duas fases atrás
 
 As fases **5 (jornada) e 8 (push)** estão só em staging, por pedido do Leo: ele
 avisa quando publicar. Quando avisar:
@@ -124,14 +148,14 @@ npm run seed:production     # senão as frases curtas dos dias ficam vazias lá
 O banco de produção já tem migrations e seed, e o R2 já tem os áudios — mas o seed
 de lá é anterior ao `summary` dos 19 dias.
 
-### 4. Em que pasta caíram os e-mails de 22 e 23/10
+### 5. Em que pasta caíram os e-mails de 22 e 23/10
 
 Seis envios saíram sem falha, mas **ninguém conferiu a caixa**. A última rodada é
 o teste da hipótese de que o Outlook pesava o domínio do link (`workers.dev` →
 `teste.jornadacomeuanjo.com`), com o mesmo conteúdo de antes. Sem essa resposta
 não dá para saber se a mudança ajudou. Detalhe em "Resultado do teste de e-mail".
 
-### 5. Adiado por decisão do Leo, para quando o app estiver completo
+### 6. Adiado por decisão do Leo, para quando o app estiver completo
 
 **Não é para começar agora.** Mas **a campanha para a base não sai antes disso**:
 
@@ -154,7 +178,7 @@ não dá para saber se a mudança ajudou. Detalhe em "Resultado do teste de e-ma
 | 3 — Postback Payt | **concluída e validada com a Payt de verdade** |
 | 4 — Auth | **concluída**, com e-mail entregando. Revisada 22/10 para o público 55+: link de acesso direto (com tela de confirmação, para pré-visualizador de link não gastar o token), sessão de 1 ano, código em ação sensível, tela de código mais fácil |
 | 5 — Jornada | **concluída em 23/10**: Home com o cartão do dia, lista de dias com estado, player com Range/Media Session/retomada, conclusão e os eventos do funil |
-| 6 — Loja | **não começou** ← próxima |
+| 6 — Loja | **construída em 26/10**, em staging: barra de abas, lista, página do produto, volta da compra com polling, aviso por push e e-mail, eventos do funil. **Falta o teste de ponta a ponta** (compra e reembolso) e os dados comerciais do Leo |
 | 8 — Push | **concluída em 23/10** (fora de ordem, a pedido): instalação na tela inicial, lembrete diário e escolha do horário. **Testada no iPhone em 26/10**, com três correções: etapa da falha registrada, ordem do toque no Safari e o BOM do segredo VAPID. Android ainda não |
 | 7, 9 a 12 | não começaram |
 
@@ -322,9 +346,25 @@ Existe uma quarta linha em `users`, **já anonimizada**: foi uma conta descartá
 ### `product_payt_map` no staging
 
 ```
-RVEEJ8 -> jornada-meu-anjo   # REAL, vem do seed, vale em produção
-LJ7KEP -> jornada-meu-anjo   # SÓ STAGING, cadastrado à mão, nunca em produção
+RVEEJ8 -> jornada-meu-anjo     # REAL, vem do seed, vale em produção
+LJ7KEP -> oracao-sao-miguel    # SÓ STAGING, à mão, nunca em produção
 ```
+
+O `LJ7KEP` apontava para a jornada e **passou a apontar para o
+`oracao-sao-miguel`** em 26/10, para o teste de compra da fase 6 exercitar um
+bundle de verdade (três partes, dois avisos obrigatórios).
+
+Junto com ele, à mão e **só no staging**:
+
+```sql
+UPDATE products SET checkout_url = 'https://payt.site/wGCBqre'
+ WHERE id = 'oracao-sao-miguel';   -- o checkout do "60 Receitas"
+```
+
+**Isso não sobrevive a um `npm run seed:staging`**: `checkout_url` vem do
+`seed/catalogo.json`, onde ainda é nulo, e o seed faz UPSERT em `products`. O
+`product_payt_map` sobrevive, porque o seed nunca apaga o que não declara.
+Depois de reaplicar o seed, é só rodar o `UPDATE` de novo.
 
 `LJ7KEP` é o código do **"60 Receitas - Saladas No Pote"**, um produto que não é
 nosso, usado só para exercitar o fluxo de compra. Em produção, mapear o código de
@@ -624,6 +664,25 @@ oferece o lembrete com a permissão em `default`, e o "Continuar" da tela de fal
 chamava o mesmo `aoPular` do "Agora não", que dispensa o convite por sete dias
 logo depois de a pessoa tentar. Três becos no mesmo caminho: quem falhava na
 assinatura não tinha mais onde tocar.
+
+**O formato das UTMs de volta no postback ainda não foi visto.** O botão da
+loja monta `utm_source=app&utm_medium=loja&utm_campaign={produto}` (§7), e o
+postback real tem onde devolvê-las: `link.query_params` e `link.sources`. Nos
+quatro postbacks que existem em staging **os dois vêm vazios**, porque aquela
+compra foi feita direto no link da Payt, sem UTM. Então o `utmsDo`
+(`services/payt.ts`) lê tolerante — objeto simples, lista de `{name,value}`, de
+`{key,value}` e de `"chave=valor"` — e devolve vazio para o que não bater, em
+vez de apostar num formato. Formato errado custa o evento `purchase_from_app` e
+nada mais: quem concede o acesso é o processamento, e ele não pode cair por
+causa de um campo de relatório. **A primeira compra de teste pela loja é que vai
+dizer qual das formas é a real** — vale rodar `npm run payt:last:staging` logo
+depois e olhar o `link`.
+
+**A loja mostra o preço do catálogo, não o do checkout.** São dois campos
+diferentes: `price_cents` é o que aparece na tela e `checkout_url` é para onde
+o botão leva. No teste de staging eles divergem de propósito (R$ 197,00 na tela,
+R$ 29,90 no checkout do "60 Receitas"). Em produção, divergir é erro de
+catálogo — e é o tipo de erro que só aparece quando alguém reclama da cobrança.
 
 **O e-mail de teste de compra era aleatório** e podia ser de uma pessoa real.
 Virou regra no CLAUDE.md (§16): sempre endereço próprio. A limpeza exigiu apagar
