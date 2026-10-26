@@ -7,6 +7,7 @@ import { Entrar } from './screens/Entrar';
 import { Home } from './screens/Home';
 import { Inicio } from './screens/Inicio';
 import { Licao } from './screens/Licao';
+import { Loja } from './screens/Loja';
 import { Onboarding, deveRodarOnboarding, marcarOnboardingFeito } from './screens/Onboarding';
 import { PassoHorario } from './screens/PassoHorario';
 import { PassoInstalar } from './screens/PassoInstalar';
@@ -119,6 +120,7 @@ export function App() {
 
   if (rota.nome === 'programa') return <Programa id={rota.id} />;
   if (rota.nome === 'licao') return <Licao id={rota.id} />;
+  if (rota.nome === 'loja') return <Loja />;
   if (rota.nome === 'produto') return <Produto id={rota.id} />;
 
   // Chamadas pelos cards da Home, para quem disse "Agora não" antes.
