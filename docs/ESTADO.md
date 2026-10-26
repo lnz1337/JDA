@@ -111,29 +111,19 @@ Para disparar um push a qualquer momento, sem esperar a hora:
 npm run push:teste -- --email leonardovcs2022@gmail.com --env staging
 ```
 
-### 3. A Loja precisa dos dados comerciais e de um teste de compra
+### 3. A Loja espera os dados comerciais
 
-A fase 6 está construída e no ar em staging, mas **não foi exercitada com uma
-compra de verdade**. Faltam duas coisas, nesta ordem.
+A fase 6 **passou no teste de ponta a ponta em 26/10**, com compra e reembolso
+de verdade (transação `82JJPJX`): o funil registrou
+`store_viewed → product_viewed → checkout_clicked → purchase_from_app`, o app
+percebeu a liberação sozinho na volta, o push e o e-mail de "já está no seu
+app" chegaram, e o reembolso revogou o acesso.
 
-**a) Os dados que só o Leo tem**, para o `seed/catalogo.json`: de cada bundle
+Falta só o que depende do Leo, para o `seed/catalogo.json`: de cada bundle
 (`oracao-sao-miguel` e `jornada-cura-padre-pio`), o **link de checkout normal**
 da Payt — não o de upsell de um clique, que só vale dentro do funil —, o preço
 e o `product.code` para o `payt_map`. Enquanto o `checkout_url` for nulo, a
 página do produto mostra tudo e **não mostra botão de compra**, de propósito.
-
-**b) O teste de ponta a ponta no staging.** O ambiente já está montado à mão
-(ver "Staging: o que existe lá e não vai para produção"): o `LJ7KEP` aponta
-para o `oracao-sao-miguel` e o `checkout_url` dele é o do "60 Receitas".
-
-> **Atenção ao preço na tela**: a loja mostra R$ 197,00, que é o preço do
-> catálogo, e o checkout de teste cobra R$ 29,90, que é o do produto que não é
-> nosso. A diferença é do teste, não do código.
-
-O que o teste tem que mostrar: a compra libera o pacote, o app percebe sozinho
-na volta, chega push e e-mail de "já está no seu app", e **o postback revela se
-a Payt devolve as UTMs** — é o que falta para o `purchase_from_app` existir de
-verdade (ver as armadilhas). Depois, o reembolso tem que revogar o acesso.
 
 ### 4. Produção está duas fases atrás
 
@@ -178,7 +168,7 @@ não dá para saber se a mudança ajudou. Detalhe em "Resultado do teste de e-ma
 | 3 — Postback Payt | **concluída e validada com a Payt de verdade** |
 | 4 — Auth | **concluída**, com e-mail entregando. Revisada 22/10 para o público 55+: link de acesso direto (com tela de confirmação, para pré-visualizador de link não gastar o token), sessão de 1 ano, código em ação sensível, tela de código mais fácil |
 | 5 — Jornada | **concluída em 23/10**: Home com o cartão do dia, lista de dias com estado, player com Range/Media Session/retomada, conclusão e os eventos do funil |
-| 6 — Loja | **construída em 26/10**, em staging: barra de abas, lista, página do produto, volta da compra com polling, aviso por push e e-mail, eventos do funil. **Falta o teste de ponta a ponta** (compra e reembolso) e os dados comerciais do Leo |
+| 6 — Loja | **concluída e testada com compra real em 26/10** (staging): barra de abas, lista, página do produto, volta da compra, aviso por push e e-mail, funil completo. Falta só os dados comerciais do Leo para valer em produção |
 | 8 — Push | **concluída em 23/10** (fora de ordem, a pedido): instalação na tela inicial, lembrete diário e escolha do horário. **Testada no iPhone em 26/10**, com três correções: etapa da falha registrada, ordem do toque no Safari e o BOM do segredo VAPID. Android ainda não |
 | 7, 9 a 12 | não começaram |
 
@@ -665,19 +655,29 @@ chamava o mesmo `aoPular` do "Agora não", que dispensa o convite por sete dias
 logo depois de a pessoa tentar. Três becos no mesmo caminho: quem falhava na
 assinatura não tinha mais onde tocar.
 
-**O formato das UTMs de volta no postback ainda não foi visto.** O botão da
-loja monta `utm_source=app&utm_medium=loja&utm_campaign={produto}` (§7), e o
-postback real tem onde devolvê-las: `link.query_params` e `link.sources`. Nos
-quatro postbacks que existem em staging **os dois vêm vazios**, porque aquela
-compra foi feita direto no link da Payt, sem UTM. Então o `utmsDo`
-(`services/payt.ts`) lê tolerante — objeto simples, lista de `{name,value}`, de
-`{key,value}` e de `"chave=valor"` — e devolve vazio para o que não bater, em
-vez de apostar num formato. Formato errado custa o evento `purchase_from_app` e
-nada mais: quem concede o acesso é o processamento, e ele não pode cair por
-causa de um campo de relatório. **A primeira compra de teste pela loja é que vai
-dizer qual das formas é a real** — vale rodar `npm run payt:last:staging` logo
-depois e olhar o `link`.
+**As UTMs voltam em `link.sources`, não em `link.query_params`.** O nome engana:
+o `query_params` fica **vazio** mesmo numa compra que veio com UTM. O que a Payt
+devolve é um objeto em `sources`, visto na compra de teste de 26/10 (transação
+`82JJPJX`), a primeira feita pela loja do app:
 
+```json
+"sources": { "utm_medium": "loja", "utm_source": "app", "utm_campaign": "oracao-sao-miguel" }
+```
+
+O `utmsDo` (`services/payt.ts`) segue lendo as outras formas plausíveis — lista
+de `{name,value}`, de `{key,value}` e de `"chave=valor"` — porque um formato
+observado não é contrato. Formato que não bate custa o evento
+`purchase_from_app` e nada mais: quem concede o acesso é o processamento, e ele
+não pode cair por causa de um campo de relatório. Foi essa tolerância que fez o
+evento sair certo na primeira compra, sem ninguém ter visto o formato antes.
+
+**Entitlement manual sobrevive ao reembolso — e confunde no teste.** O reembolso
+revoga por `transaction_id` (§7), e concessão manual não tem um. No teste de
+26/10 o acesso ao `manual-purificacao`, concedido à mão em 23/10, **continuou
+valendo** depois do reembolso do pacote que o contém, e a Home seguiu mostrando
+"também liberado para você". Não é defeito: são duas concessões diferentes para
+o mesmo produto, uma de cada fonte. Mas, ao testar reembolso de bundle, vale
+conferir antes se alguma parte dele já foi concedida à mão.
 **A loja mostra o preço do catálogo, não o do checkout.** São dois campos
 diferentes: `price_cents` é o que aparece na tela e `checkout_url` é para onde
 o botão leva. No teste de staging eles divergem de propósito (R$ 197,00 na tela,

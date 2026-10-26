@@ -89,10 +89,13 @@ const PostbackSchema = z.looseObject({
     .nullish(),
   product: ProdutoSchema.extend({ items: z.array(ProdutoSchema).nullish() }).nullish(),
   /*
-   * O link pelo qual a compra entrou. No único postback real que temos,
-   * `sources` e `query_params` vêm **vazios** — aquela compra foi feita direto
-   * no link da Payt, sem UTM —, então o formato com conteúdo ainda não foi
-   * visto. Ficam `unknown` de propósito: a leitura é tolerante (ver `utmsDo`).
+   * O link pelo qual a compra entrou. **As UTMs voltam em `sources`, como
+   * objeto** — confirmado na compra de teste de 26/10, feita pela loja do app:
+   *
+   *   "sources": { "utm_source": "app", "utm_medium": "loja", "utm_campaign": "…" }
+   *
+   * O `query_params` fica vazio mesmo nesse caso. Os dois seguem `unknown`
+   * porque só um formato foi observado e a leitura é tolerante (ver `utmsDo`).
    */
   link: z
     .looseObject({ url: texto, sources: z.unknown(), query_params: z.unknown() })
@@ -347,14 +350,17 @@ export interface ResultadoProcessamento {
  * As UTMs que vieram no link da compra, se vierem.
  *
  * A loja monta `utm_source=app&utm_medium=loja&utm_campaign={produto}` (§7), e
- * é com elas que se fecha o funil loja → compra. **Mas o formato de volta ainda
- * não foi visto**: no único postback real que temos, `link.query_params` e
- * `link.sources` estão vazios, porque a compra foi feita direto no link.
+ * é com elas que se fecha o funil loja → compra.
  *
- * Então a leitura aceita as formas plausíveis em vez de apostar numa: objeto
- * simples, lista de `{name,value}` ou `{key,value}`, e lista de `"chave=valor"`.
- * Formato que não bate devolve vazio e o funil só fica sem o evento — nunca
- * derruba o processamento, que é o que concede o acesso.
+ * **O formato real é `link.sources` como objeto simples** — visto na compra de
+ * teste de 26/10, a primeira feita pela loja do app. O `link.query_params`
+ * continua vazio mesmo nela, apesar do nome.
+ *
+ * A leitura segue aceitando as outras formas plausíveis (lista de
+ * `{name,value}` ou `{key,value}`, lista de `"chave=valor"`) porque um formato
+ * observado não é um contrato, e a Payt pode mandar diferente em outro tipo de
+ * link. Formato que não bate devolve vazio e o funil só fica sem o evento —
+ * nunca derruba o processamento, que é o que concede o acesso.
  */
 export function utmsDo(link: unknown): Record<string, string> {
   const achadas: Record<string, string> = {};

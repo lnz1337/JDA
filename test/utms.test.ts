@@ -5,13 +5,24 @@ import { utmsDo } from '../src/worker/services/payt';
  * As UTMs que voltam no postback (§7).
  *
  * O botão da loja monta `utm_source=app&utm_medium=loja&utm_campaign={produto}`.
- * **O formato de volta ainda não foi visto**: no único postback real que temos,
- * `link.query_params` e `link.sources` vêm vazios, porque aquela compra foi
- * feita direto no link da Payt. Por isso a leitura aceita as formas plausíveis
- * em vez de apostar numa — e, acima de tudo, nunca explode.
+ * O formato de volta é **`link.sources` como objeto**, confirmado na compra de
+ * teste de 26/10 — a primeira feita pela loja do app. As outras formas seguem
+ * aceitas porque um formato observado não é um contrato.
  */
 describe('utmsDo', () => {
   const esperado = { utm_source: 'app', utm_medium: 'loja', utm_campaign: 'oracao-sao-miguel' };
+
+  it('o formato real da Payt: sources como objeto, query_params vazio', () => {
+    // Copiado do postback da transação 82JJPJX, em staging.
+    expect(
+      utmsDo({
+        title: '60 Receitas - Saladas No Pote',
+        sources: { utm_medium: 'loja', utm_source: 'app', utm_campaign: 'oracao-sao-miguel' },
+        url: 'https://payt.site/wGCBqre',
+        query_params: [],
+      }),
+    ).toEqual(esperado);
+  });
 
   it('lista de pares name/value', () => {
     expect(
