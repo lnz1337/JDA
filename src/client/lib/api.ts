@@ -39,11 +39,16 @@ export function registrarEvento(
     | 'app_instalado'
     | 'push_ativado'
     | 'push_negado'
-    | 'push_erro_cliente',
+    | 'push_erro_cliente'
+    | 'store_viewed'
+    | 'product_viewed'
+    | 'checkout_clicked',
   props: {
     lesson_id?: string;
     dia?: number;
     programa?: string;
+    /** Fase 6: qual produto da loja o evento é. */
+    produto?: string;
     /** `push_ativado`: 'botao' (a pessoa tocou) ou 'automatico' (reassinou só). */
     origem?: string;
     /** `push_erro_cliente`: onde parou, o que explodiu e o status, se houver. */

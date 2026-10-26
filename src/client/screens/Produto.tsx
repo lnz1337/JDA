@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { ProdutoDaLoja } from '../../shared/types';
 import { TextoMd } from '../components/TextoMd';
-import { api, ErroApi } from '../lib/api';
+import { api, ErroApi, registrarEvento } from '../lib/api';
 import { marcarCompra } from '../lib/compra';
 import { emReais } from '../lib/dinheiro';
 import { irPara } from '../lib/rota';
@@ -22,6 +22,7 @@ export function Produto({ id }: { id: string }) {
   useEffect(() => {
     setProduto(null);
     setErro(null);
+    registrarEvento('product_viewed', { produto: id });
     api<{ produto: ProdutoDaLoja }>(`/api/loja/${id}`)
       .then((r) => setProduto(r.produto))
       .catch((e) =>
@@ -145,7 +146,10 @@ function Compra({ produto }: { produto: ProdutoDaLoja }) {
        */}
       <a
         href={produto.checkout_url}
-        onClick={() => marcarCompra(produto.id)}
+        onClick={() => {
+          registrarEvento('checkout_clicked', { produto: produto.id });
+          marcarCompra(produto.id);
+        }}
         className="block min-h-[64px] w-full rounded-xl bg-noite-900 px-4 py-4 text-center text-xl font-semibold text-white"
       >
         Quero este conteúdo

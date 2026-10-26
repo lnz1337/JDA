@@ -88,6 +88,15 @@ const PostbackSchema = z.looseObject({
     })
     .nullish(),
   product: ProdutoSchema.extend({ items: z.array(ProdutoSchema).nullish() }).nullish(),
+  /*
+   * O link pelo qual a compra entrou. No único postback real que temos,
+   * `sources` e `query_params` vêm **vazios** — aquela compra foi feita direto
+   * no link da Payt, sem UTM —, então o formato com conteúdo ainda não foi
+   * visto. Ficam `unknown` de propósito: a leitura é tolerante (ver `utmsDo`).
+   */
+  link: z
+    .looseObject({ url: texto, sources: z.unknown(), query_params: z.unknown() })
+    .nullish(),
   order_bumps: z.array(z.looseObject({ product: ProdutoSchema.nullish() })).nullish(),
   subscription: z
     .looseObject({
@@ -335,6 +344,58 @@ export interface ResultadoProcessamento {
 }
 
 /**
+ * As UTMs que vieram no link da compra, se vierem.
+ *
+ * A loja monta `utm_source=app&utm_medium=loja&utm_campaign={produto}` (§7), e
+ * é com elas que se fecha o funil loja → compra. **Mas o formato de volta ainda
+ * não foi visto**: no único postback real que temos, `link.query_params` e
+ * `link.sources` estão vazios, porque a compra foi feita direto no link.
+ *
+ * Então a leitura aceita as formas plausíveis em vez de apostar numa: objeto
+ * simples, lista de `{name,value}` ou `{key,value}`, e lista de `"chave=valor"`.
+ * Formato que não bate devolve vazio e o funil só fica sem o evento — nunca
+ * derruba o processamento, que é o que concede o acesso.
+ */
+export function utmsDo(link: unknown): Record<string, string> {
+  const achadas: Record<string, string> = {};
+
+  const guardar = (chave: unknown, valor: unknown) => {
+    if (typeof chave !== 'string' || typeof valor !== 'string') return;
+    if (chave.startsWith('utm_')) achadas[chave] = valor;
+  };
+
+  const ler = (fonte: unknown) => {
+    if (!fonte) return;
+
+    if (Array.isArray(fonte)) {
+      for (const item of fonte) {
+        if (typeof item === 'string') {
+          const [chave, ...resto] = item.split('=');
+          guardar(chave?.trim(), resto.join('=').trim());
+        } else if (item && typeof item === 'object') {
+          const o = item as Record<string, unknown>;
+          guardar(o.name ?? o.key ?? o.chave, o.value ?? o.valor);
+          // Pode ser também um objeto de pares dentro da lista.
+          for (const [k, v] of Object.entries(o)) guardar(k, v);
+        }
+      }
+      return;
+    }
+
+    if (typeof fonte === 'object') {
+      for (const [k, v] of Object.entries(fonte as Record<string, unknown>)) guardar(k, v);
+    }
+  };
+
+  if (link && typeof link === 'object') {
+    const o = link as Record<string, unknown>;
+    ler(o.query_params);
+    ler(o.sources);
+  }
+  return achadas;
+}
+
+/**
  * Avisa quem **já era cliente** de que a compra liberou (§7, volta da compra).
  *
  * Quem acabou de nascer no banco recebe o e-mail de boas-vindas, que já diz
@@ -527,6 +588,20 @@ export async function processarPostback(
       },
       usuario.userId,
     );
+  }
+
+  /*
+   * Compra que saiu da loja do app, pelas UTMs que o botão monta (§7). É o que
+   * fecha o funil store_viewed → product_viewed → checkout_clicked → compra.
+   * Se a Payt não devolver as UTMs, não há evento — e só isso.
+   */
+  const utms = utmsDo(p.link);
+  if (utms.utm_source === 'app') {
+    await registrarEvento(db, usuario.userId, 'purchase_from_app', {
+      produtos: ids,
+      campanha: utms.utm_campaign ?? null,
+      transaction_id: resumo.transactionId,
+    });
   }
 
   // Já era cliente: o e-mail de boas-vindas não vale (ele diz "bem-vindo"), mas

@@ -221,6 +221,57 @@ describe('aviso de conteúdo liberado', () => {
     expect(await nomesDeEventos('push_')).toEqual([]);
   });
 
+  it('compra vinda da loja do app vira purchase_from_app', async () => {
+    await criarUsuario();
+    await mapearFixture();
+
+    globalThis.fetch = (async () => new Response(null, { status: 201 })) as typeof fetch;
+    try {
+      await postarPostback({
+        ...pedidoPago,
+        link: {
+          url: 'https://payt.site/abc123',
+          sources: [],
+          query_params: [
+            { name: 'utm_source', value: 'app' },
+            { name: 'utm_medium', value: 'loja' },
+            { name: 'utm_campaign', value: 'oracao-sao-miguel' },
+          ],
+        },
+      });
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+
+    const evento = await env.DB.prepare(
+      "SELECT props_json FROM events WHERE name = 'purchase_from_app'",
+    ).first<{ props_json: string }>();
+    expect(JSON.parse(evento?.props_json ?? '{}')).toMatchObject({
+      campanha: 'oracao-sao-miguel',
+    });
+  });
+
+  it('compra feita fora do app não vira purchase_from_app', async () => {
+    await criarUsuario();
+    await mapearFixture();
+
+    globalThis.fetch = (async () => new Response(null, { status: 201 })) as typeof fetch;
+    try {
+      // É o formato do postback real: link sem UTM nenhuma.
+      await postarPostback({
+        ...pedidoPago,
+        link: { url: 'https://payt.site/wGCBqre', sources: [], query_params: [] },
+      });
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+
+    const evento = await env.DB.prepare(
+      "SELECT props_json FROM events WHERE name = 'purchase_from_app'",
+    ).first();
+    expect(evento).toBeNull();
+  });
+
   it('o acesso é concedido mesmo assim', async () => {
     await criarUsuario();
     await mapearFixture();

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { ItemDaLoja } from '../../shared/types';
-import { api } from '../lib/api';
+import { api, registrarEvento } from '../lib/api';
 import { emReais } from '../lib/dinheiro';
 import { irPara } from '../lib/rota';
 
@@ -19,6 +19,7 @@ export function Loja() {
   const [erro, setErro] = useState(false);
 
   useEffect(() => {
+    registrarEvento('store_viewed');
     api<{ itens: ItemDaLoja[] }>('/api/loja')
       .then((r) => setItens(r.itens))
       .catch(() => setErro(true));

@@ -35,6 +35,10 @@ const EVENTOS_DO_CLIENT = [
    * o Safari do iPhone, é por aqui que a causa aparece.
    */
   'push_erro_cliente',
+  /** Fase 6: o funil da loja, até o clique que leva para o checkout. */
+  'store_viewed',
+  'product_viewed',
+  'checkout_clicked',
 ] as const;
 
 /**
@@ -55,6 +59,8 @@ const EventoSchema = z.object({
   lesson_id: z.string().trim().max(120).optional(),
   dia: z.number().int().min(1).max(99).optional(),
   programa: z.string().trim().max(120).optional(),
+  /** Fase 6: qual produto da loja o evento é. */
+  produto: z.string().trim().max(120).optional(),
   /** Fase 8: só o `push_ativado` usa este. */
   origem: z.enum(ORIGENS_DE_ATIVACAO).optional(),
   /** Fase 8: só o `push_erro_cliente` usa os três de baixo. */

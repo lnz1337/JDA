@@ -397,6 +397,27 @@ describe('eventos do client', () => {
     ]);
   });
 
+  it('aceita os eventos da loja com o produto', async () => {
+    await prepararUsuario({ inicio: inicioNoDia(1) });
+
+    for (const nome of ['store_viewed', 'product_viewed', 'checkout_clicked']) {
+      const res = await chamar('/api/eventos', {
+        method: 'POST',
+        headers: { cookie: COOKIE },
+        body: JSON.stringify({ nome, produto: 'oracao-sao-miguel' }),
+      });
+      expect(res.status).toBe(200);
+    }
+
+    const { results } = await env.DB.prepare(
+      "SELECT name, props_json FROM events WHERE name IN ('store_viewed','product_viewed','checkout_clicked')",
+    ).all<{ name: string; props_json: string }>();
+    expect(results).toHaveLength(3);
+    expect(JSON.parse(results[0]?.props_json ?? '{}')).toMatchObject({
+      produto: 'oracao-sao-miguel',
+    });
+  });
+
   it('recusa origem que não existe', async () => {
     await prepararUsuario({ inicio: inicioNoDia(1) });
 
