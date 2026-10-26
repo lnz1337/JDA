@@ -31,8 +31,8 @@ DMARC continuam onde estavam.
 
 ## O que está aberto
 
-Seis itens: o primeiro se resolveu sozinho e fica aqui só como registro; os
-cinco seguintes continuam esperando.
+Seis itens: o primeiro se resolveu sozinho e fica aqui só como registro, os
+quatro do meio continuam esperando e o último é opcional.
 
 ### 1. Segundo login no iPhone: não se reproduziu (26/10)
 
@@ -125,9 +125,9 @@ da Payt — não o de upsell de um clique, que só vale dentro do funil —, o p
 e o `product.code` para o `payt_map`. Enquanto o `checkout_url` for nulo, a
 página do produto mostra tudo e **não mostra botão de compra**, de propósito.
 
-### 4. Produção está duas fases atrás
+### 4. Produção está três fases atrás
 
-As fases **5 (jornada) e 8 (push)** estão só em staging, por pedido do Leo: ele
+As fases **5 (jornada), 6 (loja) e 8 (push)** estão só em staging, por pedido do Leo: ele
 avisa quando publicar. Quando avisar:
 
 ```bash
@@ -145,17 +145,31 @@ o teste da hipótese de que o Outlook pesava o domínio do link (`workers.dev` �
 `teste.jornadacomeuanjo.com`), com o mesmo conteúdo de antes. Sem essa resposta
 não dá para saber se a mudança ajudou. Detalhe em "Resultado do teste de e-mail".
 
-### 6. Adiado por decisão do Leo, para quando o app estiver completo
+### 6. Opcional, só quando o Leo pedir: Política, Termos e registro de acesso
 
-**Não é para começar agora.** Mas **a campanha para a base não sai antes disso**:
+**Decisão do Leo em 26/10: o app lança sem as duas coisas abaixo, e elas não
+bloqueiam mais a campanha.** Ficam como pendência opcional — não é para começar
+sem ele pedir.
 
 - **Páginas `/privacidade` e `/termos`.** O texto já está escrito, em
   `conteudo/legal/privacidade.md` e `conteudo/legal/termos.md` (do pipeline de
-  conteúdo). Falta servir no app. A Política é o que a §14 exige e é para onde o
-  rodapé dos e-mails manda quem procura a identificação da empresa.
+  conteúdo). Falta servir no app.
 - **Registro de acesso**: IP, data e hora em toda entrada, apagados depois de 6
-  meses. A Política já declara que o IP é guardado no login — hoje ele só entra em
-  `login_codes.ip`, no pedido de código, não em toda entrada.
+  meses. Hoje o IP só entra em `login_codes.ip`, no pedido de código.
+
+O que essa decisão muda na prática, conferido em 26/10:
+
+- **Nenhum link quebra.** Nada no app aponta para `/privacidade` ou `/termos`. O
+  rodapé do `conteudo/emails/anuncio-app.md` tem o link para a Política, mas ele
+  é **descartado na leitura** (`semRodapeAntigo` em `emails/anuncio.ts`) e não
+  sai no e-mail.
+- **Não há página nenhuma com a identificação da empresa.** O rodapé dos e-mails
+  não leva razão social nem CNPJ de propósito (§14), porque esse dado ia morar na
+  Política. Sem a página, quem quiser saber quem é o controlador dos dados não
+  acha em lugar nenhum do app nem do e-mail — só pelo `Reply-To` do suporte.
+- **A §14 do CLAUDE.md continua listando a Política como requisito.** A decisão
+  está registrada em "Decisões que não estão no CLAUDE.md"; a spec não foi
+  mexida.
 
 ---
 
@@ -233,6 +247,11 @@ de confirmação. O **lembrete diário** pelo cron ainda não foi exercitado
 ---
 
 ## 2. Decisões que não estão no CLAUDE.md
+
+**O app lança sem Política, Termos e registro de acesso** (decisão do Leo,
+26/10). A §14 pede a página de Política e Termos com o CNPJ; o Leo decidiu
+lançar e fazer a campanha sem ela, e deixar as páginas e o registro de IP em
+toda entrada como pendência opcional. Ver "O que está aberto", item 6.
 
 **Rotas administrativas são interinas.** `/api/payt/reprocess`,
 `/api/campanha/enviar` e `/api/admin/conceder` existem porque os scripts de
@@ -712,17 +731,18 @@ Em ordem de dependência. O que está pronto não aparece aqui.
 | # | Falta | Depende de | Por quê trava |
 |---|---|---|---|
 | 1 | **Testar as fases 5 e 8 no Android** | Leo | O iPhone passou em 26/10; no Android nada foi exercitado, e é a maioria do público |
-| 2 | **Publicar as fases 5 e 8 em produção** | Leo (item 1) | Produção está duas fases atrás |
+| 2 | **Publicar as fases 5, 6 e 8 em produção** | Leo (item 1) | Produção está três fases atrás |
 | 3 | **Códigos do UP1 e do UP2** no `payt_map` | Leo | Sem eles o importador para, e comprador de upsell não recebe acesso em produção |
 | 4 | **Postback de produção** na Payt + `PAYT_INTEGRATION_KEY` de produção | Leo | Sem isso compra nova em produção não libera nada |
 | 5 | **CSV de vendas** e importação da base | Leo (itens 3 e 4) | É a base da campanha |
 | 6 | **`ADMIN_API_KEY` de produção em mãos** | — | Foi gerada sem cópia; `grant`, campanha e reprocesso em produção precisam dela (gerar outra e substituir) |
-| 7 | **`/privacidade` e `/termos` servidas pelo app** | — | Adiado pelo Leo para quando o app estiver completo, mas **a campanha não sai antes**: o rodapé dos e-mails aponta a identificação para lá |
-| 8 | **Registro de acesso** (IP, data e hora, apagado em 6 meses) | — | Adiado junto com o item 7, e pela mesma razão: a Política já declara que isso existe |
-| 9 | **Identidade visual** (ícones ainda são placeholder) | Leo | A raiz já é pública: o ícone aparece |
-| 10 | **Campanha**, em ondas, começando por Gmail | 3, 5, 6, 7 e 8 | O e-mail promete um app funcionando, e manda quem procura a Política para uma página que ainda não existe |
+| 7 | **Identidade visual** (ícones ainda são placeholder) | Leo | A raiz já é pública: o ícone aparece |
+| 8 | **Campanha**, em ondas, começando por Gmail | 3, 5 e 6 | O e-mail promete um app funcionando |
 
-**Produção está duas fases atrás** (5 e 8): ver "O que está aberto", no topo.
+**Produção está três fases atrás** (5, 6 e 8): ver "O que está aberto", no topo.
+
+**Fora da fila por decisão do Leo** (26/10): `/privacidade`, `/termos` e o
+registro de acesso. Não bloqueiam a campanha; ver "O que está aberto", item 6.
 
 Fora da fila, se o Leo quiser: **`www` → raiz canonizado** (hoje os dois servem o
 app; canonizar é uma Redirect Rule no painel) e **SNDS/JMRP da Microsoft**, para
