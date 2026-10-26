@@ -12,6 +12,7 @@
 import { montarAnuncio } from '../emails/anuncio';
 import { hmacHex } from '../lib/cripto';
 import { agoraIso } from '../lib/datas';
+import { segredo } from '../lib/segredos';
 import type { AppBindings } from '../lib/types';
 import { criarLinkDeAcesso } from './auth';
 import { enviarEmail } from './mail';
@@ -58,9 +59,9 @@ export interface RelatorioCampanha {
 
 /** Link assinado: marca o opt-out sem exigir login. */
 export async function linkParar(env: Ambiente, userId: string): Promise<string> {
-  const segredo = env.CAMPAIGN_SIGNING_KEY;
-  if (!segredo) throw new Error('CAMPAIGN_SIGNING_KEY não cadastrado');
-  const assinatura = await hmacHex(segredo, `parar:${userId}`);
+  const chave = segredo(env, 'CAMPAIGN_SIGNING_KEY');
+  if (!chave) throw new Error('CAMPAIGN_SIGNING_KEY não cadastrado');
+  const assinatura = await hmacHex(chave, `parar:${userId}`);
   return `${env.APP_URL}/parar?u=${encodeURIComponent(userId)}&t=${assinatura}`;
 }
 
@@ -69,9 +70,9 @@ export async function conferirAssinaturaParar(
   userId: string,
   token: string,
 ): Promise<boolean> {
-  const segredo = env.CAMPAIGN_SIGNING_KEY;
-  if (!segredo) return false;
-  return (await hmacHex(segredo, `parar:${userId}`)) === token;
+  const chave = segredo(env, 'CAMPAIGN_SIGNING_KEY');
+  if (!chave) return false;
+  return (await hmacHex(chave, `parar:${userId}`)) === token;
 }
 
 /** Quantos e-mails já saíram hoje (qualquer tipo), para a cota da conta. */

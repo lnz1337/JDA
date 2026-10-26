@@ -10,12 +10,15 @@
  * Interino: na fase 11 o admin fica atrás do Cloudflare Access (§13).
  */
 import { igualdadeSegura } from './cripto';
+import { segredo } from './segredos';
 import type { AppBindings } from './types';
 
 export function chaveAdminConfere(
   recebida: string | undefined,
   env: AppBindings['Bindings'],
 ): boolean {
-  const segredo = env.ADMIN_API_KEY;
-  return Boolean(segredo) && igualdadeSegura(recebida ?? '', segredo ?? '');
+  // Pelo leitor único: a ADMIN_API_KEY de produção foi gravada por pipe, e
+  // segredo com BOM não bate com a chave que o script manda no header.
+  const chave = segredo(env, 'ADMIN_API_KEY');
+  return Boolean(chave) && igualdadeSegura(recebida ?? '', chave);
 }

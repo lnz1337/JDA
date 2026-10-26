@@ -17,6 +17,7 @@ import { chaveAdminConfere } from '../lib/admin';
 import { igualdadeSegura, sha256Hex } from '../lib/cripto';
 import { agoraIso } from '../lib/datas';
 import { novoId } from '../lib/ids';
+import { segredo } from '../lib/segredos';
 import type { AppBindings } from '../lib/types';
 import { extrairResumo, processarPostback, textoDedupe } from '../services/payt';
 
@@ -66,8 +67,8 @@ async function marcarProcessado(
 }
 
 /** Compara o que chegou com o segredo, sempre em tempo constante. */
-function chaveBate(recebida: string | undefined, segredo?: string): boolean {
-  return Boolean(segredo) && igualdadeSegura(recebida ?? '', segredo ?? '');
+function chaveBate(recebida: string | undefined, cadastrada: string): boolean {
+  return Boolean(cadastrada) && igualdadeSegura(recebida ?? '', cadastrada);
 }
 
 /**
@@ -75,12 +76,16 @@ function chaveBate(recebida: string | undefined, segredo?: string): boolean {
  * O reprocesso aceita **só** no header: é rota administrativa, e segredo em
  * corpo de requisição acaba em log, em replay de formulário e em histórico.
  */
-function chaveDoPostback(dados: unknown, headerChave: string | undefined, segredo?: string): boolean {
+function chaveDoPostback(
+  dados: unknown,
+  headerChave: string | undefined,
+  cadastrada: string,
+): boolean {
   const noCorpo =
     typeof dados === 'object' && dados !== null
       ? (dados as Record<string, unknown>).integration_key
       : undefined;
-  return chaveBate(typeof noCorpo === 'string' ? noCorpo : headerChave, segredo);
+  return chaveBate(typeof noCorpo === 'string' ? noCorpo : headerChave, cadastrada);
 }
 
 /**
@@ -151,7 +156,8 @@ export const payt = new Hono<AppBindings>().post('/postback', async (c) => {
     return c.json({ error: 'payload_ilegivel' }, 400);
   }
 
-  if (!chaveDoPostback(dados, c.req.header('x-integration-key'), c.env.PAYT_INTEGRATION_KEY)) {
+  const cadastrada = segredo(c.env, 'PAYT_INTEGRATION_KEY');
+  if (!chaveDoPostback(dados, c.req.header('x-integration-key'), cadastrada)) {
     return c.json({ error: 'integration_key_invalida' }, 401);
   }
 

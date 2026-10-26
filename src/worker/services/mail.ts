@@ -10,6 +10,7 @@
  */
 import { agoraIso } from '../lib/datas';
 import { novoId } from '../lib/ids';
+import { segredo } from '../lib/segredos';
 import type { AppBindings } from '../lib/types';
 
 export interface MensagemEmail {
@@ -75,7 +76,7 @@ function provedorResend(env: Ambiente): ProvedorEmail {
   return {
     nome: 'resend',
     async enviar(msg) {
-      const chave = env.RESEND_API_KEY;
+      const chave = segredo(env, 'RESEND_API_KEY');
       if (!chave) {
         return { ok: false, provedor: 'resend', erro: 'RESEND_API_KEY ausente' };
       }

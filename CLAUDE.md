@@ -598,14 +598,26 @@ administrasse, quem tem o segredo do postback poderia reprocessar evento, libera
 acesso e disparar e-mail para a base. Por isso reprocesso, campanha e concessão
 manual usam a `ADMIN_API_KEY` no header `x-admin-key`.
 
-Gere e grave sem passar pela tela:
+Gere e grave **sem passar pela tela** — e **no Git Bash, não no PowerShell**:
 
 ```bash
-node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"   | npx wrangler secret put ADMIN_API_KEY --env staging
+node -e "process.stdout.write(require('crypto').randomBytes(32).toString('hex'))" | npx wrangler secret put ADMIN_API_KEY --env staging
 ```
+
+O shell importa. **O pipe do PowerShell reescreve o texto em UTF-8 com BOM**, e o
+U+FEFF entra no segredo — foi assim que o `VAPID_PUBLIC_KEY` do staging nasceu
+com 88 caracteres em vez de 87 e derrubou o `subscribe` do iPhone com
+`InvalidCharacterError`. O Git Bash passa os bytes como estão. O
+`process.stdout.write` em vez de `console.log` é pelo mesmo motivo: não
+acrescenta a quebra de linha no fim.
 
 Os scripts leem a `ADMIN_API_KEY` do ambiente ou de uma cópia no `.dev.vars`,
 que está fora do git.
+
+Rede de segurança, não substituto da receita: todo segredo do Worker é lido por
+`src/worker/lib/segredos.ts` e todo segredo dos scripts por
+`scripts/lib/segredos.ts`. Os dois tiram BOM e espaço das pontas, para a
+próxima chave gravada torta não virar outra caçada.
 
 **Vars** (no `wrangler.toml`, não são segredo):
 
