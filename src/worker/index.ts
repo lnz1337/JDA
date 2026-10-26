@@ -7,6 +7,7 @@ import { acesso, auth, me } from './routes/auth';
 import { campanha, parar } from './routes/campanha';
 import { health } from './routes/health';
 import { eventos, jornada, licoes } from './routes/jornada';
+import { loja } from './routes/loja';
 import { media } from './routes/media';
 import { payt } from './routes/payt';
 import { push } from './routes/push';
@@ -31,6 +32,7 @@ app.use('/parar', async (c, next) => {
 app.route('/api/auth', auth);
 app.route('/api/me', me);
 app.route('/api/programas', jornada);
+app.route('/api/loja', loja);
 app.route('/api/licoes', licoes);
 app.route('/api/eventos', eventos);
 app.route('/media', media);

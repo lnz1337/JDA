@@ -11,6 +11,7 @@ import { Onboarding, deveRodarOnboarding, marcarOnboardingFeito } from './screen
 import { PassoHorario } from './screens/PassoHorario';
 import { PassoInstalar } from './screens/PassoInstalar';
 import { PassoLembrete } from './screens/PassoLembrete';
+import { Produto } from './screens/Produto';
 import { Programa } from './screens/Programa';
 import { SemAcesso } from './screens/SemAcesso';
 
@@ -118,6 +119,7 @@ export function App() {
 
   if (rota.nome === 'programa') return <Programa id={rota.id} />;
   if (rota.nome === 'licao') return <Licao id={rota.id} />;
+  if (rota.nome === 'produto') return <Produto id={rota.id} />;
 
   // Chamadas pelos cards da Home, para quem disse "Agora não" antes.
   if (rota.nome === 'instalar') return <PassoInstalar aoPular={() => irPara('/')} />;

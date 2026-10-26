@@ -15,7 +15,9 @@ export type Rota =
   | { nome: 'programa'; id: string }
   | { nome: 'licao'; id: string }
   | { nome: 'instalar' }
-  | { nome: 'lembrete' };
+  | { nome: 'lembrete' }
+  | { nome: 'loja' }
+  | { nome: 'produto'; id: string };
 
 const EVENTO = 'jda:rota';
 
@@ -30,12 +32,16 @@ export function rotaDe(caminho: string, busca: string): Rota {
 
   if (caminho === '/instalar') return { nome: 'instalar' };
   if (caminho === '/lembrete') return { nome: 'lembrete' };
+  if (caminho === '/loja') return { nome: 'loja' };
 
   const programa = /^\/programa\/([\w-]+)\/?$/.exec(caminho);
   if (programa?.[1]) return { nome: 'programa', id: programa[1] };
 
   const licao = /^\/licao\/([\w-]+)\/?$/.exec(caminho);
   if (licao?.[1]) return { nome: 'licao', id: licao[1] };
+
+  const produto = /^\/produto\/([\w-]+)\/?$/.exec(caminho);
+  if (produto?.[1]) return { nome: 'produto', id: produto[1] };
 
   return { nome: 'inicio' };
 }
