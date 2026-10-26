@@ -58,12 +58,33 @@ export function permissaoDeNotificacao(): NotificationPermission | 'indisponivel
   return Notification.permission;
 }
 
-/** A assinatura de push deste aparelho, se existir. */
+/**
+ * O service worker deste aparelho, pronto para receber push.
+ *
+ * **Lança** em vez de devolver nulo: é um dos passos que podem falhar sozinhos
+ * no iPhone, e engolir o erro aqui foi o que deixou a falha sem causa conhecida.
+ */
+export async function registroPronto(): Promise<ServiceWorkerRegistration> {
+  return navigator.serviceWorker.ready;
+}
+
+/** A assinatura deste aparelho, se já existir. Também lança, pelo mesmo motivo. */
+export async function assinaturaDoRegistro(
+  registro: ServiceWorkerRegistration,
+): Promise<PushSubscription | null> {
+  return registro.pushManager.getSubscription();
+}
+
+/**
+ * A assinatura de push deste aparelho, se existir — versão que nunca lança.
+ *
+ * É para quem só quer **saber** se este aparelho está assinado, como o card da
+ * Home: ali um erro não tem o que informar, e a resposta útil é "não tem".
+ */
 export async function assinaturaAtual(): Promise<PushSubscription | null> {
   if (!suportaPush()) return null;
   try {
-    const registro = await navigator.serviceWorker.ready;
-    return await registro.pushManager.getSubscription();
+    return await assinaturaDoRegistro(await registroPronto());
   } catch {
     return null;
   }
@@ -102,9 +123,15 @@ export function assinaturaParaEnviar(assinatura: PushSubscription): AssinaturaPa
  * Assina o push deste aparelho. `userVisibleOnly` é obrigatório no Chrome: push
  * silencioso não é permitido, e a promessa é a de que todo envio vira
  * notificação na tela.
+ *
+ * Recebe o registro já pronto em vez de esperar por ele aqui: no Safari do
+ * iPhone o `subscribe` precisa sair **dentro** do toque, e cada `await` a mais
+ * antes dele é uma chance de perder o gesto.
  */
-export async function assinarPush(chavePublica: string): Promise<PushSubscription> {
-  const registro = await navigator.serviceWorker.ready;
+export async function assinarPush(
+  registro: ServiceWorkerRegistration,
+  chavePublica: string,
+): Promise<PushSubscription> {
   return registro.pushManager.subscribe({
     userVisibleOnly: true,
     applicationServerKey: chaveParaBytes(chavePublica) as BufferSource,

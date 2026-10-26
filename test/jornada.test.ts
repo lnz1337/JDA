@@ -351,6 +351,42 @@ describe('eventos do client', () => {
     expect(JSON.parse(linha?.props_json ?? '{}')).toMatchObject({ dia: 1 });
   });
 
+  it('aceita push_erro_cliente com a etapa, o erro e o status', async () => {
+    await prepararUsuario({ inicio: inicioNoDia(1) });
+
+    const res = await chamar('/api/eventos', {
+      method: 'POST',
+      headers: { cookie: COOKIE },
+      body: JSON.stringify({
+        nome: 'push_erro_cliente',
+        etapa: 'assinar',
+        erro: 'AbortError: Registration failed - push service error',
+        status: 400,
+      }),
+    });
+    expect(res.status).toBe(200);
+
+    const linha = await env.DB.prepare(
+      "SELECT props_json FROM events WHERE name = 'push_erro_cliente'",
+    ).first<{ props_json: string }>();
+    expect(JSON.parse(linha?.props_json ?? '{}')).toMatchObject({
+      etapa: 'assinar',
+      erro: 'AbortError: Registration failed - push service error',
+      status: 400,
+    });
+  });
+
+  it('recusa etapa que não está na lista', async () => {
+    await prepararUsuario({ inicio: inicioNoDia(1) });
+
+    const res = await chamar('/api/eventos', {
+      method: 'POST',
+      headers: { cookie: COOKIE },
+      body: JSON.stringify({ nome: 'push_erro_cliente', etapa: 'qualquer_coisa' }),
+    });
+    expect(res.status).toBe(400);
+  });
+
   it('sem sessão não registra evento', async () => {
     const res = await chamar('/api/eventos', {
       method: 'POST',

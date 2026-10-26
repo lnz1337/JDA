@@ -29,13 +29,26 @@ const EVENTOS_DO_CLIENT = [
   'app_instalado',
   'push_ativado',
   'push_negado',
+  /**
+   * Falha ao ligar o lembrete, com a etapa em que parou. O `catch` do client
+   * engolia o erro e a tela só dizia "não consegui" — sem Mac para inspecionar
+   * o Safari do iPhone, é por aqui que a causa aparece.
+   */
+  'push_erro_cliente',
 ] as const;
+
+/** Os passos do `ligarLembrete`, na ordem em que ele tenta cada um. */
+const ETAPAS_DE_PUSH = ['permissao', 'service_worker', 'chave', 'assinar', 'gravar'] as const;
 
 const EventoSchema = z.object({
   nome: z.enum(EVENTOS_DO_CLIENT),
   lesson_id: z.string().trim().max(120).optional(),
   dia: z.number().int().min(1).max(99).optional(),
   programa: z.string().trim().max(120).optional(),
+  /** Fase 8: só o `push_erro_cliente` usa os três de baixo. */
+  etapa: z.enum(ETAPAS_DE_PUSH).optional(),
+  erro: z.string().trim().max(300).optional(),
+  status: z.number().int().min(0).max(599).optional(),
 });
 
 async function userIdDaSessao(c: Context<AppBindings>): Promise<string | null> {

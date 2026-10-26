@@ -46,18 +46,30 @@ export function PassoLembrete({
     const r = await ligarLembrete();
     setResultado(r);
     setPedindo(false);
-    if (r === 'ligado') aoLigar();
+    if (r.estado === 'ligado') aoLigar();
   }
 
-  if (resultado === 'negado' || resultado === 'erro' || resultado === 'indisponivel') {
+  if (resultado && resultado.estado !== 'ligado') {
     return (
       <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-6 px-5 py-10">
         <h1 className="text-3xl font-semibold leading-tight text-noite-900">Tudo bem.</h1>
         <p className="text-lg leading-relaxed text-noite-700">
-          {resultado === 'negado'
+          {resultado.estado === 'negado'
             ? 'Se mudar de ideia, dá para ligar o lembrete nas configurações do celular.'
             : 'Não consegui ligar o lembrete agora. Você pode tentar de novo mais tarde, pela tela inicial do app.'}
         </p>
+
+        {/*
+         * Só em staging (§15, `define` do vite.config.ts): sem Mac não há como
+         * abrir o inspetor do Safari do iPhone, e a etapa com o `name` da
+         * exceção é a única pista de qual passo arrebentou.
+         */}
+        {resultado.estado === 'erro' && __DIAGNOSTICO__ && (
+          <p className="rounded-xl bg-noite-100 px-4 py-3 font-mono text-sm leading-snug text-noite-700">
+            {resultado.falha.etapa} · {resultado.falha.erro}
+            {resultado.falha.status !== undefined && ` · HTTP ${resultado.falha.status}`}
+          </p>
+        )}
         <button
           type="button"
           onClick={aoPular}

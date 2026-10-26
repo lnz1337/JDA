@@ -64,6 +64,15 @@ function clientOnly(plugins: Plugin[]): Plugin[] {
 }
 
 export default defineConfig({
+  /*
+   * Em staging a tela de falha do lembrete mostra a etapa e o erro em letra
+   * pequena. Não há Mac para abrir o inspetor do Safari do iPhone, e sem isso a
+   * única informação sobre a falha era "não consegui". Em produção não aparece:
+   * quem está rezando não tem o que fazer com um `AbortError`.
+   */
+  define: {
+    __DIAGNOSTICO__: JSON.stringify(process.env.CLOUDFLARE_ENV !== 'production'),
+  },
   plugins: [
     react(),
     tailwindcss(),
