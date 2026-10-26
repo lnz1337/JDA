@@ -9,6 +9,8 @@
  * Horário e fuso são o contrário: ficam na conta, para quem troca de celular não
  * perder o que escolheu.
  */
+import { chaveParaBytes } from './chave';
+
 
 export function lerLocal(chave: string): string | null {
   try {
@@ -88,13 +90,6 @@ export async function assinaturaAtual(): Promise<PushSubscription | null> {
   } catch {
     return null;
   }
-}
-
-/** `BASE64URL` → `Uint8Array`, que é o que `subscribe` aceita como chave. */
-function chaveParaBytes(base64url: string): Uint8Array {
-  const base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
-  const cru = atob(base64.padEnd(Math.ceil(base64.length / 4) * 4, '='));
-  return Uint8Array.from(cru, (c) => c.charCodeAt(0));
 }
 
 export interface AssinaturaParaEnviar {

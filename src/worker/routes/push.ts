@@ -13,7 +13,12 @@ import { agoraIso, horaLocal } from '../lib/datas';
 import { novoId } from '../lib/ids';
 import type { AppBindings } from '../lib/types';
 import { COOKIE_SESSAO, usuarioDaSessao } from '../services/auth';
-import { assinaturasDoUsuario, enviarERegistrar, servicoDoEndpoint } from '../services/push';
+import {
+  assinaturasDoUsuario,
+  chavePublicaVapid,
+  enviarERegistrar,
+  servicoDoEndpoint,
+} from '../services/push';
 
 const AssinaturaSchema = z.object({
   endpoint: z.string().trim().url().max(2000),
@@ -39,7 +44,8 @@ export const push = new Hono<AppBindings>()
   .get('/chave', async (c) => {
     if (!(await userIdDaSessao(c))) return c.json({ error: 'nao_autenticado' }, 401);
 
-    const chave = c.env.VAPID_PUBLIC_KEY;
+    // Pelo serviço, não direto do env: é lá que BOM e espaço saem do segredo.
+    const chave = chavePublicaVapid(c.env);
     if (!chave) return c.json({ error: 'push_indisponivel' }, 503);
 
     return c.json({ chave });

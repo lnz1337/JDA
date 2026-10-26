@@ -545,3 +545,72 @@ describe('push de confirmação', () => {
     }
   });
 });
+
+/*
+ * O BOM que derrubou o lembrete no iPhone (26/10).
+ *
+ * `wrangler secret put` recebendo valor por pipe no PowerShell grava UTF-8
+ * **com BOM**, e o U+FEFF ficou dentro do VAPID_PUBLIC_KEY do staging. O
+ * `Buffer.from(..., 'base64')` do Node ignora o caractere, então conferir pelo
+ * Node não acusava nada; o `atob` do Safari recusa, e o subscribe morria com
+ * `InvalidCharacterError`, que não aponta para o segredo.
+ *
+ * A normalização fica onde os três valores são lidos, uma vez, porque o mesmo
+ * pipe gravou a chave privada e o assunto.
+ */
+describe('segredo VAPID sujo de BOM ou espaço', () => {
+  const BOM = '﻿';
+
+  it('a chave servida ao aparelho sai limpa', async () => {
+    await criarUsuario();
+    const ctx = createExecutionContext();
+    const res = await app.request(
+      `${BASE}/api/push/chave`,
+      { headers: { cookie: COOKIE } },
+      { ...envTeste, VAPID_PUBLIC_KEY: `${BOM}${envTeste.VAPID_PUBLIC_KEY}
+` },
+      ctx,
+    );
+    await waitOnExecutionContext(ctx);
+
+    expect(res.status).toBe(200);
+    const { chave } = (await res.json()) as { chave: string };
+    expect(chave).toBe(envTeste.VAPID_PUBLIC_KEY);
+    expect(chave).not.toContain(BOM);
+    expect(/^[A-Za-z0-9_-]+$/.test(chave)).toBe(true);
+  });
+
+  it('assunto com BOM continua valendo', () => {
+    // Sem isto, o assuntoVapidValido recusaria o mailto: por causa do U+FEFF e
+    // o push pararia com "VAPID_SUBJECT precisa ser mailto: ou https".
+    expect(vapidConfigurado({ ...envTeste, VAPID_SUBJECT: `${BOM}mailto:x@exemplo.test` })).toBe(
+      true,
+    );
+  });
+
+  it('chave privada com BOM não impede o envio', async () => {
+    const original = globalThis.fetch;
+    globalThis.fetch = (async () => new Response(null, { status: 201 })) as typeof fetch;
+
+    try {
+      const r = await enviarPush(
+        {
+          ...envTeste,
+          VAPID_PUBLIC_KEY: `${BOM}${envTeste.VAPID_PUBLIC_KEY}`,
+          VAPID_PRIVATE_KEY: `${BOM}${envTeste.VAPID_PRIVATE_KEY}`,
+          VAPID_SUBJECT: `${BOM}${envTeste.VAPID_SUBJECT}`,
+        },
+        { endpoint: ENDPOINT, p256dh: P256DH, auth: AUTH },
+        { titulo: 'oi', corpo: 'x', url: '/' },
+      );
+      expect(r.ok).toBe(true);
+    } finally {
+      globalThis.fetch = original;
+    }
+  });
+
+  it('segredo em branco continua sendo falta de configuração', () => {
+    expect(vapidConfigurado({ ...envTeste, VAPID_PUBLIC_KEY: '   ' })).toBe(false);
+    expect(vapidConfigurado({ ...envTeste, VAPID_SUBJECT: BOM })).toBe(false);
+  });
+});

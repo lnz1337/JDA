@@ -68,12 +68,34 @@ export type ResultadoPush =
   | { ok: true; servico: string }
   | { ok: false; servico: string; status?: number; removerAssinatura: boolean; erro: string };
 
+/**
+ * Limpa o valor de um secret VAPID.
+ *
+ * `wrangler secret put` recebendo o valor por pipe no PowerShell grava UTF-8
+ * **com BOM**, e o U+FEFF foi para dentro do `VAPID_PUBLIC_KEY` do staging. O
+ * `atob` do Safari é estrito: o `subscribe` do iPhone morria com
+ * `InvalidCharacterError`, que não aponta para o segredo. Conferir pelo Node não
+ * acusava nada, porque o `Buffer.from(..., 'base64')` ignora o caractere.
+ *
+ * BOM e espaço nunca fazem parte de chave nem de assunto, e o `trim` também
+ * come o U+FEFF. A limpeza fica aqui, no único ponto onde os três são lidos:
+ * o mesmo pipe gravou a chave privada e o assunto.
+ */
+function limpar(valor: string | undefined): string {
+  return (valor ?? '').trim();
+}
+
 function vapidDe(env: Ambiente) {
   return {
-    subject: env.VAPID_SUBJECT ?? '',
-    publicKey: env.VAPID_PUBLIC_KEY ?? '',
-    privateKey: env.VAPID_PRIVATE_KEY ?? '',
+    subject: limpar(env.VAPID_SUBJECT),
+    publicKey: limpar(env.VAPID_PUBLIC_KEY),
+    privateKey: limpar(env.VAPID_PRIVATE_KEY),
   };
+}
+
+/** A chave pública que vai para o `subscribe` do navegador, já limpa. */
+export function chavePublicaVapid(env: Ambiente): string {
+  return vapidDe(env).publicKey;
 }
 
 /**
