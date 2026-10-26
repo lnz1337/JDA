@@ -11,7 +11,7 @@
  * serviço de push recusou) e de `InvalidStateError` (já existe assinatura com
  * outra chave).
  */
-import { ErroApi } from './api';
+import { ErroApi } from './erro-api';
 
 /** Em que ponto da corrente o lembrete parou. */
 export type EtapaPush = 'permissao' | 'service_worker' | 'chave' | 'assinar' | 'gravar';

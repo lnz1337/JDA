@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ErroApi } from '../src/client/lib/api';
+import { ErroApi } from '../src/client/lib/erro-api';
 import { descreverErro, semUrl } from '../src/client/lib/diagnostico';
 
 /**

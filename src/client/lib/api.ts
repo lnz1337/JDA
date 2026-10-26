@@ -1,18 +1,7 @@
 /** Chamadas à API. Erro vira exceção com o código que o Worker devolveu. */
-export class ErroApi extends Error {
-  constructor(
-    readonly codigo: string,
-    readonly status: number,
-    /**
-     * O corpo inteiro da resposta. O `/api/push/confirmacao` manda nele o
-     * status e o motivo que o serviço de push devolveu (um 403 `BadJwtToken` da
-     * Apple, por exemplo), e só o `codigo` perderia isso.
-     */
-    readonly corpo: Record<string, unknown> = {},
-  ) {
-    super(codigo);
-  }
-}
+import { ErroApi } from './erro-api';
+
+export { ErroApi } from './erro-api';
 
 export async function api<T>(caminho: string, init?: RequestInit): Promise<T> {
   const res = await fetch(caminho, {
@@ -66,5 +55,13 @@ export function registrarEvento(
   void api('/api/eventos', {
     method: 'POST',
     body: JSON.stringify({ nome, ...props }),
+    /*
+     * O evento tem que sair mesmo que o app vá para o fundo no instante
+     * seguinte. Sem isto o navegador cancela o fetch junto com a página, e foi
+     * o que aconteceu em 26/10: duas tentativas de assinar falharam, o
+     * `push_erro_cliente` foi disparado e nunca chegou ao Worker — o funil
+     * ficou com buraco justamente onde estava o defeito.
+     */
+    keepalive: true,
   }).catch(() => undefined);
 }
