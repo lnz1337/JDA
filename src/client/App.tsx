@@ -6,6 +6,7 @@ import { irPara, useRota } from './lib/rota';
 import { Entrar } from './screens/Entrar';
 import { Home } from './screens/Home';
 import { Inicio } from './screens/Inicio';
+import { abaDaRota, BarraDeAbas } from './components/BarraDeAbas';
 import { Licao } from './screens/Licao';
 import { Loja } from './screens/Loja';
 import { Onboarding, deveRodarOnboarding, marcarOnboardingFeito } from './screens/Onboarding';
@@ -118,39 +119,66 @@ export function App() {
     );
   }
 
-  if (rota.nome === 'programa') return <Programa id={rota.id} />;
-  if (rota.nome === 'licao') return <Licao id={rota.id} />;
-  if (rota.nome === 'loja') return <Loja />;
-  if (rota.nome === 'produto') return <Produto id={rota.id} />;
+  /*
+   * Fixado aqui porque o `telaLogada` é função: o TypeScript não leva o
+   * estreitamento de `estado` para dentro dela — ela poderia ser chamada depois,
+   * quando `estado` já fosse outro.
+   */
+  const me = estado.me;
+  const tela = telaLogada();
+  const aba = abaDaRota(rota);
 
-  // Chamadas pelos cards da Home, para quem disse "Agora não" antes.
-  if (rota.nome === 'instalar') return <PassoInstalar aoPular={() => irPara('/')} />;
+  // Sem aba (lição, instalar, lembrete), a tela ocupa tudo: ali a pessoa está
+  // numa tarefa só, e a barra competiria com os controles do player.
+  if (!aba) return tela;
 
-  if (rota.nome === 'lembrete') {
-    /*
-     * Permissão concedida não quer dizer assinado. Esta rota ia direto para o
-     * horário, e escolher a hora sem assinatura não liga nada: era por isso que
-     * o push de confirmação respondia `sem_assinatura`. Com a permissão dada e
-     * sem assinatura, o que falta é justamente o `ligarLembrete`.
-     */
-    if (semAssinatura === null) {
-      return (
-        <main className="flex min-h-dvh items-center justify-center">
-          <p className="text-lg text-noite-300">carregando…</p>
-        </main>
+  return (
+    <>
+      {/*
+       * O `pb-28` entra no `<main>` da tela, não aqui: a barra é `fixed` e
+       * cobriria o fim do conteúdo. Com `box-sizing: border-box` o `min-h-dvh`
+       * já conta o padding, então nada disso cria rolagem numa tela curta.
+       */}
+      <div className="[&>main]:pb-28">{tela}</div>
+      <BarraDeAbas ativa={aba} />
+    </>
+  );
+
+  function telaLogada() {
+    if (rota.nome === 'programa') return <Programa id={rota.id} />;
+    if (rota.nome === 'licao') return <Licao id={rota.id} />;
+    if (rota.nome === 'loja') return <Loja />;
+    if (rota.nome === 'produto') return <Produto id={rota.id} />;
+
+    // Chamadas pelos cards da Home, para quem disse "Agora não" antes.
+    if (rota.nome === 'instalar') return <PassoInstalar aoPular={() => irPara('/')} />;
+
+    if (rota.nome === 'lembrete') {
+      /*
+       * Permissão concedida não quer dizer assinado. Esta rota ia direto para o
+       * horário, e escolher a hora sem assinatura não liga nada: era por isso
+       * que o push de confirmação respondia `sem_assinatura`. Com a permissão
+       * dada e sem assinatura, o que falta é justamente o `ligarLembrete`.
+       */
+      if (semAssinatura === null) {
+        return (
+          <main className="flex min-h-dvh items-center justify-center">
+            <p className="text-lg text-noite-300">carregando…</p>
+          </main>
+        );
+      }
+
+      return permissaoDeNotificacao() === 'granted' && !semAssinatura ? (
+        <PassoHorario aoTerminar={() => irPara('/')} />
+      ) : (
+        <PassoLembrete
+          aoLigar={() => irPara('/lembrete')}
+          aoPular={() => irPara('/')}
+          aoSeguir={() => irPara('/')}
+        />
       );
     }
 
-    return permissaoDeNotificacao() === 'granted' && !semAssinatura ? (
-      <PassoHorario aoTerminar={() => irPara('/')} />
-    ) : (
-      <PassoLembrete
-        aoLigar={() => irPara('/lembrete')}
-        aoPular={() => irPara('/')}
-        aoSeguir={() => irPara('/')}
-      />
-    );
+    return <Home me={me} aoSair={sair} />;
   }
-
-  return <Home me={estado.me} aoSair={sair} />;
 }
