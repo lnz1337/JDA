@@ -8,13 +8,13 @@
  */
 import { z } from 'zod';
 import { APP_NAME, LINK_ACESSO_DIAS } from '../../shared/constants';
-import modeloBoasVindas from '../emails/boas-vindas.md?raw';
 import modeloConteudoLiberado from '../emails/conteudo-liberado.md?raw';
 import { renderizarEmail } from '../emails/render';
 import { agoraIso, paytParaIso } from '../lib/datas';
 import { novoId } from '../lib/ids';
 import type { AppBindings } from '../lib/types';
 import { criarLinkDeAcesso } from './auth';
+import { enviarBoasVindas } from './boas-vindas';
 import { concederEntitlement, revogarPorTransacao } from './entitlements';
 import { enviarEmail } from './mail';
 import { assinaturasDoUsuario, enviarERegistrar } from './push';
@@ -566,34 +566,12 @@ export async function processarPostback(
   // era cliente comprando de novo não recebe "bem-vindo" outra vez.
   const email = p.customer?.email?.trim().toLowerCase();
   if (usuario.novo && email && p.customer?.fake_email !== true) {
-    const primeiro = p.customer?.name?.trim().split(' ')[0] ?? '';
-    // Link que já entra: quem acabou de comprar não digita código nenhum (§8).
-    const token = await criarLinkDeAcesso(db, usuario.userId);
-    const corpo = renderizarEmail(
-      modeloBoasVindas,
-      {
-        app: APP_NAME,
-        nome: primeiro ? `, ${primeiro}` : '',
-        nome_ou_ola: primeiro || 'Olá',
-        link_acesso: `${env.APP_URL}/acesso?t=${token}`,
-        validade_link: String(LINK_ACESSO_DIAS),
-        suporte: env.SUPPORT_EMAIL ?? '',
-      },
-      { motivo: `Você recebeu este e-mail porque sua compra da ${APP_NAME} foi confirmada.` },
-    );
-
-    await enviarEmail(
-      env,
-      'boas_vindas',
-      {
-        para: email,
-        assunto: corpo.assunto,
-        texto: corpo.texto,
-        html: corpo.html,
-        ...(env.SUPPORT_EMAIL ? { responderPara: env.SUPPORT_EMAIL } : {}),
-      },
-      usuario.userId,
-    );
+    await enviarBoasVindas(env, {
+      userId: usuario.userId,
+      email,
+      nome: p.customer?.name,
+      motivo: `Você recebeu este e-mail porque sua compra da ${APP_NAME} foi confirmada.`,
+    });
   }
 
   /*
