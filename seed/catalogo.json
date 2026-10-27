@@ -2,7 +2,7 @@
   "_comentario": [
     "Catálogo do funil, mantido À MÃO (ao contrário de jornada-19-dias.json, que é gerado).",
     "Os 'id' são os SKU cadastrados na Payt (CLAUDE.md §5 e §7).",
-    "Preços em centavos. checkout_url fica null até os links da Payt serem definidos (§17).",
+    "Preços em centavos. checkout_url null = sem botão de compra na loja (fase 6).",
     "Os produtos dentro de bundles são kind=program, listed=0: só aparecem como item do bundle.",
     "payt_map: product.code da Payt -> nosso produto. Vale em TODOS os ambientes, inclusive",
     "produção. Mapeamento de teste (produto que não é nosso) nunca entra aqui — fica só no",
@@ -22,7 +22,7 @@
       "kind": "bundle",
       "description_md": "A Oração de São Miguel do Monte Gargano, o Manual de Purificação e Autocuidado e o Mapa da Prosperidade Divina, juntos.",
       "price_cents": 19700,
-      "checkout_url": null,
+      "checkout_url": "https://checkout.payt.com.br/4d03c4e35040458c8a2c95f0c2effee9",
       "requires_subscription": 0,
       "listed": 1,
       "sort": 20
@@ -33,7 +33,7 @@
       "kind": "bundle",
       "description_md": "A Jornada de Cura com Padre Pio e a Limpeza com os Anjos, juntas.",
       "price_cents": 9700,
-      "checkout_url": null,
+      "checkout_url": "https://checkout.payt.com.br/29458eca2dfee3886ffebf7003111e62",
       "requires_subscription": 0,
       "listed": 1,
       "sort": 30
@@ -97,6 +97,8 @@
     }
   ],
   "payt_map": {
-    "RVEEJ8": "jornada-meu-anjo"
+    "RVEEJ8": "jornada-meu-anjo",
+    "LPG38N": "oracao-sao-miguel",
+    "RAO7YD": "jornada-cura-padre-pio"
   }
 }

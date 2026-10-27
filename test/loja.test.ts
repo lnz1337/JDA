@@ -43,8 +43,8 @@ async function conceder(produto: string): Promise<void> {
     .run();
 }
 
-/** Deixa um produto comprável, como o catálogo vai ficar quando o Leo passar o link. */
-async function comCheckout(produto: string, url = 'https://payt.site/abc123'): Promise<void> {
+/** Troca o checkout de um produto; `null` tira o botão de compra. */
+async function comCheckout(produto: string, url: string | null = 'https://payt.site/abc123'): Promise<void> {
   await env.DB.prepare('UPDATE products SET checkout_url = ? WHERE id = ?').bind(url, produto).run();
 }
 
@@ -103,8 +103,9 @@ describe('GET /api/loja', () => {
 
   it('produto sem checkout_url não é comprável', async () => {
     await criarUsuario();
-    // O catálogo ainda não tem os links da Payt (§17): sem botão de compra.
-    expect((await listar()).every((i) => i.tem_checkout === false)).toBe(true);
+    // Link ainda não cadastrado é estado normal de um produto novo no catálogo.
+    await comCheckout('oracao-sao-miguel', null);
+    expect((await listar()).find((i) => i.id === 'oracao-sao-miguel')?.tem_checkout).toBe(false);
 
     await comCheckout('oracao-sao-miguel');
     expect((await listar()).find((i) => i.id === 'oracao-sao-miguel')?.tem_checkout).toBe(true);
@@ -229,6 +230,7 @@ describe('GET /api/loja/:id', () => {
 
   it('sem checkout_url, não há link nenhum', async () => {
     await criarUsuario();
+    await comCheckout('oracao-sao-miguel', null);
     const produto = await abrirProduto('oracao-sao-miguel');
     expect(produto.checkout_url).toBeNull();
   });

@@ -31,7 +31,7 @@ describe('seed', () => {
       programs: 6,
       lessons: 41,
       bundle_items: 5,
-      payt_map: 1,
+      payt_map: 3,
     });
 
     await aplicarSeed();
@@ -193,7 +193,7 @@ describe('seed', () => {
     const { results } = await env.DB.prepare(
       'SELECT payt_code FROM product_payt_map ORDER BY payt_code',
     ).all<{ payt_code: string }>();
-    expect(results.map((r) => r.payt_code)).toEqual(['LJ7KEP', 'RVEEJ8']);
+    expect(results.map((r) => r.payt_code)).toEqual(['LJ7KEP', 'LPG38N', 'RAO7YD', 'RVEEJ8']);
   });
 
   it('cadastra os preços do funil em centavos', async () => {
