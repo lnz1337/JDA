@@ -9,6 +9,7 @@ import type { AppBindings } from '../lib/types';
 import { normalizarEmail } from '../services/auth';
 import { excluirConta } from '../services/conta';
 import { assinaturasDoUsuario, enviarERegistrar } from '../services/push';
+import { diagnosticoVapid } from '../services/vapid-diagnostico';
 import {
   assinaturaDoUsuario,
   assinaturaValida,
@@ -138,6 +139,17 @@ export const admin = new Hono<AppBindings>().post('/conceder', async (c) => {
    * corrente inteira — VAPID, assinatura, serviço de push e service worker —
    * sem esperar a hora do lembrete chegar.
    */
+  /**
+   * O par VAPID deste ambiente passa pela leitura? Só tamanhos e validade, nunca
+   * o valor: segredo do wrangler não se lê de volta, e este é o jeito de saber
+   * se o que foi gravado tinha BOM e se o que sobra serve.
+   */
+  .get('/vapid', async (c) => {
+    if (!chaveAdminConfere(c.req.header('x-admin-key'), c.env)) {
+      return c.json({ error: 'nao_autorizado' }, 401);
+    }
+    return c.json(await diagnosticoVapid(c.env));
+  })
   .post('/push-teste', async (c) => {
     if (!chaveAdminConfere(c.req.header('x-admin-key'), c.env)) {
       return c.json({ error: 'nao_autorizado' }, 401);
