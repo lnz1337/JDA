@@ -1,6 +1,6 @@
 # E-mail de acesso ao app, versão curta
 
-Variante do `anuncio-app.md`, escrita para parecer uma mensagem pessoal de acesso e não um informativo: sem lista de vantagens, sem botão, um link só no corpo, assinatura de uma pessoa. O objetivo é testar se o Gmail a coloca em Principal em vez de Promoções. A estrutura de seções é a mesma do `anuncio-app.md`, para o mesmo leitor servir aos dois.
+Variante do `anuncio-app.md`, escrita para parecer uma mensagem pessoal de acesso e não um informativo: sem lista de vantagens, sem botão e com um link só no corpo. Sem assinatura: quem identifica o remetente é o nome dele na caixa de entrada. O objetivo é testar se o Gmail a coloca em Principal em vez de Promoções. A estrutura de seções é a mesma do `anuncio-app.md`, para o mesmo leitor servir aos dois.
 
 Variáveis: as mesmas do `anuncio-app.md` (`{{primeiro_nome}}`, `{{link_acesso}}`, `{{lista_produtos}}`, `{{link_parar}}`, `{{email_suporte}}`).
 
@@ -24,8 +24,6 @@ Para entrar, [toque aqui e o app abre já com o seu acesso]({{link_acesso}}). O 
 Se tiver qualquer dificuldade, é só responder este e-mail.
 
 Que São Miguel vá à sua frente.
-
-Leo, da Jornada com Meu Anjo
 
 ---
 Você está recebendo este e-mail porque comprou a Jornada com Meu Anjo. Se não quiser mais receber avisos sobre o app, [clique aqui]({{link_parar}}).
