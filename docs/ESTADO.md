@@ -33,8 +33,8 @@ roteiro descreve.
 |---|---|
 | 1. Catálogo | **feita**: UP1 `oracao-sao-miguel` (`LPG38N`, R$ 197) e UP2 `jornada-cura-padre-pio` (`RAO7YD`, R$ 97) com checkout normal da Payt e no `payt_map` ao lado do `RVEEJ8`. O checkout sai **preenchido com `email` e `phone`** da conta (telefone só se houver; sem nome, o checkout não pede) |
 | 2. Chave de administração | **feita**: `ADMIN_API_KEY` de produção gerada de novo pela receita do §15, no Git Bash; cópia local como `ADMIN_API_KEY_PRODUCTION` no `.dev.vars`. Os VAPID de produção **tinham BOM nos três valores** e passam pela leitura (ver "Secrets") |
-| 3. Publicar produção | **feita**: migration `0006`, seed, os 34 áudios e deploy. Conta do Leo criada com a Jornada manual e e-mail de boas-vindas com link de acesso enviado. **Esperando o teste do Leo no iPhone** (entrar, dia 1 com áudio, lembrete, Loja) |
-| 4. Postback de produção | esperando a etapa 3 |
+| 3. Publicar produção | **feita**: migration `0006`, seed, os 34 áudios e deploy. Conta do Leo criada com a Jornada manual e e-mail de boas-vindas com link de acesso enviado. **Testada pelo Leo no iPhone em 27/10**: entrou pelo link, dia 1 com áudio, lembrete (push de confirmação chegou) e Loja até o checkout. O banco registrou `lesson_started`, `lesson_completed`, `push_ativado`, `push_enviado`, `store_viewed`, `product_viewed` e `checkout_clicked` |
+| 4. Postback de produção | **esperando o Leo** cadastrar na Payt e gravar a `PAYT_INTEGRATION_KEY` de produção; depois, conferir que o teste da Payt parou no passo 3 do §7 |
 | 5. Importação da base (.xlsx) | esperando a etapa 4 |
 | 6. Primeira onda | esperando a etapa 5 |
 
@@ -746,12 +746,11 @@ Em ordem de dependência. O que está pronto não aparece aqui.
 
 | # | Falta | Depende de | Por quê trava |
 |---|---|---|---|
-| 1 | **Teste do Leo em produção, no iPhone** | Leo | É a pausa da etapa 3 do lançamento |
+| 1 | **Postback de produção** na Payt + `PAYT_INTEGRATION_KEY` de produção | Leo | Sem isso compra nova em produção não libera nada |
 | 2 | **Testar as fases 5 e 8 no Android** | Leo | No Android só o BlueStacks foi visto, e é a maioria do público |
-| 3 | **Postback de produção** na Payt + `PAYT_INTEGRATION_KEY` de produção | Leo (item 1) | Sem isso compra nova em produção não libera nada |
-| 4 | **Relatório de vendas (.xlsx)**, leitor de .xlsx no importador e importação | Leo (item 3) | É a base da campanha |
-| 5 | **Identidade visual** (ícones ainda são placeholder) | Leo | A raiz já é pública: o ícone aparece |
-| 6 | **Campanha**, em ondas, começando por Gmail | 4 | O e-mail promete um app funcionando |
+| 3 | **Relatório de vendas (.xlsx)**, leitor de .xlsx no importador e importação | Leo (item 1) | É a base da campanha |
+| 4 | **Identidade visual** (ícones ainda são placeholder) | Leo | A raiz já é pública: o ícone aparece |
+| 5 | **Campanha**, em ondas, começando por Gmail | 3 | O e-mail promete um app funcionando |
 
 **Fora da fila por decisão do Leo** (26/10): `/privacidade`, `/termos` e o
 registro de acesso. Não bloqueiam a campanha; ver "O que está aberto", item 6.
