@@ -34,7 +34,7 @@ roteiro descreve.
 | 2. Chave de administração | **feita**: `ADMIN_API_KEY` de produção gerada de novo pela receita do §15, no Git Bash; cópia local como `ADMIN_API_KEY_PRODUCTION` no `.dev.vars`. Os VAPID de produção **tinham BOM nos três valores** e passam pela leitura (ver "Secrets") |
 | 3. Publicar produção | **feita**: migration `0006`, seed, os 34 áudios e deploy. Conta do Leo criada com a Jornada manual e e-mail de boas-vindas com link de acesso enviado. **Testada pelo Leo no iPhone em 27/10**: entrou pelo link, dia 1 com áudio, lembrete (push de confirmação chegou) e Loja até o checkout. O banco registrou `lesson_started`, `lesson_completed`, `push_ativado`, `push_enviado`, `store_viewed`, `product_viewed` e `checkout_clicked` |
 | 4. Postback de produção | **feita em 27/10**: postback PayT V1 com todos os eventos cadastrado pelo Leo, `PAYT_INTEGRATION_KEY` de produção gravada. O teste da Payt (`PAYTS2`, `test: true`, `paid/paid`) chegou às 17:58 UTC, foi gravado com a chave mascarada (`"***"`) e **parou no passo 3 do §7**: sem erro, sem revisão, nenhum usuário, entitlement ou e-mail criado |
-| 5. Importação da base (.xlsx) | **em andamento**. O importador lê o `.xlsx` direto e liga o produto pelo **sku** (o relatório não traz o `product.code`). Dry-run em produção com o relatório de 27/10 até 09:20: ver "Importação da base". **Esperando o relatório novo**, exportado depois de o postback entrar no ar — só ele é importado de verdade |
+| 5. Importação da base (.xlsx) | **em andamento**. O importador lê o `.xlsx` direto e liga o produto pelo **sku** (o relatório não traz o `product.code`). Dry-run em produção com o relatório de 27/10 até 09:20: ver "Importação da base". Relatório novo (exportado às 20:23 de 27/10) com dry-run feito: **esperando o ok do Leo** para importar em produção |
 | 6. Primeira onda | esperando a etapa 5 |
 
 **O que estava na raiz antes:** uma página estacionada da Hostinger
@@ -84,6 +84,25 @@ Colunas usadas: Email, Cliente, Telefone, **Código** (transação), Sku, Produt
 
 Todo cliente tem a Jornada; 64 compraram a Jornada mais de uma vez (cada compra
 é um entitlement, sem efeito no acesso).
+
+**Dry-run do relatório novo** (`vendas_27_10_2026 - novo.xlsx`, exportado às
+20:23 de 27/10, 1.934 linhas):
+
+| | |
+|---|---|
+| Vendas por status | 1.904 aprovadas (entram), 19 reembolsadas, 11 chargebacks |
+| Sem e-mail válido | 0 |
+| Produto sem mapeamento | nenhum |
+| **Clientes únicos** | **1.421** (todos novos em produção) |
+| Por provedor | gmail 1.147, outlook 129, yahoo 60, outros 41, uol 25, icloud 10, terra 9 |
+| Entitlements | jornada-meu-anjo 1.516, oracao-sao-miguel 233, jornada-cura-padre-pio 155 (1.904) |
+| Última venda | 27/10 às 14:37 em Brasília (`787NXNG`) |
+
+Contra o primeiro: +12 vendas aprovadas, +11 clientes, +11 Jornadas e +1 UP1.
+**A cobertura fecha**: a última venda do relatório é das 14:37, o postback entrou
+às 14:58, e até a exportação nenhum postback pago real chegou em produção — então
+não houve venda nem antes do postback fora do relatório, nem depois dele fora do
+postback.
 
 **Como a importação grava:** um arquivo SQL só, na pasta temporária do sistema
 e apagado no fim (tem dado de cliente). Usuário existente só ganha telefone e
