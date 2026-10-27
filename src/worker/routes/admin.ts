@@ -6,7 +6,11 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 import { chaveAdminConfere } from '../lib/admin';
 import type { AppBindings } from '../lib/types';
+import { APP_NAME } from '../../shared/constants';
+import { agoraIso } from '../lib/datas';
+import { novoId } from '../lib/ids';
 import { normalizarEmail } from '../services/auth';
+import { enviarBoasVindas } from '../services/boas-vindas';
 import { excluirConta } from '../services/conta';
 import { assinaturasDoUsuario, enviarERegistrar } from '../services/push';
 import { diagnosticoVapid } from '../services/vapid-diagnostico';
@@ -19,6 +23,11 @@ import {
 const ConcederSchema = z.object({
   email: z.string().trim().email(),
   product_id: z.string().trim().min(1),
+  /** Cria a conta se o e-mail ainda não existir. Sem isto, e-mail novo é 404. */
+  criar_usuario: z.boolean().optional(),
+  nome: z.string().trim().max(120).optional(),
+  /** Manda o e-mail de boas-vindas com o link que já entra (§8). */
+  enviar_acesso: z.boolean().optional(),
 });
 
 const PushTesteSchema = z.object({
@@ -50,17 +59,32 @@ export const admin = new Hono<AppBindings>().post('/conceder', async (c) => {
     .bind(email)
     .first<{ id: string }>();
 
-  if (!usuario) return c.json({ error: 'usuario_nao_encontrado' }, 404);
-
+  // O produto antes da conta: produto digitado errado não pode deixar para trás
+  // uma conta criada sem acesso a nada.
   const produto = await c.env.DB.prepare('SELECT id, name FROM products WHERE id = ?')
     .bind(corpo.data.product_id)
     .first<{ id: string; name: string }>();
 
   if (!produto) return c.json({ error: 'produto_nao_encontrado' }, 404);
 
+  /*
+   * Criar é opt-in. Para o suporte, e-mail que não existe quase sempre é e-mail
+   * digitado errado ou compra feita com outro endereço — criar sem pedir faria
+   * uma conta nova em vez de achar a certa.
+   */
+  let userId = usuario?.id;
+  const criado = !userId;
+  if (!userId) {
+    if (!corpo.data.criar_usuario) return c.json({ error: 'usuario_nao_encontrado' }, 404);
+    userId = novoId();
+    await c.env.DB.prepare('INSERT INTO users (id, email, name, created_at) VALUES (?, ?, ?, ?)')
+      .bind(userId, email, corpo.data.nome ?? null, agoraIso())
+      .run();
+  }
+
   // source='manual' e sem transaction_id: reembolso da Payt não revoga isto.
   await concederEntitlement(c.env.DB, {
-    userId: usuario.id,
+    userId,
     productId: produto.id,
     source: 'manual',
   });
@@ -69,10 +93,25 @@ export const admin = new Hono<AppBindings>().post('/conceder', async (c) => {
     `SELECT status, granted_at FROM entitlements
       WHERE user_id = ? AND product_id = ? AND source = 'manual'`,
   )
-    .bind(usuario.id, produto.id)
+    .bind(userId, produto.id)
     .first<{ status: string; granted_at: string }>();
 
-  return c.json({ ok: true, produto: produto.name, ...linha });
+  const envio = corpo.data.enviar_acesso
+    ? await enviarBoasVindas(c.env, {
+        userId,
+        email,
+        nome: corpo.data.nome,
+        motivo: `Você recebeu este e-mail porque o suporte da ${APP_NAME} liberou o seu acesso.`,
+      })
+    : null;
+
+  return c.json({
+    ok: true,
+    produto: produto.name,
+    usuario_criado: criado,
+    ...linha,
+    ...(envio ? { email_enviado: envio.ok, ...(envio.ok ? {} : { erro_email: envio.erro }) } : {}),
+  });
 })
 
   /**
