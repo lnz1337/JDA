@@ -4,7 +4,7 @@ Retrato para uma sessão nova continuar daqui. A spec é o [CLAUDE.md](../CLAUDE
 este arquivo registra o que **não** cabe lá: o que já rodou, o que está só em
 staging, o que depende do Leo e as armadilhas que custaram caro.
 
-`npm run typecheck && npm test` limpo, **367 testes** em 25 arquivos.
+`npm run typecheck && npm test` limpo, **397 testes** em 28 arquivos.
 
 ## Os dois ambientes
 
@@ -34,7 +34,7 @@ roteiro descreve.
 | 2. Chave de administração | **feita**: `ADMIN_API_KEY` de produção gerada de novo pela receita do §15, no Git Bash; cópia local como `ADMIN_API_KEY_PRODUCTION` no `.dev.vars`. Os VAPID de produção **tinham BOM nos três valores** e passam pela leitura (ver "Secrets") |
 | 3. Publicar produção | **feita**: migration `0006`, seed, os 34 áudios e deploy. Conta do Leo criada com a Jornada manual e e-mail de boas-vindas com link de acesso enviado. **Testada pelo Leo no iPhone em 27/10**: entrou pelo link, dia 1 com áudio, lembrete (push de confirmação chegou) e Loja até o checkout. O banco registrou `lesson_started`, `lesson_completed`, `push_ativado`, `push_enviado`, `store_viewed`, `product_viewed` e `checkout_clicked` |
 | 4. Postback de produção | **feita em 27/10**: postback PayT V1 com todos os eventos cadastrado pelo Leo, `PAYT_INTEGRATION_KEY` de produção gravada. O teste da Payt (`PAYTS2`, `test: true`, `paid/paid`) chegou às 17:58 UTC, foi gravado com a chave mascarada (`"***"`) e **parou no passo 3 do §7**: sem erro, sem revisão, nenhum usuário, entitlement ou e-mail criado |
-| 5. Importação da base (.xlsx) | **esperando o Leo** passar o relatório de vendas |
+| 5. Importação da base (.xlsx) | **em andamento**. O importador lê o `.xlsx` direto e liga o produto pelo **sku** (o relatório não traz o `product.code`). Dry-run em produção com o relatório de 27/10 até 09:20: ver "Importação da base". **Esperando o relatório novo**, exportado depois de o postback entrar no ar — só ele é importado de verdade |
 | 6. Primeira onda | esperando a etapa 5 |
 
 **O que estava na raiz antes:** uma página estacionada da Hostinger
@@ -42,6 +42,55 @@ roteiro descreve.
 foram **apagados** para o Custom Domain poder assumir — Custom Domain recusa host
 com registro A/CNAME (`code: 100117`). Nada de e-mail foi tocado: MX, SPF, DKIM e
 DMARC continuam onde estavam.
+
+### Importação da base
+
+**Ordem combinada com o Leo (27/10), para ninguém ficar de fora:** o postback de
+produção entrou no ar às **17:58 UTC de 27/10** (14:58 em Brasília). O relatório
+de 27/10 vai só até 09:20, então as vendas entre um e outro não estariam nem no
+relatório nem no postback. Por isso o primeiro relatório serviu só para o
+dry-run, e o Leo exporta um **novo**, cobrindo até depois das 14:58, que é o
+importado. A importação é idempotente: quem estiver nos dois não duplica.
+
+**O relatório `.xlsx` da Payt** (planilha `report`, 46 colunas) não tem o
+`product.code`. O produto sai da coluna **Sku**, que vem como
+`<prefixo>-<sku da Payt>`; o pedaço depois do hífen é o mesmo sku do postback.
+Por isso o catálogo ganhou o `payt_sku` (migration `0007`, tabela
+`product_payt_sku`), usado pelo importador **e** pelo postback — sku primeiro,
+code depois:
+
+```
+853b4781f48478 -> jornada-meu-anjo        (R$ 97)
+c58a626d8e337  -> oracao-sao-miguel       (UP1, "Oração Oculta de São Miguel Arcanjo", R$ 197)
+3d11bdf6943ce8 -> jornada-cura-padre-pio  (UP2, R$ 97 e o downsell de R$ 37, mesmo pacote)
+```
+
+O "60 Receitas - Saladas No Pote" (2 linhas, ambas reembolso) fica de fora.
+Colunas usadas: Email, Cliente, Telefone, **Código** (transação), Sku, Produto,
+**Status Pagamento** e **Data da venda** (decisão do Leo; a alternativa era
+"Data Aprovação do Pagamento").
+
+**Dry-run de 27/10 em produção** (relatório até 09:20, 1.922 linhas):
+
+| | |
+|---|---|
+| Vendas por status | 1.892 aprovadas (entram), 19 reembolsadas, 11 chargebacks |
+| Sem e-mail válido | 0 |
+| Produto sem mapeamento | nenhum |
+| **Clientes únicos** | **1.410** (todos novos em produção) |
+| Por provedor | gmail 1.140, outlook 127, yahoo 59, outros 40, uol 25, icloud 10, terra 9 |
+| Entitlements | jornada-meu-anjo 1.505, oracao-sao-miguel 232, jornada-cura-padre-pio 155 (1.892) |
+| Período | 29/07 a 27/10/2026 |
+
+Todo cliente tem a Jornada; 64 compraram a Jornada mais de uma vez (cada compra
+é um entitlement, sem efeito no acesso).
+
+**Como a importação grava:** um arquivo SQL só, na pasta temporária do sistema
+e apagado no fim (tem dado de cliente). Usuário existente só ganha telefone e
+nome que estejam vazios; concessão que já existe **não muda** — se um
+reembolso chegou pelo postback depois da exportação, o relatório velho não
+devolve o acesso. Depois de aplicar, o script conta usuários e entitlements por
+produto no banco e compara com o plano.
 
 ---
 
