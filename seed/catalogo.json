@@ -6,7 +6,10 @@
     "Os produtos dentro de bundles são kind=program, listed=0: só aparecem como item do bundle.",
     "payt_map: product.code da Payt -> nosso produto. Vale em TODOS os ambientes, inclusive",
     "produção. Mapeamento de teste (produto que não é nosso) nunca entra aqui — fica só no",
-    "staging, cadastrado à mão (ver fixtures/payt/README.md)."
+    "staging, cadastrado à mão (ver fixtures/payt/README.md).",
+    "payt_sku: sku da Payt -> nosso produto, também em todos os ambientes. O postback manda o sku",
+    "sozinho; o relatório em .xlsx manda com prefixo e hífen, e vale o pedaço depois do hífen.",
+    "O resolvedor tenta o sku primeiro e o code (payt_map) depois: um cobre o outro."
   ],
   "products": [
     {
@@ -100,5 +103,10 @@
     "RVEEJ8": "jornada-meu-anjo",
     "LPG38N": "oracao-sao-miguel",
     "RAO7YD": "jornada-cura-padre-pio"
+  },
+  "payt_sku": {
+    "853b4781f48478": "jornada-meu-anjo",
+    "c58a626d8e337": "oracao-sao-miguel",
+    "3d11bdf6943ce8": "jornada-cura-padre-pio"
   }
 }

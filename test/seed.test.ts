@@ -10,7 +10,8 @@ async function contagens(): Promise<Record<string, number>> {
        (SELECT COUNT(*) FROM programs) AS programs,
        (SELECT COUNT(*) FROM lessons) AS lessons,
        (SELECT COUNT(*) FROM bundle_items) AS bundle_items,
-       (SELECT COUNT(*) FROM product_payt_map) AS payt_map`,
+       (SELECT COUNT(*) FROM product_payt_map) AS payt_map,
+       (SELECT COUNT(*) FROM product_payt_sku) AS payt_sku`,
   ).first<Record<string, number>>();
   return r ?? {};
 }
@@ -18,8 +19,8 @@ async function contagens(): Promise<Record<string, number>> {
 beforeEach(limparBanco);
 
 describe('seed', () => {
-  it('gera sete comandos: products, programs, limpa+insere lessons e bundle_items, payt_map', () => {
-    expect(comandosDoSeed(envTeste.TEST_SEED_SQL)).toHaveLength(7);
+  it('gera oito comandos: products, programs, limpa+insere lessons e bundle_items, payt_map, payt_sku', () => {
+    expect(comandosDoSeed(envTeste.TEST_SEED_SQL)).toHaveLength(8);
   });
 
   it('rodado duas vezes não duplica nada', async () => {
@@ -32,6 +33,7 @@ describe('seed', () => {
       lessons: 41,
       bundle_items: 5,
       payt_map: 3,
+      payt_sku: 3,
     });
 
     await aplicarSeed();

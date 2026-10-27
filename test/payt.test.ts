@@ -625,3 +625,33 @@ describe('rota de reprocesso', () => {
     expect(linha?.needs_review).toBe(0);
   });
 });
+
+describe('produto pelo sku da Payt (product_payt_sku)', () => {
+  // O mapa de sku vem do seed; o code LJ7KEP do pedidoPago aponta para a
+  // Jornada pelo cadastro à mão do beforeEach.
+  const comProduto = (produto: Record<string, unknown>) =>
+    comChave({ ...pedidoPago, product: { ...pedidoPago.product, ...produto } });
+
+  it('resolve pelo sku sem code nenhum', async () => {
+    await postar(comProduto({ sku: '853b4781f48478', code: null }));
+    expect(await entitlementsDe('cliente.exemplo@exemplo.com.br')).toEqual(['jornada-meu-anjo']);
+  });
+
+  it('resolve o sku no formato do relatório, com prefixo', async () => {
+    await postar(comProduto({ sku: '6a7097e1d9463-3d11bdf6943ce8', code: null }));
+    expect(await entitlementsDe('cliente.exemplo@exemplo.com.br')).toEqual(['jornada-cura-padre-pio']);
+  });
+
+  it('sku vem antes do code', async () => {
+    // sku do UP1 com o code que aponta para a Jornada: vale o sku.
+    await postar(comProduto({ sku: 'c58a626d8e337', code: 'LJ7KEP' }));
+    const ids = await entitlementsDe('cliente.exemplo@exemplo.com.br');
+    expect(ids).toContain('oracao-sao-miguel');
+    expect(ids).not.toContain('jornada-meu-anjo');
+  });
+
+  it('sku desconhecido ainda cai no code', async () => {
+    await postar(comProduto({ sku: 'nao-e-nosso-123', code: 'LJ7KEP' }));
+    expect(await entitlementsDe('cliente.exemplo@exemplo.com.br')).toEqual(['jornada-meu-anjo']);
+  });
+});

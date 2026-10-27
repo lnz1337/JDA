@@ -12,6 +12,7 @@ import modeloConteudoLiberado from '../emails/conteudo-liberado.md?raw';
 import { renderizarEmail } from '../emails/render';
 import { agoraIso, paytParaIso } from '../lib/datas';
 import { novoId } from '../lib/ids';
+import { formasDoSku } from '../lib/payt-sku';
 import type { AppBindings } from '../lib/types';
 import { criarLinkDeAcesso } from './auth';
 import { enviarBoasVindas } from './boas-vindas';
@@ -201,8 +202,14 @@ function produtosDoPedido(p: Postback): ProdutoBruto[] {
 }
 
 /**
- * sku → products.id; se não bater, product.code → product_payt_map (§7 passo 6).
- * Produto que não resolve é devolvido em `naoResolvidos` para o admin ver.
+ * sku primeiro, code depois (§7 passo 6):
+ *
+ *   1. sku → product_payt_sku (o sku que a Payt gera);
+ *   2. sku → products.id (sku igual ao nosso id, como nas fixtures);
+ *   3. product.code → product_payt_map.
+ *
+ * Com o sku e o code mapeados, postback sem code ou relatório sem sku ainda
+ * resolvem. Produto que não resolve vai em `naoResolvidos` para o admin ver.
  */
 export async function resolverProdutos(
   db: D1Database,
@@ -213,6 +220,20 @@ export async function resolverProdutos(
 
   for (const bruto of produtosDoPedido(p)) {
     const sku = bruto.sku?.trim();
+    const formas = formasDoSku(sku);
+    if (formas.length > 0) {
+      const pelaPayt = await db
+        .prepare(
+          `SELECT product_id FROM product_payt_sku WHERE payt_sku IN (${formas.map(() => '?').join(', ')})`,
+        )
+        .bind(...formas)
+        .first<{ product_id: string }>();
+      if (pelaPayt) {
+        ids.add(pelaPayt.product_id);
+        continue;
+      }
+    }
+
     if (sku) {
       const achado = await db
         .prepare('SELECT id FROM products WHERE id = ?')

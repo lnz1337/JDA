@@ -97,8 +97,9 @@ JSON gerado à mão: a próxima geração sobrescreve.
 | `conteudo/*.md` + `conteudo/gerar_audio.py` | os MP3 em `audio/` | `notebooks/gerar_audio_colab.ipynb` (Colab) |
 
 `seed/catalogo.json` é a exceção: mantido **à mão**, só com dado comercial
-(`price_cents`, `checkout_url`, `listed`, `sort`, `requires_subscription`) e o
-`payt_map`.
+(`price_cents`, `checkout_url`, `listed`, `sort`, `requires_subscription`), o
+`payt_map` (`product.code` → produto) e o `payt_sku` (sku da Payt → produto).
+Os dois valem em todos os ambientes e o seed só faz UPSERT neles.
 
 **`payt_map` vs. mapeamento de teste.** O `product.sku` que a Payt manda é gerado
 por ela (observado: `853b4781f48478` para a Jornada), não é o nosso `products.id`
@@ -414,7 +415,7 @@ Endpoint: `POST /api/payt/postback`. Cadastrar na Payt em Ferramentas → Integr
 5. Encontrar ou criar o usuário:
    - por `customer.email` (lowercase), exceto se `customer.fake_email === true`;
    - senão, por `customer.phone`.
-6. Resolver produtos do pedido: `product.sku` → `products.id`; fallback `product.code` → `product_payt_map`. Incluir `product.items` (grouped) e cada `order_bumps[].product`.
+6. Resolver produtos do pedido, **sku primeiro e code depois**: `product.sku` → `product_payt_sku`; `product.sku` → `products.id`; `product.code` → `product_payt_map`. Incluir `product.items` (grouped) e cada `order_bumps[].product`. Com os dois mapas, postback sem code ou relatório sem sku ainda resolvem: um identificador cobre o outro. O sku do relatório em `.xlsx` vem com prefixo (`6a44473d38700-853b4781f48478`); o mapa guarda só o pedaço depois do hífen, e a busca tenta as duas formas (`formasDoSku`).
 7. Aplicar a tabela abaixo.
 
 | Evento (status / transaction.payment_status) | Ação |

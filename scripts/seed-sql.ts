@@ -106,6 +106,8 @@ export interface Catalogo {
   products: ItemCatalogo[];
   /** product.code da Payt -> nosso produto. Vale em todos os ambientes. */
   payt_map?: Record<string, string>;
+  /** sku da Payt -> nosso produto. Vale em todos os ambientes (§7 passo 6). */
+  payt_sku?: Record<string, string>;
 }
 
 /** Campos de um produto que vêm de uma fonte de conteúdo. */
@@ -252,6 +254,16 @@ export function conferirFontes(
   for (const [paytCode, productId] of Object.entries(catalogo.payt_map ?? {})) {
     if (!noCatalogo.has(productId)) {
       erros.push(`payt_map '${paytCode}' aponta para '${productId}', que não está no catálogo`);
+    }
+  }
+
+  for (const [sku, productId] of Object.entries(catalogo.payt_sku ?? {})) {
+    if (!noCatalogo.has(productId)) {
+      erros.push(`payt_sku '${sku}' aponta para '${productId}', que não está no catálogo`);
+    }
+    // O mapa guarda só o sku; o prefixo do relatório sai na busca (formasDoSku).
+    if (sku.includes('-')) {
+      erros.push(`payt_sku '${sku}' tem hífen: guarde só o pedaço depois do último hífen`);
     }
   }
 
@@ -453,6 +465,17 @@ export function gerarSeedSql(): { sql: string; comDuracao: number; semDuracao: s
       )
     : null;
 
+  // Mesma regra do payt_map: só UPSERT.
+  const entradasSku = Object.entries(catalogo.payt_sku ?? {});
+  const sqlPaytSku = entradasSku.length
+    ? upsert(
+        'product_payt_sku',
+        ['payt_sku', 'product_id'],
+        entradasSku.map(([sku, produto]) => linha([sku, produto])),
+        'payt_sku',
+      )
+    : null;
+
   const cabecalho = [
     '-- GERADO por scripts/seed-sql.ts — não editar à mão.',
     '-- Fontes: seed/jornada-19-dias.json e seed/produtos.json (gerados do conteúdo)',
@@ -471,6 +494,7 @@ export function gerarSeedSql(): { sql: string; comDuracao: number; semDuracao: s
     sqlLimpaItens,
     sqlItens,
     ...(sqlPaytMap ? [sqlPaytMap] : []),
+    ...(sqlPaytSku ? [sqlPaytSku] : []),
   ].join('\n\n-- @stmt\n\n');
 
   return { sql: `${cabecalho}\n\n${corpo}\n`, comDuracao, semDuracao };

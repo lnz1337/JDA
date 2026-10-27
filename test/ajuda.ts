@@ -25,6 +25,7 @@ const TABELAS = [
   'lessons',
   'programs',
   'product_payt_map',
+  'product_payt_sku',
   'products',
   'users',
 ];
