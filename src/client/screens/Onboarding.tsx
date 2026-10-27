@@ -9,6 +9,7 @@ import {
   permissaoDeNotificacao,
   suportaPush,
 } from '../lib/dispositivo';
+import { type Convite, conviteDaHome } from '../lib/convite';
 import { PassoHorario } from './PassoHorario';
 import { PassoInstalar } from './PassoInstalar';
 import { PassoLembrete } from './PassoLembrete';
@@ -64,6 +65,25 @@ export function passoAtual(): Passo {
   if (permissao === 'granted' && !lerLocal(CHAVES.horarioFeito)) return 'horario';
 
   return null;
+}
+
+/**
+ * O card de convite da Home, lido deste aparelho.
+ *
+ * Não é o `passoAtual`: no Android o card pede o lembrete **antes** de instalar,
+ * porque lá o push funciona no Chrome sem instalar (§11). O onboarding em tela
+ * cheia continua na ordem dele.
+ */
+export function conviteAtual(): Convite {
+  return conviteDaHome({
+    celular: ehCelular(),
+    ios: ehIOS(),
+    standalone: ehStandalone(),
+    suportaPush: suportaPush(),
+    permissao: permissaoDeNotificacao(),
+    instalarDispensado: dispensadoRecentemente(CHAVES.instalarDispensado),
+    lembreteDispensado: dispensadoRecentemente(CHAVES.lembreteDispensado),
+  });
 }
 
 /**

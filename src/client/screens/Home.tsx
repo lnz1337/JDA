@@ -4,7 +4,8 @@ import { APP_NAME } from '../../shared/constants';
 import { api, type Me } from '../lib/api';
 import { permissaoDeNotificacao } from '../lib/dispositivo';
 import { irPara } from '../lib/rota';
-import { CHAVES, dispensar, type Passo, passoAtual, precisaAssinarDeNovo } from './Onboarding';
+import type { Convite } from '../lib/convite';
+import { CHAVES, conviteAtual, dispensar, precisaAssinarDeNovo } from './Onboarding';
 
 /**
  * A primeira tela de quem está dentro: o cartão do dia, grande, com o que fazer
@@ -106,17 +107,18 @@ export function Home({ me, aoSair }: { me: Me; aoSair: () => void }) {
  * para quem disse "Agora não": lembra sem prender.
  */
 function ConviteDoAparelho() {
-  const [passo, setPasso] = useState<Passo>(() => passoAtual());
+  const [passo, setPasso] = useState<Convite>(() => conviteAtual());
 
   /*
-   * O `passoAtual` é síncrono e não consulta o `pushManager`, então ele não vê
+   * O `conviteAtual` é síncrono e não consulta o `pushManager`, então ele não vê
    * o caso de quem permitiu a notificação e **não conseguiu assinar**. Essas
    * pessoas não caíam em passo nenhum: a tela de falha mandava tentar de novo
    * pela tela inicial, e aqui não havia nada. A checagem é assíncrona, por isso
-   * vem depois da primeira renderização.
+   * vem depois da primeira renderização. O lembrete passa na frente do de
+   * instalar, como no `conviteAtual`.
    */
   useEffect(() => {
-    if (passo === 'instalar' || passo === 'lembrete') return;
+    if (passo === 'lembrete') return;
 
     let vivo = true;
     void precisaAssinarDeNovo().then((precisa) => {
@@ -127,7 +129,7 @@ function ConviteDoAparelho() {
     };
   }, [passo]);
 
-  if (passo !== 'instalar' && passo !== 'lembrete') return null;
+  if (passo === null) return null;
 
   const instalar = passo === 'instalar';
 
@@ -147,7 +149,7 @@ function ConviteDoAparelho() {
         type="button"
         onClick={() => {
           dispensar(instalar ? CHAVES.instalarDispensado : CHAVES.lembreteDispensado);
-          setPasso(passoAtual());
+          setPasso(conviteAtual());
         }}
         className="min-h-[48px] w-full py-1 text-base text-noite-700 underline"
       >
