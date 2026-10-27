@@ -1,10 +1,10 @@
-# Estado do projeto — 26/10/2026
+# Estado do projeto — 27/10/2026
 
 Retrato para uma sessão nova continuar daqui. A spec é o [CLAUDE.md](../CLAUDE.md);
 este arquivo registra o que **não** cabe lá: o que já rodou, o que está só em
 staging, o que depende do Leo e as armadilhas que custaram caro.
 
-`npm run typecheck && npm test` limpo, **341 testes** em 22 arquivos.
+`npm run typecheck && npm test` limpo, **367 testes** em 25 arquivos.
 
 ## Os dois ambientes
 
@@ -15,11 +15,28 @@ staging, o que depende do Leo e as armadilhas que custaram caro.
 | Worker | `jda-pwa-staging` | `jda-pwa` |
 | D1 | `jda-pwa-staging` (`53e3ee12-…`) | `jda-pwa-prod` (`eddb43c3-75ea-43f3-a8cf-4371a833b573`) |
 | R2 | `jda-pwa-media-staging` | `jda-pwa-media` (34 áudios, 145 MB) |
-| Banco | 3 usuários de teste, 8 postbacks, 9 tokens, 3 matrículas, **1 assinatura de push** (iPhone do Leo, serviço da Apple) | **seed só**: 10 produtos, 6 programas, 41 lições, 1 `payt_map`, **0 usuários** |
+| Banco | 3 usuários de teste, 8 postbacks, 9 tokens, 3 matrículas, **1 assinatura de push** (iPhone do Leo, serviço da Apple) | seed de 27/10 (10 produtos, 6 programas, 41 lições, 3 `payt_map`), **1 usuário**: o Leo, com a Jornada concedida à mão |
 | Indexável | não (`Disallow: /` + `noindex`) | sim, menos `/entrar`, `/acesso` e `/parar` |
 
-Produção subiu em 23/10 e **ainda não recebe cliente**: sem postback cadastrado,
+Produção subiu em 23/10 e foi **atualizada em 27/10 com as fases 5, 6 e 8**, no
+mesmo código do staging. **Ainda não recebe cliente**: sem postback cadastrado,
 sem base importada e sem `PAYT_INTEGRATION_KEY`. A raiz serve a tela de Início.
+
+---
+
+## Lançamento para a base (começou em 27/10)
+
+Em etapas, com pausa para o Leo em cada uma. Produção liberada só para o que o
+roteiro descreve.
+
+| Etapa | Estado |
+|---|---|
+| 1. Catálogo | **feita**: UP1 `oracao-sao-miguel` (`LPG38N`, R$ 197) e UP2 `jornada-cura-padre-pio` (`RAO7YD`, R$ 97) com checkout normal da Payt e no `payt_map` ao lado do `RVEEJ8`. O checkout sai **preenchido com `email` e `phone`** da conta (telefone só se houver; sem nome, o checkout não pede) |
+| 2. Chave de administração | **feita**: `ADMIN_API_KEY` de produção gerada de novo pela receita do §15, no Git Bash; cópia local como `ADMIN_API_KEY_PRODUCTION` no `.dev.vars`. Os VAPID de produção **tinham BOM nos três valores** e passam pela leitura (ver "Secrets") |
+| 3. Publicar produção | **feita**: migration `0006`, seed, os 34 áudios e deploy. Conta do Leo criada com a Jornada manual e e-mail de boas-vindas com link de acesso enviado. **Esperando o teste do Leo no iPhone** (entrar, dia 1 com áudio, lembrete, Loja) |
+| 4. Postback de produção | esperando a etapa 3 |
+| 5. Importação da base (.xlsx) | esperando a etapa 4 |
+| 6. Primeira onda | esperando a etapa 5 |
 
 **O que estava na raiz antes:** uma página estacionada da Hostinger
 (`A jornadacomeuanjo.com → 2.57.91.91`, proxied) e um `CNAME www → raiz`. Os dois
@@ -111,7 +128,7 @@ Para disparar um push a qualquer momento, sem esperar a hora:
 npm run push:teste -- --email leonardovcs2022@gmail.com --env staging
 ```
 
-### 3. A Loja espera os dados comerciais
+### 3. A Loja tem os dados comerciais (27/10)
 
 A fase 6 **passou no teste de ponta a ponta em 26/10**, com compra e reembolso
 de verdade (transação `82JJPJX`): o funil registrou
@@ -119,24 +136,16 @@ de verdade (transação `82JJPJX`): o funil registrou
 percebeu a liberação sozinho na volta, o push e o e-mail de "já está no seu
 app" chegaram, e o reembolso revogou o acesso.
 
-Falta só o que depende do Leo, para o `seed/catalogo.json`: de cada bundle
-(`oracao-sao-miguel` e `jornada-cura-padre-pio`), o **link de checkout normal**
-da Payt — não o de upsell de um clique, que só vale dentro do funil —, o preço
-e o `product.code` para o `payt_map`. Enquanto o `checkout_url` for nulo, a
-página do produto mostra tudo e **não mostra botão de compra**, de propósito.
+Os dados comerciais chegaram em 27/10 e estão no `seed/catalogo.json` (ver
+"Lançamento para a base"). **O seed de staging não rodou de novo**: lá o
+`oracao-sao-miguel` continua com o checkout de teste do "60 Receitas", à mão.
+Rodar `seed:staging` troca pelo checkout real — e uma compra de teste no
+staging passaria a cobrar R$ 197 de verdade.
 
-### 4. Produção está três fases atrás
+### 4. Produção alcançou o staging (27/10)
 
-As fases **5 (jornada), 6 (loja) e 8 (push)** estão só em staging, por pedido do Leo: ele
-avisa quando publicar. Quando avisar:
-
-```bash
-npm run deploy:production
-npm run seed:production     # senão as frases curtas dos dias ficam vazias lá
-```
-
-O banco de produção já tem migrations e seed, e o R2 já tem os áudios — mas o seed
-de lá é anterior ao `summary` dos 19 dias.
+As fases 5, 6 e 8 foram publicadas em produção em 27/10, a pedido do Leo, com
+migration, seed (que trouxe os `summary` dos 19 dias) e os áudios.
 
 ### 5. Em que pasta caíram os e-mails de 22 e 23/10
 
@@ -317,18 +326,26 @@ A chave pública de staging, que não é segredo e ajuda a conferir no aparelho:
 RESEND_API_KEY           # só se MAIL_PROVIDER virar "resend"
 ```
 
-### Produção — cadastrados em 23/10
+### Produção — cadastrados
 
 ```
-ADMIN_API_KEY            # gerado direto no wrangler, nunca exibido
-CAMPAIGN_SIGNING_KEY     # idem
-VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY / VAPID_SUBJECT   # par próprio de produção
+ADMIN_API_KEY            # REGERADA em 27/10; cópia local ADMIN_API_KEY_PRODUCTION no .dev.vars
+CAMPAIGN_SIGNING_KEY     # 23/10, sem cópia (só o Worker precisa dela)
+VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY / VAPID_SUBJECT   # par próprio de produção, 23/10
 ```
 
-Os dois foram sorteados (`randomBytes(32)`) e enviados por pipe para o
-`wrangler secret put --env production`: **não existe cópia em lugar nenhum**, nem
-no `.dev.vars` (que é só de staging). Para rodar `grant`, campanha ou reprocesso
-em produção é preciso gerar outro e substituir — não há como recuperar estes.
+A `ADMIN_API_KEY` de 23/10 não tinha cópia e foi **substituída** em 27/10 pela
+receita do §15, no Git Bash: o mesmo comando grava o wrangler e acrescenta
+`ADMIN_API_KEY_PRODUCTION` ao `.dev.vars`, sem a chave passar pela tela. Os
+scripts escolhem a cópia pelo `--env`; a chave de staging em produção é 401.
+
+**Os três VAPID de produção têm BOM gravado** — o pipe do PowerShell de 23/10,
+o mesmo que sujou o staging. `GET /api/admin/vapid` em 27/10: pública 88 → 87,
+privada 44 → 43, assunto 36 → 35, todos com `tinha_bom: true`; depois da
+leitura, ponto P-256 válido, privada de 32 bytes, assunto válido e **o par
+confere** (assina com uma, verifica com a outra). Funciona como está. Regravar
+sem BOM é opcional e **não** invalida assinaturas (o valor lido é o mesmo); não
+foi feito porque ninguém pediu.
 
 ### Produção — ainda faltam
 
@@ -495,13 +512,12 @@ evita veredito de "sem SPF" em verificador ingênuo.
 
 ### Bloqueiam a campanha
 
-1. **Códigos do UP1 e do UP2 na Payt.** Hoje o `payt_map` só tem a Jornada
-   (`RVEEJ8`). Cada produto do funil precisa do `product.code` dele em
-   `seed/catalogo.json` antes de qualquer importação ou disparo — senão o
-   importador **interrompe** com a lista do que falta, de propósito.
-   Os códigos saem do painel da Payt ou do primeiro postback de cada produto.
+1. ~~Códigos do UP1 e do UP2 na Payt~~ — no `payt_map` desde 27/10
+   (`LPG38N`, `RAO7YD`).
 
-2. **CSV de vendas da Payt.** O importador está pronto mas nunca rodou.
+2. **Relatório de vendas da Payt.** O importador está pronto mas nunca rodou.
+   **Em 27/10 ficou combinado que o arquivo vem em `.xlsx`** e o importador lê
+   direto (etapa 5 do lançamento) — ainda não implementado.
    O fluxo combinado é: o Leo passa o arquivo, a sessão roda
    `npm run import:compradores -- vendas.csv --colunas`, **mostra o mapeamento de
    colunas e confirma antes de importar**.
@@ -730,16 +746,12 @@ Em ordem de dependência. O que está pronto não aparece aqui.
 
 | # | Falta | Depende de | Por quê trava |
 |---|---|---|---|
-| 1 | **Testar as fases 5 e 8 no Android** | Leo | O iPhone passou em 26/10; no Android nada foi exercitado, e é a maioria do público |
-| 2 | **Publicar as fases 5, 6 e 8 em produção** | Leo (item 1) | Produção está três fases atrás |
-| 3 | **Códigos do UP1 e do UP2** no `payt_map` | Leo | Sem eles o importador para, e comprador de upsell não recebe acesso em produção |
-| 4 | **Postback de produção** na Payt + `PAYT_INTEGRATION_KEY` de produção | Leo | Sem isso compra nova em produção não libera nada |
-| 5 | **CSV de vendas** e importação da base | Leo (itens 3 e 4) | É a base da campanha |
-| 6 | **`ADMIN_API_KEY` de produção em mãos** | — | Foi gerada sem cópia; `grant`, campanha e reprocesso em produção precisam dela (gerar outra e substituir) |
-| 7 | **Identidade visual** (ícones ainda são placeholder) | Leo | A raiz já é pública: o ícone aparece |
-| 8 | **Campanha**, em ondas, começando por Gmail | 3, 5 e 6 | O e-mail promete um app funcionando |
-
-**Produção está três fases atrás** (5, 6 e 8): ver "O que está aberto", no topo.
+| 1 | **Teste do Leo em produção, no iPhone** | Leo | É a pausa da etapa 3 do lançamento |
+| 2 | **Testar as fases 5 e 8 no Android** | Leo | No Android só o BlueStacks foi visto, e é a maioria do público |
+| 3 | **Postback de produção** na Payt + `PAYT_INTEGRATION_KEY` de produção | Leo (item 1) | Sem isso compra nova em produção não libera nada |
+| 4 | **Relatório de vendas (.xlsx)**, leitor de .xlsx no importador e importação | Leo (item 3) | É a base da campanha |
+| 5 | **Identidade visual** (ícones ainda são placeholder) | Leo | A raiz já é pública: o ícone aparece |
+| 6 | **Campanha**, em ondas, começando por Gmail | 4 | O e-mail promete um app funcionando |
 
 **Fora da fila por decisão do Leo** (26/10): `/privacidade`, `/termos` e o
 registro de acesso. Não bloqueiam a campanha; ver "O que está aberto", item 6.
@@ -758,7 +770,7 @@ npm run db:migrate:staging           # aplica migrations
 npm run seed:staging                 # gera e aplica o seed (idempotente)
 npm run deploy:staging               # build com CLOUDFLARE_ENV + wrangler deploy
 
-# Os mesmos existem para produção; são os que subiram o ambiente em 23/10:
+# Os mesmos existem para produção; rodaram em 23/10 e de novo em 27/10:
 npm run db:migrate:production
 npm run seed:production
 npm run media:upload:production      # 34 áudios, 145 MB
@@ -770,9 +782,17 @@ npm run conta:excluir -- --email <email> --env staging  # prévia; --confirmar a
 npm run payt:last:staging            # últimos 5 postbacks, com o JSON
 npm run payt:reprocess:staging X9P8DY5
 npm run grant:staging <email> <produto>
+node scripts/grant.ts <email> <produto> production --criar --nome Fulana --enviar-acesso
+# retrato do VAPID sem os valores (tamanho, BOM, validade, par confere):
+#   GET /api/admin/vapid com x-admin-key
 npm run campanha:anuncio -- --env staging --limite 1 --teste-para <email> --dry-run
 npm run campanha:anuncio -- --env production --limite 50 --provedores gmail   # 1ª onda: só Gmail
 ```
 
 As credenciais da Cloudflare saem de `CLOUDFLARE_API_TOKEN` e
-`CLOUDFLARE_ACCOUNT_ID` no ambiente; a `ADMIN_API_KEY` sai do `.dev.vars`.
+`CLOUDFLARE_ACCOUNT_ID` no ambiente; a chave administrativa sai do `.dev.vars`
+(`ADMIN_API_KEY` para staging, `ADMIN_API_KEY_PRODUCTION` para produção).
+
+**Sem `CLOUDFLARE_API_TOKEN`, o `media:upload` reenvia tudo**: a listagem do
+bucket usa a API e falha calada, então nada é pulado. Foi o que aconteceu em
+27/10 — 34 áudios reenviados, sem estrago (mesmo conteúdo, mesma chave).
