@@ -19,8 +19,7 @@ staging, o que depende do Leo e as armadilhas que custaram caro.
 | Indexável | não (`Disallow: /` + `noindex`) | sim, menos `/entrar`, `/acesso` e `/parar` |
 
 Produção subiu em 23/10 e foi **atualizada em 27/10 com as fases 5, 6 e 8**, no
-mesmo código do staging. **Ainda não recebe cliente**: sem postback cadastrado,
-sem base importada e sem `PAYT_INTEGRATION_KEY`. A raiz serve a tela de Início.
+mesmo código do staging. **Ainda não recebe cliente**: sem base importada. **Desde 27/10 o postback está ligado**: compra nova em produção já libera acesso. A raiz serve a tela de Início.
 
 ---
 
@@ -34,8 +33,8 @@ roteiro descreve.
 | 1. Catálogo | **feita**: UP1 `oracao-sao-miguel` (`LPG38N`, R$ 197) e UP2 `jornada-cura-padre-pio` (`RAO7YD`, R$ 97) com checkout normal da Payt e no `payt_map` ao lado do `RVEEJ8`. O checkout sai **preenchido com `email` e `phone`** da conta (telefone só se houver; sem nome, o checkout não pede) |
 | 2. Chave de administração | **feita**: `ADMIN_API_KEY` de produção gerada de novo pela receita do §15, no Git Bash; cópia local como `ADMIN_API_KEY_PRODUCTION` no `.dev.vars`. Os VAPID de produção **tinham BOM nos três valores** e passam pela leitura (ver "Secrets") |
 | 3. Publicar produção | **feita**: migration `0006`, seed, os 34 áudios e deploy. Conta do Leo criada com a Jornada manual e e-mail de boas-vindas com link de acesso enviado. **Testada pelo Leo no iPhone em 27/10**: entrou pelo link, dia 1 com áudio, lembrete (push de confirmação chegou) e Loja até o checkout. O banco registrou `lesson_started`, `lesson_completed`, `push_ativado`, `push_enviado`, `store_viewed`, `product_viewed` e `checkout_clicked` |
-| 4. Postback de produção | **esperando o Leo** cadastrar na Payt e gravar a `PAYT_INTEGRATION_KEY` de produção; depois, conferir que o teste da Payt parou no passo 3 do §7 |
-| 5. Importação da base (.xlsx) | esperando a etapa 4 |
+| 4. Postback de produção | **feita em 27/10**: postback PayT V1 com todos os eventos cadastrado pelo Leo, `PAYT_INTEGRATION_KEY` de produção gravada. O teste da Payt (`PAYTS2`, `test: true`, `paid/paid`) chegou às 17:58 UTC, foi gravado com a chave mascarada (`"***"`) e **parou no passo 3 do §7**: sem erro, sem revisão, nenhum usuário, entitlement ou e-mail criado |
+| 5. Importação da base (.xlsx) | **esperando o Leo** passar o relatório de vendas |
 | 6. Primeira onda | esperando a etapa 5 |
 
 **O que estava na raiz antes:** uma página estacionada da Hostinger
@@ -347,10 +346,10 @@ confere** (assina com uma, verifica com a outra). Funciona como está. Regravar
 sem BOM é opcional e **não** invalida assinaturas (o valor lido é o mesmo); não
 foi feito porque ninguém pediu.
 
-### Produção — ainda faltam
+### Produção — gravado em 27/10 pelo Leo
 
 ```
-PAYT_INTEGRATION_KEY     # quando o Leo criar o postback de produção na Payt
+PAYT_INTEGRATION_KEY     # postback PayT V1 de produção, todos os eventos
 ```
 
 ---
@@ -746,11 +745,10 @@ Em ordem de dependência. O que está pronto não aparece aqui.
 
 | # | Falta | Depende de | Por quê trava |
 |---|---|---|---|
-| 1 | **Postback de produção** na Payt + `PAYT_INTEGRATION_KEY` de produção | Leo | Sem isso compra nova em produção não libera nada |
+| 1 | **Relatório de vendas (.xlsx)**, leitor de .xlsx no importador e importação | Leo | É a base da campanha |
 | 2 | **Testar as fases 5 e 8 no Android** | Leo | No Android só o BlueStacks foi visto, e é a maioria do público |
-| 3 | **Relatório de vendas (.xlsx)**, leitor de .xlsx no importador e importação | Leo (item 1) | É a base da campanha |
-| 4 | **Identidade visual** (ícones ainda são placeholder) | Leo | A raiz já é pública: o ícone aparece |
-| 5 | **Campanha**, em ondas, começando por Gmail | 3 | O e-mail promete um app funcionando |
+| 3 | **Identidade visual** (ícones ainda são placeholder) | Leo | A raiz já é pública: o ícone aparece |
+| 4 | **Campanha**, em ondas, começando por Gmail | 1 | O e-mail promete um app funcionando |
 
 **Fora da fila por decisão do Leo** (26/10): `/privacidade`, `/termos` e o
 registro de acesso. Não bloqueiam a campanha; ver "O que está aberto", item 6.
