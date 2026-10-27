@@ -15,11 +15,11 @@ staging, o que depende do Leo e as armadilhas que custaram caro.
 | Worker | `jda-pwa-staging` | `jda-pwa` |
 | D1 | `jda-pwa-staging` (`53e3ee12-…`) | `jda-pwa-prod` (`eddb43c3-75ea-43f3-a8cf-4371a833b573`) |
 | R2 | `jda-pwa-media-staging` | `jda-pwa-media` (34 áudios, 145 MB) |
-| Banco | 3 usuários de teste, 8 postbacks, 9 tokens, 3 matrículas, **1 assinatura de push** (iPhone do Leo, serviço da Apple) | seed de 27/10 (10 produtos, 6 programas, 41 lições, 3 `payt_map`), **1 usuário**: o Leo, com a Jornada concedida à mão |
+| Banco | 3 usuários de teste, 8 postbacks, 9 tokens, 3 matrículas, **1 assinatura de push** (iPhone do Leo, serviço da Apple) | seed de 27/10 (10 produtos, 6 programas, 41 lições, 3 `payt_map`, 3 `payt_sku`); **1.422 usuários**: a base importada em 27/10 (1.421) e o Leo, com a Jornada concedida à mão |
 | Indexável | não (`Disallow: /` + `noindex`) | sim, menos `/entrar`, `/acesso` e `/parar` |
 
 Produção subiu em 23/10 e foi **atualizada em 27/10 com as fases 5, 6 e 8**, no
-mesmo código do staging. **Ainda não recebe cliente**: sem base importada. **Desde 27/10 o postback está ligado**: compra nova em produção já libera acesso. A raiz serve a tela de Início.
+mesmo código do staging. **A base foi importada em 27/10** (1.421 clientes) e o postback está ligado desde as 14:58 do mesmo dia: compra nova já libera acesso. Falta a campanha avisar a base. A raiz serve a tela de Início.
 
 ---
 
@@ -34,8 +34,8 @@ roteiro descreve.
 | 2. Chave de administração | **feita**: `ADMIN_API_KEY` de produção gerada de novo pela receita do §15, no Git Bash; cópia local como `ADMIN_API_KEY_PRODUCTION` no `.dev.vars`. Os VAPID de produção **tinham BOM nos três valores** e passam pela leitura (ver "Secrets") |
 | 3. Publicar produção | **feita**: migration `0006`, seed, os 34 áudios e deploy. Conta do Leo criada com a Jornada manual e e-mail de boas-vindas com link de acesso enviado. **Testada pelo Leo no iPhone em 27/10**: entrou pelo link, dia 1 com áudio, lembrete (push de confirmação chegou) e Loja até o checkout. O banco registrou `lesson_started`, `lesson_completed`, `push_ativado`, `push_enviado`, `store_viewed`, `product_viewed` e `checkout_clicked` |
 | 4. Postback de produção | **feita em 27/10**: postback PayT V1 com todos os eventos cadastrado pelo Leo, `PAYT_INTEGRATION_KEY` de produção gravada. O teste da Payt (`PAYTS2`, `test: true`, `paid/paid`) chegou às 17:58 UTC, foi gravado com a chave mascarada (`"***"`) e **parou no passo 3 do §7**: sem erro, sem revisão, nenhum usuário, entitlement ou e-mail criado |
-| 5. Importação da base (.xlsx) | **em andamento**. O importador lê o `.xlsx` direto e liga o produto pelo **sku** (o relatório não traz o `product.code`). Dry-run em produção com o relatório de 27/10 até 09:20: ver "Importação da base". Relatório novo (exportado às 20:23 de 27/10) com dry-run feito: **esperando o ok do Leo** para importar em produção |
-| 6. Primeira onda | esperando a etapa 5 |
+| 5. Importação da base (.xlsx) | **feita em 27/10**: 1.421 usuários e 1.904 entitlements em produção, conferidos no banco contra o dry-run. Os dois relatórios foram para a Lixeira do Windows. Detalhes: O importador lê o `.xlsx` direto e liga o produto pelo **sku** (o relatório não traz o `product.code`). Dry-run em produção com o relatório de 27/10 até 09:20: ver "Importação da base". ver "Importação da base" |
+| 6. Primeira onda | **próxima**: envio de teste só para o Leo (`--teste-para`), pausa para o ok, depois 50 pelo Gmail |
 
 **O que estava na raiz antes:** uma página estacionada da Hostinger
 (`A jornadacomeuanjo.com → 2.57.91.91`, proxied) e um `CNAME www → raiz`. Os dois
@@ -103,6 +103,26 @@ Contra o primeiro: +12 vendas aprovadas, +11 clientes, +11 Jornadas e +1 UP1.
 às 14:58, e até a exportação nenhum postback pago real chegou em produção — então
 não houve venda nem antes do postback fora do relatório, nem depois dele fora do
 postback.
+
+**Importado em produção em 27/10, com o ok do Leo.** A conferência do script,
+antes → depois, bateu linha a linha com o dry-run:
+
+```
+ok   usuários: esperado +1421, banco +1421
+ok   entitlements jornada-meu-anjo: esperado +1516, banco +1516
+ok   entitlements oracao-sao-miguel: esperado +233, banco +233
+ok   entitlements jornada-cura-padre-pio: esperado +155, banco +155
+```
+
+Conferido também por fora do script: 1.422 usuários (todos com nome; só o do Leo
+sem telefone), todos os entitlements `payt` ativos, `granted_at` de 29/07 a
+27/10 (a data da venda, não a da importação) e **nenhum usuário sem a Jornada**.
+O arquivo SQL temporário não ficou na pasta. Um dry-run rodado logo depois dá
+0 usuários e 0 entitlements novos: a importação é idempotente de verdade.
+
+Os dois relatórios de 27/10 foram para a **Lixeira do Windows**, não apagados de
+vez — esvaziar a lixeira fica com o Leo. Os de 22/10 (`vendas_22_10_2026.csv` e
+`.xlsx`), de uma sessão anterior, continuam em Downloads até o Leo decidir.
 
 **Como a importação grava:** um arquivo SQL só, na pasta temporária do sistema
 e apagado no fim (tem dado de cliente). Usuário existente só ganha telefone e
@@ -813,10 +833,9 @@ Em ordem de dependência. O que está pronto não aparece aqui.
 
 | # | Falta | Depende de | Por quê trava |
 |---|---|---|---|
-| 1 | **Relatório de vendas (.xlsx)**, leitor de .xlsx no importador e importação | Leo | É a base da campanha |
+| 1 | **Campanha**, em ondas, começando por Gmail | Leo (ok do envio de teste) | A base está importada e ainda não sabe do app |
 | 2 | **Testar as fases 5 e 8 no Android** | Leo | No Android só o BlueStacks foi visto, e é a maioria do público |
 | 3 | **Identidade visual** (ícones ainda são placeholder) | Leo | A raiz já é pública: o ícone aparece |
-| 4 | **Campanha**, em ondas, começando por Gmail | 1 | O e-mail promete um app funcionando |
 
 **Fora da fila por decisão do Leo** (26/10): `/privacidade`, `/termos` e o
 registro de acesso. Não bloqueiam a campanha; ver "O que está aberto", item 6.
