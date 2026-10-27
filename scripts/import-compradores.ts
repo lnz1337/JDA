@@ -1,8 +1,11 @@
 /**
  * Importa a exportação de vendas da Payt para a base do app.
  *
- *   node scripts/import-compradores.ts <arquivo.csv> --env staging [--dry-run]
- *   node scripts/import-compradores.ts <arquivo.csv> --colunas
+ *   node scripts/import-compradores.ts <arquivo.xlsx|.csv> --env staging [--dry-run]
+ *   node scripts/import-compradores.ts <arquivo.xlsx|.csv> --colunas
+ *
+ * O relatório da Payt vem em `.xlsx` e é lido direto, sem passar pelo Excel
+ * (ver scripts/lib/xlsx.ts). CSV continua aceito.
  *
  * Só importa venda **paga**: reembolsada, chargeback e cancelada ficam de fora,
  * senão quem pediu o dinheiro de volta ganharia acesso.
@@ -16,7 +19,9 @@
  * Idempotente: roda de novo sem duplicar.
  */
 import { readFileSync } from 'node:fs';
+import { acharColuna } from './lib/colunas.ts';
 import { lerCsv } from './lib/csv.ts';
+import { lerXlsx } from './lib/xlsx.ts';
 import { dataDaVendaParaIso } from './lib/data-venda.ts';
 import { consultar, sql } from './lib/d1.ts';
 import { ulid } from 'ulid';
@@ -28,7 +33,7 @@ const dryRun = argv.includes('--dry-run');
 const soColunas = argv.includes('--colunas');
 
 if (!arquivo) {
-  console.error('uso: node scripts/import-compradores.ts <arquivo.csv> --env <staging|production> [--dry-run]');
+  console.error('uso: node scripts/import-compradores.ts <arquivo.xlsx|.csv> --env <staging|production> [--dry-run]');
   process.exit(1);
 }
 
@@ -50,34 +55,31 @@ const CANDIDATOS = {
   ],
 };
 
-const PAGOS = new Set(['paid', 'pago', 'aprovado', 'approved', 'completo', 'complete']);
+// "Pagamento Aprovado" e "Pagamento Reembolsado" são como o relatório em .xlsx
+// da Payt escreve a coluna "Status Pagamento".
+const PAGOS = new Set([
+  'paid', 'pago', 'aprovado', 'approved', 'completo', 'complete', 'pagamento aprovado',
+]);
 const RECUSADOS = new Set([
-  'refunded', 'reembolsado', 'estornado', 'chargeback', 'canceled', 'cancelled',
+  'refunded', 'reembolsado', 'pagamento reembolsado', 'estornado', 'chargeback', 'canceled', 'cancelled',
   'cancelado', 'refused', 'recusado', 'waiting_payment', 'aguardando', 'pending', 'pendente',
   'refunded_partial', 'expired', 'expirado',
 ]);
 
-const texto = readFileSync(arquivo, 'utf8');
-const { colunas, linhas } = lerCsv(texto);
-
-function acharColuna(nomes: string[]): string | null {
-  const normal = (s: string) => s.toLowerCase().replace(/[\s_-]/g, '');
-  for (const n of nomes) {
-    const achada = colunas.find((c) => normal(c) === normal(n));
-    if (achada) return achada;
-  }
-  for (const n of nomes) {
-    const achada = colunas.find((c) => normal(c).includes(normal(n)));
-    if (achada) return achada;
-  }
-  return null;
-}
+const ehXlsx = arquivo.toLowerCase().endsWith('.xlsx');
+const lido = ehXlsx
+  ? await lerXlsx(arquivo)
+  : { ...lerCsv(readFileSync(arquivo, 'utf8')), planilhas: [] as string[] };
+const { colunas, linhas } = lido;
 
 const mapa = Object.fromEntries(
-  Object.entries(CANDIDATOS).map(([chave, nomes]) => [chave, acharColuna(nomes)]),
+  Object.entries(CANDIDATOS).map(([chave, nomes]) => [chave, acharColuna(colunas, nomes)]),
 ) as Record<keyof typeof CANDIDATOS, string | null>;
 
 console.log(`Arquivo: ${arquivo}`);
+if (lido.planilhas.length > 0) {
+  console.log(`Planilhas: ${lido.planilhas.join(', ')} (lendo a primeira)`);
+}
 console.log(`Linhas: ${linhas.length}`);
 console.log(`\nColunas encontradas (${colunas.length}):`);
 for (const c of colunas) console.log(`  ${c}`);
@@ -87,9 +89,23 @@ for (const [chave, coluna] of Object.entries(mapa)) {
 }
 
 if (linhas[0]) {
+  /*
+   * Dado pessoal sai mascarado: o que se confere aqui é se a coluna certa foi
+   * escolhida, e para isso basta o formato. Data e status saem inteiros, porque
+   * são eles que decidem a ordem das ondas e quem entra.
+   */
+  const pessoais = new Set(['email', 'nome', 'telefone']);
+  const mascarar = (v: string) =>
+    v.length <= 4 ? '***' : `${v.slice(0, 2)}***${v.slice(-2)} (${v.length} caracteres)`;
   console.log('\nPrimeira linha, pelo mapeamento:');
   for (const [chave, coluna] of Object.entries(mapa)) {
-    console.log(`  ${chave.padEnd(15)} = ${coluna ? JSON.stringify(linhas[0][coluna]) : '-'}`);
+    const bruto = coluna ? (linhas[0][coluna] ?? '') : null;
+    const mostrado = bruto === null ? '-' : pessoais.has(chave) ? mascarar(bruto) : JSON.stringify(bruto);
+    console.log(`  ${chave.padEnd(15)} = ${mostrado}`);
+  }
+  if (mapa.data) {
+    const lida = dataDaVendaParaIso(linhas[0][mapa.data]);
+    console.log(`  data lida como  = ${lida ?? '*** NÃO CONSEGUI LER ***'} (UTC)`);
   }
 }
 
