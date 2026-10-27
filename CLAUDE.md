@@ -442,7 +442,7 @@ Usar `fixtures/payt/*.json`: pedido pago, pedido com order bump, upsell, reembol
 ### Compra dentro do app
 
 - Botão de compra abre `products.checkout_url` com `utm_source=app&utm_medium=loja&utm_campaign={product_id}`.
-- **A confirmar na Payt:** se o checkout aceita pré-preenchimento de nome/e-mail por query param. Se aceitar, preencher com os dados do usuário logado para reduzir atrito.
+- **Pré-preenchimento confirmado**: o checkout aceita `?email=` e `&phone=`. O link sai com o e-mail da conta e, se ela tiver, o telefone; **sem `name`**, porque o checkout não pede. Mais que poupar digitação, é o que faz a compra cair **na mesma conta**: com outro e-mail, o postback cria outro usuário e o conteúdo não aparece para quem comprou.
 - Depois do pagamento, o app faz polling leve de `/api/me/entitlements` (a cada 5 s por até 2 min) ao voltar para a aba, para liberar o produto sem precisar recarregar.
 
 ## 8. Autenticação
@@ -671,7 +671,7 @@ e a limpeza exigiu apagar o usuário de todas as tabelas e mascarar o payload.
 
 ## 17. Pendências a confirmar (perguntar ao Leo antes da fase correspondente)
 
-- Payt: o checkout aceita pré-preenchimento de e-mail/nome via URL? (fase 6)
+- ~~Payt: o checkout aceita pré-preenchimento?~~ Sim: `?email=` e `&phone=`, sem nome (§7).
 - Payt: assinatura aceita **Pix** (Pix Automático) ou só cartão? Isso muda o texto do paywall. (fase 7)
 - Payt: o SKU dos produtos pode ser definido igual ao `products.id`? Se não, popular `product_payt_map`. (fase 3)
 - ~~Domínio do app e do remetente de e-mail~~: `jornadacomeuanjo.com`, envio por

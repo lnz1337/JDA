@@ -41,8 +41,19 @@ const SEM_ASSINATURA = "kind != 'subscription'";
  *
  * Preserva a query que o link já tiver — link de oferta da Payt costuma vir com
  * parâmetro próprio, e trocar a query inteira mudaria o preço da venda.
+ *
+ * Com a `conta`, preenche o checkout com `email` e `phone` (os nomes que o
+ * checkout da Payt aceita, confirmados pelo Leo). É menos digitação para o
+ * público 55+ e, principalmente, a compra sai **no e-mail da conta**: compra
+ * com outro e-mail vira outra conta pelo postback, e o conteúdo não aparece
+ * para quem comprou. Telefone só se a conta tiver; nome não vai, porque o
+ * checkout não pede.
  */
-function comUtms(url: string | null, productId: string): string | null {
+function comUtms(
+  url: string | null,
+  productId: string,
+  conta?: { email: string | null; phone: string | null } | null,
+): string | null {
   if (!url?.trim()) return null;
 
   try {
@@ -50,6 +61,8 @@ function comUtms(url: string | null, productId: string): string | null {
     u.searchParams.set('utm_source', 'app');
     u.searchParams.set('utm_medium', 'loja');
     u.searchParams.set('utm_campaign', productId);
+    if (conta?.email) u.searchParams.set('email', conta.email);
+    if (conta?.phone) u.searchParams.set('phone', conta.phone);
     return u.toString();
   } catch {
     // Checkout que não é URL é erro de catálogo. Botão para lugar nenhum é pior
@@ -216,16 +229,16 @@ export const loja = new Hono<AppBindings>()
       });
     }
 
-    const usuario = await c.env.DB.prepare('SELECT email FROM users WHERE id = ?')
+    const usuario = await c.env.DB.prepare('SELECT email, phone FROM users WHERE id = ?')
       .bind(sessao.userId)
-      .first<{ email: string | null }>();
+      .first<{ email: string | null; phone: string | null }>();
 
     const resposta: ProdutoDaLoja = {
       ...base,
       descricao_md: produto.description_md,
       avisos: avisosDe(produto, partesCruas),
       partes,
-      checkout_url: comUtms(produto.checkout_url, produto.id),
+      checkout_url: comUtms(produto.checkout_url, produto.id, usuario),
       // Para o aviso logo acima do botão: compra com outro e-mail cria outra
       // conta pelo postback, e o conteúdo não aparece para quem comprou.
       email_da_conta: usuario?.email ?? null,

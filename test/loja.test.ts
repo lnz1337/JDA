@@ -228,6 +228,30 @@ describe('GET /api/loja/:id', () => {
     expect(url.searchParams.get('utm_source')).toBe('app');
   });
 
+  it('checkout vem preenchido com o e-mail da conta', async () => {
+    await criarUsuario();
+    await comCheckout('oracao-sao-miguel');
+
+    // Compra com outro e-mail vira outra conta pelo postback (§7): preencher é
+    // o que faz o conteúdo aparecer para quem comprou.
+    const url = new URL((await abrirProduto('oracao-sao-miguel')).checkout_url ?? '');
+    expect(url.searchParams.get('email')).toBe('pessoa@exemplo.com.br');
+    // Nome não vai: o checkout não pede.
+    expect(url.searchParams.has('name')).toBe(false);
+  });
+
+  it('telefone só entra se a conta tiver', async () => {
+    await criarUsuario();
+    await comCheckout('oracao-sao-miguel');
+
+    let url = new URL((await abrirProduto('oracao-sao-miguel')).checkout_url ?? '');
+    expect(url.searchParams.has('phone')).toBe(false);
+
+    await env.DB.prepare('UPDATE users SET phone = ? WHERE id = ?').bind('11987654321', USER).run();
+    url = new URL((await abrirProduto('oracao-sao-miguel')).checkout_url ?? '');
+    expect(url.searchParams.get('phone')).toBe('11987654321');
+  });
+
   it('sem checkout_url, não há link nenhum', async () => {
     await criarUsuario();
     await comCheckout('oracao-sao-miguel', null);
