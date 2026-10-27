@@ -28,3 +28,18 @@ export function consultar<T>(comando: string, ambiente: string): T[] {
   if (inicio < 0) throw new Error(`não achei JSON na saída do wrangler:\n${saida}`);
   return (JSON.parse(saida.slice(inicio)) as Array<{ results: T[] }>)[0]?.results ?? [];
 }
+
+/**
+ * Executa um arquivo SQL inteiro no D1, como o seed. Lança se o wrangler falhar;
+ * quem chama confere o efeito no banco, porque a saída do wrangler não basta.
+ */
+export function executarArquivo(caminho: string, ambiente: string): void {
+  const r = spawnSync(
+    process.execPath,
+    [WRANGLER, 'd1', 'execute', 'DB', '--env', ambiente, '--remote', '--yes', '--file', caminho],
+    { cwd: RAIZ, stdio: ['ignore', 'pipe', 'pipe'], encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 },
+  );
+  if (r.status !== 0) {
+    throw new Error(r.stderr || r.stdout || 'falha ao executar o arquivo no D1');
+  }
+}

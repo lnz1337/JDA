@@ -1,8 +1,9 @@
 /**
  * Importa a exportação de vendas da Payt para a base do app.
  *
- *   node scripts/import-compradores.ts <arquivo.xlsx|.csv> --env staging [--dry-run]
  *   node scripts/import-compradores.ts <arquivo.xlsx|.csv> --colunas
+ *   node scripts/import-compradores.ts <arquivo.xlsx|.csv> --env production --dry-run
+ *   node scripts/import-compradores.ts <arquivo.xlsx|.csv> --env production
  *
  * O relatório da Payt vem em `.xlsx` e é lido direto, sem passar pelo Excel
  * (ver scripts/lib/xlsx.ts). CSV continua aceito.
@@ -10,25 +11,45 @@
  * Só importa venda **paga**: reembolsada, chargeback e cancelada ficam de fora,
  * senão quem pediu o dinheiro de volta ganharia acesso.
  *
- * O entitlement entra com `source = 'payt'` e o `transaction_id` real — assim um
- * reembolso futuro revoga pelo caminho normal do postback, sem exceção.
+ * O produto sai do sku primeiro e do code depois, a mesma ordem do postback
+ * (§7 passo 6). O entitlement entra com `source = 'payt'` e o `transaction_id`
+ * real — assim um reembolso futuro revoga pelo caminho normal do postback.
  *
- * Produto sem mapeamento em `product_payt_map` **interrompe** a importação com
- * relatório. Pular calado deixaria cliente sem acesso e ninguém saberia.
+ * Produto pago sem mapeamento **interrompe** a importação com relatório. Pular
+ * calado deixaria cliente sem acesso e ninguém saberia.
  *
- * Idempotente: roda de novo sem duplicar.
+ * Tudo vai num arquivo SQL só (`d1 execute --file`): um comando do wrangler por
+ * venda levaria horas. Depois de aplicar, conta de novo no banco e compara com
+ * o que o plano previa.
+ *
+ * Idempotente: roda de novo, com o mesmo relatório ou um mais novo, sem duplicar.
  */
-import { readFileSync } from 'node:fs';
+import { readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { ulid } from 'ulid';
 import { acharColuna } from './lib/colunas.ts';
 import { lerCsv } from './lib/csv.ts';
-import { lerXlsx } from './lib/xlsx.ts';
+import { consultar, executarArquivo } from './lib/d1.ts';
 import { dataDaVendaParaIso } from './lib/data-venda.ts';
-import { consultar, sql } from './lib/d1.ts';
-import { ulid } from 'ulid';
+import {
+  emailValido,
+  planejar,
+  produtoDaVenda,
+  provedorDoEmail,
+  sqlDaImportacao,
+  type Mapas,
+  type Venda,
+} from './lib/importacao.ts';
+import { lerXlsx } from './lib/xlsx.ts';
 
 const argv = process.argv.slice(2);
-const arquivo = argv.find((a) => !a.startsWith('--'));
-const ambiente = argv[argv.indexOf('--env') + 1] ?? 'staging';
+const valor = (flag: string): string | undefined => {
+  const i = argv.indexOf(flag);
+  return i >= 0 ? argv[i + 1] : undefined;
+};
+const arquivo = argv.find((a, i) => !a.startsWith('--') && argv[i - 1] !== '--env');
+const ambiente = valor('--env') ?? 'staging';
 const dryRun = argv.includes('--dry-run');
 const soColunas = argv.includes('--colunas');
 
@@ -43,14 +64,15 @@ const CANDIDATOS = {
   nome: ['nome', 'name', 'customer_name', 'cliente', 'nome_cliente', 'comprador'],
   telefone: ['telefone', 'phone', 'celular', 'customer_phone', 'whatsapp'],
   transacao: ['transaction_id', 'transacao', 'id_transacao', 'codigo', 'code', 'pedido', 'order_id'],
-  produtoCodigo: ['product_code', 'codigo_produto', 'produto_codigo', 'sku', 'product_sku'],
+  sku: ['sku', 'product_sku', 'sku_produto'],
+  produtoCodigo: ['product_code', 'codigo_produto', 'produto_codigo'],
   produtoNome: ['product_name', 'produto', 'nome_produto', 'product'],
-  status: ['status', 'situacao', 'situação', 'payment_status', 'status_pagamento'],
+  status: ['status_pagamento', 'payment_status', 'status', 'situacao'],
   // A data da venda vira o granted_at do entitlement: é por ela que a campanha
   // ordena as ondas (mais recente primeiro). Sem ela, toda a base importada
   // ficaria com o horário da importação e a ordem não diria nada.
   data: [
-    'data_pagamento', 'paid_at', 'data_da_venda', 'data_venda', 'data_aprovacao',
+    'data_da_venda', 'data_venda', 'data_pagamento', 'paid_at', 'data_aprovacao',
     'approved_at', 'created_at', 'data', 'date',
   ],
 };
@@ -115,143 +137,202 @@ if (soColunas) {
 }
 
 const faltando = (['email', 'transacao', 'status'] as const).filter((k) => !mapa[k]);
+if (!mapa.sku && !mapa.produtoCodigo) faltando.push('sku ou código do produto' as never);
 if (faltando.length > 0) {
   console.error(`\nNÃO DÁ PARA IMPORTAR: faltam as colunas ${faltando.join(', ')}.`);
   console.error('Rode com --colunas e me diga quais colunas correspondem.');
   process.exit(1);
 }
 
-// --- seleção -------------------------------------------------------------
-interface Venda {
-  email: string;
-  nome: string;
-  telefone: string;
-  transacao: string;
-  produtoCodigo: string;
-  produtoNome: string;
-  status: string;
-  /** ISO UTC, ou null se o CSV não trouxer data que dê para ler. */
-  data: string | null;
-}
+// --- vendas ---------------------------------------------------------------
+const campo = (l: Record<string, string>, coluna: string | null) => (coluna ? (l[coluna] ?? '') : '').trim();
 
 const vendas: Venda[] = linhas.map((l) => ({
-  email: (mapa.email ? l[mapa.email] : '')?.trim().toLowerCase() ?? '',
-  nome: (mapa.nome ? l[mapa.nome] : '')?.trim() ?? '',
-  telefone: ((mapa.telefone ? l[mapa.telefone] : '') ?? '').replace(/\D/g, ''),
-  transacao: (mapa.transacao ? l[mapa.transacao] : '')?.trim() ?? '',
-  produtoCodigo: (mapa.produtoCodigo ? l[mapa.produtoCodigo] : '')?.trim() ?? '',
-  produtoNome: (mapa.produtoNome ? l[mapa.produtoNome] : '')?.trim() ?? '',
-  status: (mapa.status ? l[mapa.status] : '')?.trim().toLowerCase() ?? '',
-  data: dataDaVendaParaIso(mapa.data ? l[mapa.data] : null),
+  email: campo(l, mapa.email).toLowerCase(),
+  nome: campo(l, mapa.nome),
+  telefone: campo(l, mapa.telefone).replace(/\D/g, ''),
+  transacao: campo(l, mapa.transacao),
+  sku: campo(l, mapa.sku),
+  produtoCodigo: campo(l, mapa.produtoCodigo),
+  produtoNome: campo(l, mapa.produtoNome),
+  status: campo(l, mapa.status).toLowerCase(),
+  data: dataDaVendaParaIso(campo(l, mapa.data)),
 }));
 
-const pagas = vendas.filter((v) => PAGOS.has(v.status));
-const descartadas = vendas.filter((v) => !PAGOS.has(v.status));
-const statusDesconhecidos = [...new Set(descartadas.map((v) => v.status).filter((s) => !RECUSADOS.has(s)))];
+const contar = <T>(itens: T[], chave: (x: T) => string) => {
+  const m = new Map<string, number>();
+  for (const x of itens) m.set(chave(x), (m.get(chave(x)) ?? 0) + 1);
+  return [...m].sort((a, b) => b[1] - a[1]);
+};
+const n = (x: number) => x.toLocaleString('pt-BR').padStart(6);
 
-console.log(`\nVendas pagas: ${pagas.length} | descartadas: ${descartadas.length}`);
+console.log('\nVendas por status:');
+for (const [status, qtd] of contar(vendas, (v) => v.status || '(vazio)')) {
+  console.log(`  ${n(qtd)}  ${status}${PAGOS.has(status) ? '   <- entra' : ''}`);
+}
+
+const pagas = vendas.filter((v) => PAGOS.has(v.status));
+const statusDesconhecidos = [
+  ...new Set(vendas.map((v) => v.status).filter((s) => !PAGOS.has(s) && !RECUSADOS.has(s))),
+];
 if (statusDesconhecidos.length > 0) {
   console.error(`\nPAREI: status que eu não sei classificar: ${statusDesconhecidos.join(', ')}`);
   console.error('Me diga se cada um conta como pago ou não antes de importar.');
   process.exit(1);
 }
 
-// Sem data não dá para ordenar onda por data de compra: avisa em vez de fingir.
-const semData = pagas.filter((v) => !v.data).length;
+// --- produtos -------------------------------------------------------------
+const mapas: Mapas = {
+  porSku: new Map(
+    consultar<{ payt_sku: string; product_id: string }>(
+      'SELECT payt_sku, product_id FROM product_payt_sku',
+      ambiente,
+    ).map((m) => [m.payt_sku, m.product_id]),
+  ),
+  porCodigo: new Map(
+    consultar<{ payt_code: string; product_id: string }>(
+      'SELECT payt_code, product_id FROM product_payt_map',
+      ambiente,
+    ).map((m) => [m.payt_code, m.product_id]),
+  ),
+};
+
+const resolvidas = pagas.map((v) => ({ ...v, produto: produtoDaVenda(v, mapas) }));
+const semMapeamento = resolvidas.filter((v) => !v.produto);
+
+if (semMapeamento.length > 0) {
+  console.error(`\nProdutos pagos sem mapeamento (nem sku nem code) em ${ambiente}:`);
+  for (const [produto, qtd] of contar(semMapeamento, (v) => `${v.sku || v.produtoCodigo || '(sem sku)'} — ${v.produtoNome || '(sem nome)'}`)) {
+    console.error(`  ${n(qtd)} venda(s)  ${produto}`);
+  }
+  if (!dryRun) {
+    console.error('\nPAREI: adicione o payt_sku (ou o payt_map) em seed/catalogo.json, rode o seed e tente de novo.');
+    process.exit(1);
+  }
+} else {
+  console.log('\nTodo produto pago tem mapeamento.');
+}
+
+const mapeadas = resolvidas.filter((v): v is Venda & { produto: string } => v.produto !== null);
+const semEmail = mapeadas.filter((v) => !emailValido(v.email));
+const importaveis = mapeadas.filter((v) => emailValido(v.email));
+
+// --- plano ----------------------------------------------------------------
+const agora = new Date().toISOString();
+const plano = planejar(importaveis, agora);
+
+// O que já está no banco: a diferença é o que a importação cria.
+const existentes = new Set(
+  consultar<{ email: string }>(
+    'SELECT email FROM users WHERE email IS NOT NULL AND deleted_at IS NULL',
+    ambiente,
+  ).map((u) => u.email),
+);
+const concessoesExistentes = new Set(
+  consultar<{ email: string; product_id: string; transaction_id: string }>(
+    `SELECT u.email, e.product_id, e.transaction_id
+       FROM entitlements e JOIN users u ON u.id = e.user_id
+      WHERE e.transaction_id IS NOT NULL`,
+    ambiente,
+  ).map((c) => `${c.email}|${c.product_id}|${c.transaction_id}`),
+);
+
+const usuariosNovos = plano.usuarios.filter((u) => !existentes.has(u.email));
+const concessoesNovas = plano.concessoes.filter(
+  (c) => !concessoesExistentes.has(`${c.email}|${c.produto}|${c.transacao}`),
+);
+
+const datas = plano.concessoes.map((c) => c.quando).sort();
+const semData = importaveis.filter((v) => !v.data).length;
+
+console.log(`\nVendas pagas: ${pagas.length} | importáveis: ${importaveis.length} | sem e-mail válido: ${semEmail.length}`);
+console.log(`\nClientes únicos: ${plano.usuarios.length}  (dimensiona as ondas)`);
+console.log(`  novos em ${ambiente}: ${usuariosNovos.length} | já existiam: ${plano.usuarios.length - usuariosNovos.length}`);
+console.log('  por provedor:');
+for (const [provedor, qtd] of contar(plano.usuarios, (u) => provedorDoEmail(u.email))) {
+  console.log(`    ${n(qtd)}  ${provedor}`);
+}
+
+console.log('\nEntitlements por produto (no relatório | novos):');
+const novosPorProduto = new Map(contar(concessoesNovas, (c) => c.produto));
+for (const [produto, qtd] of contar(plano.concessoes, (c) => c.produto)) {
+  console.log(`  ${n(qtd)} | ${n(novosPorProduto.get(produto) ?? 0)}  ${produto}`);
+}
+console.log(`  ${n(plano.concessoes.length)} | ${n(concessoesNovas.length)}  total`);
+
+if (datas.length > 0) console.log(`\nVendas de ${datas[0]} a ${datas.at(-1)} (UTC)`);
 if (semData > 0) {
   console.warn(
-    `\nAVISO: ${semData} venda(s) sem data que eu consiga ler` +
-      `${mapa.data ? ` (coluna ${mapa.data})` : ' (nenhuma coluna de data encontrada)'}.` +
-      '\nElas entram com a data da importação, e a ordem das ondas por data de compra' +
-      '\nnão diz nada para essas linhas. Rode com --colunas para conferir.',
+    `AVISO: ${semData} venda(s) sem data que eu consiga ler; entram com a data da importação` +
+      ' e a ordem das ondas não diz nada para elas.',
   );
 }
-
-// --- produtos ------------------------------------------------------------
-const mapeamentos = consultar<{ payt_code: string; product_id: string }>(
-  'SELECT payt_code, product_id FROM product_payt_map',
-  ambiente,
-);
-const porCodigo = new Map(mapeamentos.map((m) => [m.payt_code, m.product_id]));
-
-const semMapeamento = new Map<string, number>();
-for (const v of pagas) {
-  if (!porCodigo.has(v.produtoCodigo)) {
-    semMapeamento.set(
-      `${v.produtoCodigo || '(sem código)'} — ${v.produtoNome || '(sem nome)'}`,
-      (semMapeamento.get(`${v.produtoCodigo || '(sem código)'} — ${v.produtoNome || '(sem nome)'}`) ?? 0) + 1,
-    );
-  }
-}
-
-if (semMapeamento.size > 0) {
-  console.error(`\nPAREI: ${semMapeamento.size} produto(s) sem mapeamento em product_payt_map:\n`);
-  for (const [produto, n] of [...semMapeamento].sort((a, b) => b[1] - a[1])) {
-    console.error(`  ${n.toString().padStart(5)} venda(s)  ${produto}`);
-  }
-  console.error('\nAdicione o payt_map em seed/catalogo.json (ou à mão, se for só de staging) e rode de novo.');
-  process.exit(1);
-}
-
-// --- importação ----------------------------------------------------------
-const semEmail = pagas.filter((v) => !v.email || v.email.includes('@fake'));
-const importaveis = pagas.filter((v) => v.email && !v.email.includes('@fake'));
-
-console.log(`Importáveis: ${importaveis.length} | sem e-mail válido: ${semEmail.length}`);
 
 if (dryRun) {
   console.log('\n(--dry-run: nada foi gravado)');
-  const porProduto = new Map<string, number>();
-  for (const v of importaveis) {
-    const id = porCodigo.get(v.produtoCodigo) ?? '?';
-    porProduto.set(id, (porProduto.get(id) ?? 0) + 1);
-  }
-  console.log('\nEntitlements que seriam concedidos:');
-  for (const [produto, n] of porProduto) console.log(`  ${n.toString().padStart(5)}  ${produto}`);
   process.exit(0);
 }
 
-const agora = new Date().toISOString();
-let usuarios = 0;
-let concedidos = 0;
-
-for (const v of importaveis) {
-  const productId = porCodigo.get(v.produtoCodigo)!;
-
-  const existente = consultar<{ id: string }>(
-    `SELECT id FROM users WHERE email = ${sql(v.email)}`,
-    ambiente,
-  );
-
-  let userId = existente[0]?.id;
-  if (!userId) {
-    userId = ulid();
-    consultar(
-      `INSERT INTO users (id, email, phone, name, created_at)
-       VALUES (${sql(userId)}, ${sql(v.email)}, ${sql(v.telefone || null)}, ${sql(v.nome || null)}, ${sql(agora)})`,
-      ambiente,
-    );
-    usuarios += 1;
-  } else {
-    consultar(
-      `UPDATE users SET phone = COALESCE(phone, ${sql(v.telefone || null)}),
-                        name = COALESCE(name, ${sql(v.nome || null)})
-        WHERE id = ${sql(userId)}`,
-      ambiente,
-    );
-  }
-
-  consultar(
-    `INSERT INTO entitlements (id, user_id, product_id, source, transaction_id, status, granted_at)
-     VALUES (${sql(ulid())}, ${sql(userId)}, ${sql(productId)}, 'payt', ${sql(v.transacao)}, 'active', ${sql(v.data ?? agora)})
-     ON CONFLICT (user_id, product_id, transaction_id) DO UPDATE SET
-       status = 'active', revoked_at = NULL`,
-    ambiente,
-  );
-  concedidos += 1;
+// --- importação -----------------------------------------------------------
+interface Contagem {
+  usuarios: number;
+  porProduto: Map<string, number>;
 }
 
-console.log(`\nPronto em ${ambiente}: ${usuarios} usuário(s) novo(s), ${concedidos} entitlement(s).`);
+function contarNoBanco(): Contagem {
+  const usuarios = consultar<{ n: number }>('SELECT COUNT(*) AS n FROM users', ambiente)[0]?.n ?? 0;
+  const porProduto = new Map(
+    consultar<{ product_id: string; n: number }>(
+      "SELECT product_id, COUNT(*) AS n FROM entitlements WHERE source = 'payt' GROUP BY product_id",
+      ambiente,
+    ).map((l) => [l.product_id, l.n]),
+  );
+  return { usuarios, porProduto };
+}
+
+const antes = contarNoBanco();
+
+/*
+ * O arquivo tem e-mail, nome e telefone de cliente: vai para a pasta temporária
+ * do sistema, nunca para o repositório, e sai no fim mesmo se a execução falhar.
+ */
+const caminhoSql = join(tmpdir(), `importacao-${ambiente}-${Date.now()}.sql`);
+writeFileSync(caminhoSql, `${sqlDaImportacao(plano, agora, ulid).join('\n\n')}\n`, 'utf8');
+try {
+  executarArquivo(caminhoSql, ambiente);
+} finally {
+  rmSync(caminhoSql, { force: true });
+}
+
+const depois = contarNoBanco();
+
+/*
+ * Confere no banco em vez de confiar na saída do wrangler: comando com várias
+ * instruções no `d1 execute` já passou sem efeito e sem erro neste projeto.
+ */
+let divergiu = false;
+const conferir = (rotulo: string, esperado: number, obtido: number) => {
+  const ok = esperado === obtido;
+  if (!ok) divergiu = true;
+  console.log(`  ${ok ? 'ok ' : 'DIVERGIU'}  ${rotulo}: esperado +${esperado}, banco +${obtido}`);
+};
+
+console.log(`\nConferência em ${ambiente} (antes → depois):`);
+conferir('usuários', usuariosNovos.length, depois.usuarios - antes.usuarios);
+const produtos = new Set([...novosPorProduto.keys(), ...depois.porProduto.keys()]);
+for (const produto of produtos) {
+  conferir(
+    `entitlements ${produto}`,
+    novosPorProduto.get(produto) ?? 0,
+    (depois.porProduto.get(produto) ?? 0) - (antes.porProduto.get(produto) ?? 0),
+  );
+}
+
+if (divergiu) {
+  console.error('\nA contagem não bate com o plano. Não rode de novo antes de entender a diferença.');
+  process.exit(1);
+}
+console.log(`\nPronto em ${ambiente}: ${usuariosNovos.length} usuário(s) novo(s), ${concessoesNovas.length} entitlement(s) novo(s).`);
 if (semEmail.length > 0) {
   console.log(`${semEmail.length} venda(s) sem e-mail válido — use scripts/exportar-sem-email.ts.`);
 }
