@@ -57,6 +57,23 @@ export function segredo(nome: string): string | undefined {
   return valorNoDevVars(readFileSync(arquivo, 'utf8'), nome);
 }
 
+/**
+ * O nome da chave administrativa de cada ambiente.
+ *
+ * O Worker de qualquer ambiente lê `ADMIN_API_KEY` (§15); a diferença é só na
+ * cópia local. Com um nome só, guardar a de produção apagaria a de staging, e
+ * um comando apontado para o ambiente errado levaria a chave do outro. Com dois,
+ * a chave de staging em produção é só um 401.
+ */
+export function nomeDaChaveAdmin(ambiente: string): string {
+  return ambiente === 'production' ? 'ADMIN_API_KEY_PRODUCTION' : 'ADMIN_API_KEY';
+}
+
+/** A chave administrativa do ambiente, do processo ou do `.dev.vars`. */
+export function chaveAdmin(ambiente: string): string {
+  return exigirSegredo(nomeDaChaveAdmin(ambiente));
+}
+
 export function exigirSegredo(nome: string): string {
   const v = segredo(nome);
   if (!v) {

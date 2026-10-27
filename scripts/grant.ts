@@ -7,7 +7,7 @@
  * manual não tem `transaction_id`, então reembolso da Payt não o revoga — some
  * só por decisão humana. Idempotente.
  */
-import { exigirSegredo } from './lib/segredos.ts';
+import { chaveAdmin } from './lib/segredos.ts';
 
 const URLS: Record<string, string> = {
   staging: 'https://jda-pwa-staging.leonardovcs2022.workers.dev',
@@ -31,7 +31,7 @@ if (!base) {
 
 const res = await fetch(`${base}/api/admin/conceder`, {
   method: 'POST',
-  headers: { 'content-type': 'application/json', 'x-admin-key': exigirSegredo('ADMIN_API_KEY') },
+  headers: { 'content-type': 'application/json', 'x-admin-key': chaveAdmin(ambiente) },
   body: JSON.stringify({ email, product_id: productId }),
 });
 

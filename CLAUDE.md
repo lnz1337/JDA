@@ -612,8 +612,18 @@ com 88 caracteres em vez de 87 e derrubou o `subscribe` do iPhone com
 `process.stdout.write` em vez de `console.log` é pelo mesmo motivo: não
 acrescenta a quebra de linha no fim.
 
-Os scripts leem a `ADMIN_API_KEY` do ambiente ou de uma cópia no `.dev.vars`,
-que está fora do git.
+Os scripts leem a chave administrativa do ambiente ou de uma cópia no
+`.dev.vars`, que está fora do git. **Uma cópia por ambiente**: `ADMIN_API_KEY`
+para staging e `ADMIN_API_KEY_PRODUCTION` para produção (`chaveAdmin` em
+`scripts/lib/segredos.ts`). No Worker o nome é `ADMIN_API_KEY` nos dois; o nome
+separado é só da cópia local, para guardar uma não apagar a outra.
+
+Para produção, a receita grava o wrangler e a cópia local de uma vez, sem a
+chave passar pela tela:
+
+```bash
+node -e "const k=require('crypto').randomBytes(32).toString('hex'); require('fs').appendFileSync('.dev.vars', '\nADMIN_API_KEY_PRODUCTION='+k+'\n'); process.stdout.write(k)" | npx wrangler secret put ADMIN_API_KEY --env production
+```
 
 Rede de segurança, não substituto da receita: todo segredo do Worker é lido por
 `src/worker/lib/segredos.ts` e todo segredo dos scripts por

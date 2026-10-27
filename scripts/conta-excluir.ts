@@ -11,11 +11,10 @@
  * e-mail digitado errado apaga a conta de outra pessoa. O passo a mais custa um
  * comando e evita um estrago que não dá para desfazer.
  *
- * Autentica com a ADMIN_API_KEY do ambiente ou do .dev.vars — que é a de
- * **staging**. Para produção, a chave tem que estar no ambiente: a de produção
- * foi gerada sem cópia (ver docs/ESTADO.md).
+ * Autentica com a chave administrativa do ambiente (`chaveAdmin`): em produção,
+ * ADMIN_API_KEY_PRODUCTION no processo ou no .dev.vars.
  */
-import { exigirSegredo } from './lib/segredos.ts';
+import { chaveAdmin } from './lib/segredos.ts';
 
 const URLS: Record<string, string> = {
   staging: 'https://teste.jornadacomeuanjo.com',
@@ -45,7 +44,7 @@ if (!base) {
 
 const res = await fetch(`${base}/api/admin/excluir-conta`, {
   method: 'POST',
-  headers: { 'content-type': 'application/json', 'x-admin-key': exigirSegredo('ADMIN_API_KEY') },
+  headers: { 'content-type': 'application/json', 'x-admin-key': chaveAdmin(ambiente) },
   body: JSON.stringify({ email, ...(confirmar ? { confirmar: true } : {}) }),
 });
 

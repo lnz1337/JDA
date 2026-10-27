@@ -9,9 +9,10 @@
  * A seleção, o controle de onda e o corte por taxa de falha ficam no Worker
  * (services/campanhas.ts): é lá que estão o banco e o envio.
  *
- * Autentica com a ADMIN_API_KEY (ambiente ou .dev.vars).
+ * Autentica com a chave administrativa do ambiente (`chaveAdmin`: processo ou
+ * .dev.vars; a de produção se chama ADMIN_API_KEY_PRODUCTION na cópia local).
  */
-import { exigirSegredo } from './lib/segredos.ts';
+import { chaveAdmin } from './lib/segredos.ts';
 const URLS: Record<string, string> = {
   staging: 'https://jda-pwa-staging.leonardovcs2022.workers.dev',
   production: 'https://jornadacomeuanjo.com',
@@ -32,7 +33,7 @@ const provedores = (valor('--provedores') ?? '')
   .split(',')
   .map((p) => p.trim().toLowerCase())
   .filter(Boolean);
-const chave = exigirSegredo('ADMIN_API_KEY');
+const chave = chaveAdmin(ambiente);
 
 if (!Number.isFinite(limite) || limite <= 0) {
   console.error('informe --limite N');

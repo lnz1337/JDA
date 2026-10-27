@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { valorNoDevVars } from '../../scripts/lib/segredos.ts';
+import { nomeDaChaveAdmin, valorNoDevVars } from '../../scripts/lib/segredos.ts';
 
 /**
  * O leitor de segredo dos scripts (`.dev.vars`, fora do git).
@@ -48,5 +48,17 @@ describe('valorNoDevVars', () => {
 
   it('não encontrado é undefined', () => {
     expect(valorNoDevVars('OUTRA=x', 'ADMIN_API_KEY')).toBeUndefined();
+  });
+});
+
+describe('nomeDaChaveAdmin', () => {
+  // Uma cópia local por ambiente: guardar a de produção não pode apagar a de
+  // staging, e a chave de um ambiente nunca é mandada para o outro.
+  it('produção tem nome próprio', () => {
+    expect(nomeDaChaveAdmin('production')).toBe('ADMIN_API_KEY_PRODUCTION');
+  });
+
+  it('staging continua com o nome de sempre', () => {
+    expect(nomeDaChaveAdmin('staging')).toBe('ADMIN_API_KEY');
   });
 });

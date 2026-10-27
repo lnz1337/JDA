@@ -8,7 +8,7 @@
  * retomado por aqui. Usa a ADMIN_API_KEY (ambiente ou .dev.vars), não a chave da
  * Payt: quem recebe postback não administra o app.
  */
-import { exigirSegredo } from './lib/segredos.ts';
+import { chaveAdmin } from './lib/segredos.ts';
 const URLS: Record<string, string> = {
   staging: 'https://jda-pwa-staging.leonardovcs2022.workers.dev',
 };
@@ -19,7 +19,7 @@ if (!transactionId) {
   console.error('uso: node scripts/payt-reprocess.ts <transaction_id> [ambiente]');
   process.exit(1);
 }
-const chave = exigirSegredo('ADMIN_API_KEY');
+const chave = chaveAdmin(ambiente);
 
 const base = URLS[ambiente];
 if (!base) {

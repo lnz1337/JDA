@@ -8,7 +8,7 @@
  * service worker — sem esperar a hora do lembrete. Autentica com a
  * ADMIN_API_KEY, como o resto do administrativo.
  */
-import { exigirSegredo } from './lib/segredos.ts';
+import { chaveAdmin } from './lib/segredos.ts';
 
 const URLS: Record<string, string> = {
   staging: 'https://teste.jornadacomeuanjo.com',
@@ -37,7 +37,7 @@ if (!base) {
 
 const res = await fetch(`${base}/api/admin/push-teste`, {
   method: 'POST',
-  headers: { 'content-type': 'application/json', 'x-admin-key': exigirSegredo('ADMIN_API_KEY') },
+  headers: { 'content-type': 'application/json', 'x-admin-key': chaveAdmin(ambiente) },
   body: JSON.stringify({
     email,
     ...(valor('--titulo') ? { titulo: valor('--titulo') } : {}),
