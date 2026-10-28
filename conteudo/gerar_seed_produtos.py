@@ -4,13 +4,14 @@ Cada arquivo é um produto (programa) com lições. Formato:
 
     # Título do produto
     - **ID:** slug (= products.id e programs.id)
-    - **Bundle:** slug do bundle que o contém
+    - **Bundle:** (opcional) slug do bundle que o contém; produto grátis não tem
     - **Liberação:** all | daily
     - **Aviso:** (opcional) texto obrigatório na tela, ex. aviso de saúde
     - **Descrição:** texto curto da loja
 
     ## Lição N — Título
     - **Resumo:** frase curta
+    - **Áudio:** pronto   (opcional) a faixa já existe e não sai do roteiro, ex. um canto
     ### Texto
     markdown mostrado na tela
     ### Roteiro do áudio   (opcional)
@@ -45,7 +46,7 @@ def parse_produto(caminho: Path) -> dict:
     produto = {"title": titulo.group(1).strip()}
     for rotulo, chave in META.items():
         produto[chave] = _meta(cabecalho, rotulo)
-    for obrigatorio in ("id", "bundle", "unlock_rule", "descricao"):
+    for obrigatorio in ("id", "unlock_rule", "descricao"):
         if not produto[obrigatorio]:
             raise ValueError(f"{caminho.name}: campo '{obrigatorio}' ausente")
     if produto["unlock_rule"] not in ("all", "daily"):
@@ -58,8 +59,12 @@ def parse_produto(caminho: Path) -> dict:
         m_rot = re.search(r"### Roteiro do áudio\s*\n(.*)", bloco, re.S)
         if not m_texto or not m_texto.group(1).strip():
             raise ValueError(f"{caminho.name}: lição {n} sem '### Texto'")
+        audio_pronto = (_meta(bloco, "Áudio") or "").lower() == "pronto"
+        if audio_pronto and m_rot:
+            raise ValueError(f"{caminho.name}: lição {n} tem 'Áudio: pronto' e roteiro; escolha um")
         licoes.append({
             "day": n,
+            "audio_pronto": audio_pronto,
             "title": tit,
             "resumo": _meta(bloco, "Resumo"),
             "texto": m_texto.group(1).strip(),
@@ -121,7 +126,7 @@ def main() -> None:
                 "title": l["title"],
                 "summary": l["resumo"],
                 "body_md": corpo,
-                "audio_key": f"{p['id']}/l{l['day']:02d}.mp3" if l["audio_script"] else None,
+                "audio_key": f"{p['id']}/l{l['day']:02d}.mp3" if l["audio_script"] or l["audio_pronto"] else None,
             })
 
     DESTINO.parent.mkdir(parents=True, exist_ok=True)
@@ -129,7 +134,9 @@ def main() -> None:
     print(f"OK: {len(seed['products'])} produtos, {len(seed['lessons'])} lições -> {DESTINO.relative_to(RAIZ)}")
     for p in produtos.values():
         com_audio = [l["day"] for l in p["lessons"] if l["audio_script"]]
-        print(f"  {p['id']:<20} {len(p['lessons'])} lições | áudio nas lições {com_audio or '-'}")
+        prontos = [l["day"] for l in p["lessons"] if l["audio_pronto"]]
+        extra = f" | faixa pronta nas lições {prontos}" if prontos else ""
+        print(f"  {p['id']:<22} {len(p['lessons'])} lições | narração nas lições {com_audio or '-'}{extra}")
 
 
 if __name__ == "__main__":

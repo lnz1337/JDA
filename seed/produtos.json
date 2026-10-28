@@ -44,6 +44,15 @@
       "description_md": "Uma oração inspirada na tradição do santuário mais antigo dedicado a São Miguel no Ocidente, com a história da montanha, a oração guiada em áudio e o modo de rezar.",
       "notice": null,
       "listed": 0
+    },
+    {
+      "id": "presentes-sao-miguel",
+      "name": "Presentes de São Miguel",
+      "kind": "program",
+      "bundle_id": null,
+      "description_md": "Orações e cantos para rezar a qualquer hora, de presente para quem faz a Jornada com Meu Anjo.",
+      "notice": null,
+      "listed": 0
     }
   ],
   "programs": [
@@ -81,6 +90,13 @@
       "title": "Oração de São Miguel do Monte Gargano",
       "unlock_rule": "all",
       "total_days": 3
+    },
+    {
+      "id": "presentes-sao-miguel",
+      "product_id": "presentes-sao-miguel",
+      "title": "Presentes de São Miguel",
+      "unlock_rule": "all",
+      "total_days": 4
     }
   ],
   "lessons": [
@@ -281,6 +297,42 @@
       "summary": "Um modo simples de rezar a oração durante nove dias, como uma novena.",
       "body_md": "Não existe fórmula mágica na oração. O que dá força a ela é a fé e a constância de quem reza. Por isso, a sugestão é rezar a Oração de São Miguel do Monte Gargano durante **nove dias seguidos**, como uma novena.\n\n**1. Escolha um horário**\nDe preferência sempre o mesmo. Muita gente prefere logo ao acordar, antes que o dia comece a correr. Outros preferem à noite, antes de dormir.\n\n**2. Prepare um cantinho**\nNão precisa de altar. Uma mesa, uma imagem ou um crucifixo, e se quiser, uma vela acesa. A vela não tem poder em si: ela é um sinal de que, naquele momento, você separou um tempo só para Deus.\n\n**3. Leve o seu pedido**\nUse sempre o mesmo papel que você escreveu na primeira lição. Segure-o enquanto reza.\n\n**4. Reze devagar**\nLeia a oração ou reze junto com o áudio. Na pausa do pedido, não tenha pressa. Fale com Deus do seu jeito.\n\n**5. Termine agradecendo**\nAntes de apagar a vela, agradeça por uma coisa boa do dia, por menor que seja.\n\n**Datas especiais**\nA Igreja celebra São Miguel, junto com São Gabriel e São Rafael, no dia **29 de setembro**. Muitos devotos fazem a chamada **Quaresma de São Miguel**: quarenta dias de oração, de 15 de agosto a 28 de setembro. Se quiser, você pode rezar esta oração nesse período também.\n\n**Prática:** marque no calendário os nove dias da sua novena. A cada dia rezado, faça um pequeno sinal no papel do seu pedido.",
       "audio_key": null
+    },
+    {
+      "id": "presentes-sao-miguel-l01",
+      "program_id": "presentes-sao-miguel",
+      "day": 1,
+      "title": "Hino de São Miguel",
+      "summary": "O hino da jornada, para rezar cantando.",
+      "body_md": "Um hino em português, feito para a Jornada com Meu Anjo a partir da oração a São Miguel e do significado do nome dele: *Quem é como Deus?* Cante junto, ou apenas escute e reze em silêncio.\n\n**Príncipe da luz celeste,**\n**fiel guarda do Senhor,**\n**vinde ao nosso lado agora,**\n**afastai de nós o temor.**\nQuando a noite é mais escura\ne o caminho, de aflição,\nvossa espada nos defende,\nvossas asas, proteção.\n\n*São Miguel, quem é como Deus?*\n*Ninguém é como o Senhor!*\n*Defendei-nos no combate,*\n*guardai-nos no seu amor.*\n\nPela casa onde moramos,\npelos filhos, pelo pão,\npelo enfermo que padece,\npelo aflito coração:\napresentai ao Pai do céu\ncada súplica e oração,\nque Ele sabe o que nos falta\ne nos guarda em sua mão.\n\n*São Miguel, quem é como Deus?*\n*Ninguém é como o Senhor!*\n*Defendei-nos no combate,*\n*guardai-nos no seu amor.*\n\nQuando o medo bate à porta,\nquando falta a direção,\nvossa voz nos lembra sempre:\nDeus é a nossa salvação.\n\n*São Miguel, quem é como Deus?*\n*Ninguém é como o Senhor!*\n*Defendei-nos no combate,*\n*guardai-nos no seu amor.*\n\nSão Miguel, rogai por nós. Amém.",
+      "audio_key": "presentes-sao-miguel/l01.mp3"
+    },
+    {
+      "id": "presentes-sao-miguel-l02",
+      "program_id": "presentes-sao-miguel",
+      "day": 2,
+      "title": "A oração de São Miguel em latim",
+      "summary": "A oração do Papa Leão XIII em canto gregoriano.",
+      "body_md": "O Papa Leão XIII escreveu esta oração no fim do século XIX, e durante muitas décadas ela foi rezada em todas as igrejas, de joelhos, ao fim da Missa. É a mesma oração que você ouviu durante os dias da jornada, aqui inteira, em canto gregoriano.\n\n**Em latim**\n\n*Sancte Michael Archangele, defende nos in proelio;*\n*contra nequitiam et insidias diaboli esto praesidium.*\n*Imperet illi Deus, supplices deprecamur:*\n*tuque, Princeps militiae caelestis,*\n*Satanam aliosque spiritus malignos,*\n*qui ad perditionem animarum pervagantur in mundo,*\n*divina virtute in infernum detrude. Amen.*\n\n**Em português**\n\nSão Miguel Arcanjo, defendei-nos no combate. Sede o nosso refúgio contra as maldades e ciladas do demônio. Ordene-lhe Deus, instantemente o pedimos. E vós, príncipe da milícia celeste, pela virtude divina, precipitai no inferno a Satanás e aos outros espíritos malignos, que andam pelo mundo para perder as almas. Amém.",
+      "audio_key": "presentes-sao-miguel/l02.mp3"
+    },
+    {
+      "id": "presentes-sao-miguel-l03",
+      "program_id": "presentes-sao-miguel",
+      "day": 3,
+      "title": "A oração de São Miguel, rezada em português",
+      "summary": "A oração de Leão XIII rezada devagar, para aprender e rezar junto.",
+      "body_md": "Muitos devotos rezam esta oração todos os dias: ao acordar, antes de sair de casa ou nos momentos de aflição. No áudio, ela é rezada devagar, frase por frase, para você repetir até saber de cor.\n\nSão Miguel Arcanjo, defendei-nos no combate. Sede o nosso refúgio contra as maldades e ciladas do demônio. Ordene-lhe Deus, instantemente o pedimos. E vós, príncipe da milícia celeste, pela virtude divina, precipitai no inferno a Satanás e aos outros espíritos malignos, que andam pelo mundo para perder as almas. Amém.",
+      "audio_key": "presentes-sao-miguel/l03.mp3"
+    },
+    {
+      "id": "presentes-sao-miguel-l04",
+      "program_id": "presentes-sao-miguel",
+      "day": 4,
+      "title": "Santo Anjo do Senhor",
+      "summary": "A oração ao anjo da guarda, para rezar sozinho ou ensinar aos netos.",
+      "body_md": "É a primeira oração que muita gente aprendeu na infância, e continua valendo a vida inteira. No áudio, ela é rezada frase por frase, do jeito certo para ensinar a uma criança: os netos, os sobrinhos, as crianças da família.\n\nSanto Anjo do Senhor, meu zeloso guardador, se a ti me confiou a piedade divina, sempre me rege, me guarda, me governa e me ilumina. Amém.",
+      "audio_key": "presentes-sao-miguel/l04.mp3"
     }
   ]
 }
