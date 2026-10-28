@@ -61,16 +61,29 @@ const SO_REGISTRAM = new Set([
 ]);
 
 /**
- * Tudo aceita null além de ausente: o postback manda `"subscription": null` em
- * pedido comum, e um schema que só aceitasse `undefined` rejeitaria o payload
- * inteiro por causa disso.
+ * **O schema não recusa pedido nenhum por formato.** Todo campo é opcional e
+ * tolerante: aceita null, ausente e tipo trocado (número no lugar de texto e
+ * vice-versa), e o que não der para ler vira `undefined` em vez de erro.
+ *
+ * Foi assim que o upsell KY5W52D (28/10) se perdeu: um campo de relatório
+ * (`link.query_params`) faltou, a validação recusou o pedido pago inteiro e o
+ * cliente ficou sem o UP1. O que decide o acesso é conferido no
+ * `processarPostback`, com mensagem que diz o que faltou:
+ *
+ *   - transaction_id, status e payment_status;
+ *   - e-mail ou telefone do cliente;
+ *   - sku ou code do produto.
  */
 const texto = z
   .union([z.string(), z.number()])
   .nullish()
-  .transform((v) => (v === null || v === undefined ? undefined : String(v)));
+  .transform((v) => (v === null || v === undefined ? undefined : String(v)))
+  .catch(undefined);
 
-const frase = z.string().nullish();
+/** Texto livre: igual ao `texto`; o nome fica para dizer que não é código. */
+const frase = texto;
+
+const booleano = z.boolean().nullish().catch(undefined);
 
 const ProdutoSchema = z.looseObject({
   sku: frase,
@@ -78,54 +91,53 @@ const ProdutoSchema = z.looseObject({
   name: frase,
 });
 
+/** Objeto que veio em outro formato (texto, lista) vira ausente, não erro. */
+const tolerante = <T extends z.ZodType>(schema: T) => schema.nullish().catch(undefined);
+
 const PostbackSchema = z.looseObject({
-  test: z.boolean().nullish(),
+  test: booleano,
   type: frase,
   status: frase,
   updated_at: frase,
   transaction_id: texto,
-  transaction: z.looseObject({ id: texto, code: texto, payment_status: frase }).nullish(),
-  customer: z
-    .looseObject({
+  transaction: tolerante(z.looseObject({ id: texto, code: texto, payment_status: frase })),
+  customer: tolerante(
+    z.looseObject({
       name: frase,
       email: frase,
       phone: texto,
-      fake_email: z.boolean().nullish(),
+      fake_email: booleano,
       code: texto,
-    })
-    .nullish(),
-  product: ProdutoSchema.extend({ items: z.array(ProdutoSchema).nullish() }).nullish(),
+    }),
+  ),
+  product: tolerante(ProdutoSchema.extend({ items: tolerante(z.array(ProdutoSchema)) })),
   /*
    * O link pelo qual a compra entrou. **As UTMs voltam em `sources`, como
    * objeto** — confirmado na compra de teste de 26/10, feita pela loja do app:
    *
    *   "sources": { "utm_source": "app", "utm_medium": "loja", "utm_campaign": "…" }
    *
-   * O `query_params` fica vazio mesmo nesse caso. Os dois seguem `unknown`
-   * porque só um formato foi observado e a leitura é tolerante (ver `utmsDo`).
-   *
-   * **Os dois são opcionais.** No Zod 4, `z.unknown()` dentro de objeto é campo
-   * obrigatório, e o upsell KY5W52D (28/10) chegou com link de anúncio só com
-   * `title` e `sources`: o pedido pago inteiro foi recusado por causa de um
-   * campo que só serve de relatório, e o cliente ficou sem o acesso.
+   * O `query_params` fica vazio mesmo nesse caso, e o link de anúncio do upsell
+   * de um clique vem **sem** `url` e sem `query_params`. No Zod 4,
+   * `z.unknown()` dentro de objeto é obrigatório, por isso os `.optional()`.
    */
-  link: z
-    .looseObject({
+  link: tolerante(
+    z.looseObject({
       url: texto,
       sources: z.unknown().optional(),
       query_params: z.unknown().optional(),
-    })
-    .nullish(),
-  order_bumps: z.array(z.looseObject({ product: ProdutoSchema.nullish() })).nullish(),
-  subscription: z
-    .looseObject({
+    }),
+  ),
+  order_bumps: tolerante(z.array(z.looseObject({ product: tolerante(ProdutoSchema) }))),
+  subscription: tolerante(
+    z.looseObject({
       code: texto,
       status: frase,
       periodicity: frase,
       next_charge_at: frase,
       started_at: frase,
-    })
-    .nullish(),
+    }),
+  ),
 });
 
 export type Postback = z.infer<typeof PostbackSchema>;
@@ -524,8 +536,10 @@ export async function processarPostback(
 ): Promise<ResultadoProcessamento> {
   const db = env.DB;
   const parse = PostbackSchema.safeParse(bruto);
+  // Com o schema tolerante, só falha o que nem é objeto JSON.
   if (!parse.success) {
-    throw new Error(`payload fora do formato esperado: ${parse.error.issues[0]?.message ?? '?'}`);
+    const onde = parse.error.issues[0]?.path.join('.') || '(raiz)';
+    throw new Error(`payload fora do formato esperado em ${onde}: ${parse.error.issues[0]?.message ?? '?'}`);
   }
   const p = parse.data;
 
@@ -560,6 +574,9 @@ export async function processarPostback(
       detalhe: { status, paymentStatus },
     };
   }
+
+  // Sem transaction_id o acesso entraria sem como ser revogado por um reembolso.
+  if (pago && !resumo.transactionId) throw new Error('pedido pago sem transaction_id');
 
   const usuario = await acharOuCriarUsuario(db, p);
   if (!usuario) throw new Error('postback sem e-mail nem telefone: não dá para identificar o usuário');

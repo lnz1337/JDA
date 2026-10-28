@@ -418,6 +418,8 @@ Endpoint: `POST /api/payt/postback`. Cadastrar na Payt em Ferramentas → Integr
 6. Resolver produtos do pedido, **sku primeiro e code depois**: `product.sku` → `product_payt_sku`; `product.sku` → `products.id`; `product.code` → `product_payt_map`. Incluir `product.items` (grouped) e cada `order_bumps[].product`. Com os dois mapas, postback sem code ou relatório sem sku ainda resolvem: um identificador cobre o outro. O sku do relatório em `.xlsx` vem com prefixo (`6a44473d38700-853b4781f48478`); o mapa guarda só o pedaço depois do hífen, e a busca tenta as duas formas (`formasDoSku`).
 7. Aplicar a tabela abaixo.
 
+**O schema não recusa pedido por formato.** Só é obrigatório o que decide o acesso — `transaction_id`, `status`, `payment_status`, e-mail ou telefone do cliente e sku ou code do produto —, conferido no processamento com mensagem que diz o que faltou. Todo o resto é opcional e tolerante: ausente, null ou tipo trocado vira `undefined`. Em 28/10 um campo de relatório faltando (`link.query_params`) derrubou um upsell pago inteiro e o cliente ficou sem o acesso.
+
 | Evento (status / transaction.payment_status) | Ação |
 |---|---|
 | `status = paid` e `payment_status = paid` (type order, upsell ou manual_upsell) | Conceder entitlement de cada produto resolvido. Se o usuário é novo, enviar e-mail de boas-vindas com link de acesso |

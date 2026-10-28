@@ -741,3 +741,49 @@ describe('link do pedido em formato incompleto', () => {
     expect(await entitlementsDe('cliente.exemplo@exemplo.com.br')).toEqual(['jornada-meu-anjo']);
   });
 });
+
+describe('schema tolerante: só o que decide o acesso é obrigatório', () => {
+  it('tipo trocado e formato estranho fora do essencial não derrubam o pedido pago', async () => {
+    await postar(
+      comChave({
+        ...pedidoPago,
+        updated_at: 20261028,
+        link: 'https://payt.site/abc',
+        order_bumps: { nao: 'é lista' },
+        subscription: 'nenhuma',
+        customer: { ...pedidoPago.customer, name: 12345, fake_email: 'não', code: null },
+        product: { ...pedidoPago.product, name: ['lista'], items: 'nenhum' },
+      }),
+    );
+
+    const linha = await evento('X9P8DY5');
+    expect(linha?.error).toBeNull();
+    expect(linha?.needs_review).toBe(0);
+    expect(await entitlementsDe('cliente.exemplo@exemplo.com.br')).toEqual(['jornada-meu-anjo']);
+  });
+
+  it('pedido pago sem transaction_id falha dizendo o que faltou', async () => {
+    const { transaction_id: _t, ...semTransacao } = pedidoPago;
+    await postar(
+      comChave({ ...semTransacao, transaction: { ...pedidoPago.transaction, id: undefined, code: undefined } }),
+    );
+
+    const linha = await env.DB.prepare(
+      "SELECT error, needs_review FROM payt_events WHERE status = 'paid' ORDER BY received_at DESC",
+    ).first<{ error: string | null; needs_review: number }>();
+    expect(linha?.error).toMatch(/pedido pago sem transaction_id/);
+    expect(linha?.needs_review).toBe(1);
+  });
+
+  it('pedido pago sem e-mail nem telefone falha dizendo o que faltou', async () => {
+    await postar(comChave({ ...pedidoPago, customer: { name: 'Sem Contato' } }));
+    const linha = await evento('X9P8DY5');
+    expect(linha?.error).toMatch(/sem e-mail nem telefone/);
+  });
+
+  it('pedido pago sem sku nem code falha dizendo o que faltou', async () => {
+    await postar(comChave({ ...pedidoPago, product: { name: 'Algo' } }));
+    const linha = await evento('X9P8DY5');
+    expect(linha?.error).toMatch(/produto sem sku nem code/);
+  });
+});
