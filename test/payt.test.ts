@@ -589,9 +589,46 @@ describe('rota de reprocesso', () => {
     expect(res.status).toBe(401);
   });
 
-  it('recusa em produção', async () => {
+  it('em produção, recusa sem a confirmação de revisão', async () => {
     const res = await reprocessar(chave(), { transaction_id: 'X9P8DY5' }, { ENV: 'production' });
     expect(res.status).toBe(403);
+  });
+
+  it('em produção, recusa pelo id interno mesmo com a confirmação', async () => {
+    // Uma transação por vez, pelo código que quem revisou digitou.
+    const res = await reprocessar(
+      chave(),
+      { id: 'qualquer', confirmo_revisado: true },
+      { ENV: 'production' },
+    );
+    expect(res.status).toBe(403);
+  });
+
+  it('em produção, com a transação e a confirmação, reprocessa e registra', async () => {
+    await env.DB.prepare("DELETE FROM product_payt_map WHERE payt_code = 'LJ7KEP'").run();
+    await postar(comChave(pedidoPago));
+    await env.DB.prepare(
+      "INSERT INTO product_payt_map (payt_code, product_id) VALUES ('LJ7KEP', 'jornada-meu-anjo')",
+    ).run();
+
+    const res = await reprocessar(
+      chave(),
+      { transaction_id: 'X9P8DY5', confirmo_revisado: true },
+      { ENV: 'production' },
+    );
+    expect(res.status).toBe(200);
+    expect(await entitlementsDe('cliente.exemplo@exemplo.com.br')).toEqual(['jornada-meu-anjo']);
+
+    const registro = await env.DB.prepare(
+      "SELECT props_json, created_at FROM events WHERE name = 'payt_reprocessado'",
+    ).first<{ props_json: string; created_at: string }>();
+    expect(JSON.parse(registro?.props_json ?? '{}')).toMatchObject({
+      transaction_id: 'X9P8DY5',
+      ambiente: 'production',
+      confirmo_revisado: true,
+      ok: true,
+    });
+    expect(registro?.created_at).toBeTruthy();
   });
 
   it('404 para evento que não existe', async () => {

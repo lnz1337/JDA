@@ -19,7 +19,7 @@ import { agoraIso } from '../lib/datas';
 import { novoId } from '../lib/ids';
 import { segredo } from '../lib/segredos';
 import type { AppBindings } from '../lib/types';
-import { extrairResumo, processarPostback, textoDedupe } from '../services/payt';
+import { extrairResumo, processarPostback, registrarEvento, textoDedupe } from '../services/payt';
 
 /** JSON, ou form-encoded (alguns postbacks mandam assim). Null = ilegível. */
 function entender(cru: string, contentType: string): unknown | null {
@@ -225,9 +225,16 @@ export const payt = new Hono<AppBindings>().post('/postback', async (c) => {
  * retomado pela origem. É o motor do botão "reprocessar" do admin (§13); quando o
  * admin existir, atrás do Cloudflare Access, esta rota sai daqui.
  *
- * Autenticação pelo header `x-admin-key`, em tempo constante. Fora de
- * produção, só: em produção, reprocessar sem revisão humana pode conceder acesso
- * a partir de um payload que já foi recusado por um motivo legítimo.
+ * Autenticação pelo header `x-admin-key`, em tempo constante.
+ *
+ * **Em produção, só com revisão humana declarada**: uma transação por vez, pelo
+ * `transaction_id` (não pelo id interno), e `confirmo_revisado: true` no
+ * pedido. Reprocessar sem olhar pode conceder acesso a partir de um payload que
+ * foi recusado por um motivo legítimo; foi liberado em 28/10 para o upsell
+ * KY5W52D, recusado por um defeito do schema e não do pedido.
+ *
+ * Todo reprocesso fica em `events` (`payt_reprocessado`): qual transação, o
+ * resultado e, pelo `created_at`, quando.
  */
 payt.post('/reprocess', async (c) => {
   // Chave de admin, não a da Payt: quem recebe postback não administra o app.
@@ -237,12 +244,19 @@ payt.post('/reprocess', async (c) => {
 
   const corpo = (await c.req.json().catch(() => null)) as Record<string, unknown> | null;
 
-  if (c.env.ENV === 'production') {
-    return c.json({ error: 'reprocesso_indisponivel_em_producao' }, 403);
-  }
-
-  const transactionId = typeof corpo?.transaction_id === 'string' ? corpo.transaction_id : null;
+  const transactionId =
+    typeof corpo?.transaction_id === 'string' && corpo.transaction_id.trim() ? corpo.transaction_id.trim() : null;
   const id = typeof corpo?.id === 'string' ? corpo.id : null;
+
+  if (c.env.ENV === 'production' && (!transactionId || id || corpo?.confirmo_revisado !== true)) {
+    return c.json(
+      {
+        error: 'reprocesso_em_producao_exige_revisao',
+        detalhe: 'informe só o transaction_id e confirmo_revisado: true, depois de revisar o evento',
+      },
+      403,
+    );
+  }
   if (!transactionId && !id) {
     return c.json({ error: 'informe id ou transaction_id' }, 400);
   }
@@ -266,13 +280,22 @@ payt.post('/reprocess', async (c) => {
     return c.json({ error: 'payload_gravado_nao_e_json' }, 422);
   }
 
+  const registro = {
+    transaction_id: transactionId,
+    evento: evento.id,
+    ambiente: c.env.ENV ?? null,
+    confirmo_revisado: corpo?.confirmo_revisado === true,
+  };
+
   try {
     const r = await processarPostback(c.env, dados);
     await marcarProcessado(c.env.DB, evento.id, null, r.precisaRevisao);
+    await registrarEvento(c.env.DB, null, 'payt_reprocessado', { ...registro, ok: true, acao: r.acao });
     return c.json({ ok: true, id: evento.id, ...r });
   } catch (erro) {
     const msg = erro instanceof Error ? erro.message : String(erro);
     await marcarProcessado(c.env.DB, evento.id, msg, true);
+    await registrarEvento(c.env.DB, null, 'payt_reprocessado', { ...registro, ok: false, erro: msg.slice(0, 300) });
     return c.json({ ok: false, id: evento.id, error: msg }, 200);
   }
 });

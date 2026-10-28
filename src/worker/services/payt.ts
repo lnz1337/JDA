@@ -322,7 +322,7 @@ export async function acharOuCriarUsuario(
   return { userId, novo: true };
 }
 
-async function registrarEvento(
+export async function registrarEvento(
   db: D1Database,
   userId: string | null,
   nome: string,
