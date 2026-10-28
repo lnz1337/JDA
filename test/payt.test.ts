@@ -655,3 +655,30 @@ describe('produto pelo sku da Payt (product_payt_sku)', () => {
     expect(await entitlementsDe('cliente.exemplo@exemplo.com.br')).toEqual(['jornada-meu-anjo']);
   });
 });
+
+describe('link do pedido em formato incompleto', () => {
+  it('link só com title e sources não derruba o pedido pago', async () => {
+    // Formato real do upsell KY5W52D (28/10, produção): link de anúncio sem url
+    // nem query_params. O schema exigia query_params, e um campo que só serve de
+    // relatório recusou o pedido inteiro — o cliente ficou sem o acesso.
+    await postar(
+      comChave({
+        ...pedidoPago,
+        link: {
+          title: 'Anúncio',
+          sources: { src: 'x', utm_source: 'facebook', utm_medium: 'cpc', utm_campaign: 'c' },
+        },
+      }),
+    );
+
+    const linha = await evento('X9P8DY5');
+    expect(linha?.error).toBeNull();
+    expect(await entitlementsDe('cliente.exemplo@exemplo.com.br')).toEqual(['jornada-meu-anjo']);
+  });
+
+  it('link ausente também passa', async () => {
+    const { link: _semLink, ...semLink } = { ...pedidoPago, link: undefined };
+    await postar(comChave(semLink));
+    expect(await entitlementsDe('cliente.exemplo@exemplo.com.br')).toEqual(['jornada-meu-anjo']);
+  });
+});

@@ -97,9 +97,18 @@ const PostbackSchema = z.looseObject({
    *
    * O `query_params` fica vazio mesmo nesse caso. Os dois seguem `unknown`
    * porque só um formato foi observado e a leitura é tolerante (ver `utmsDo`).
+   *
+   * **Os dois são opcionais.** No Zod 4, `z.unknown()` dentro de objeto é campo
+   * obrigatório, e o upsell KY5W52D (28/10) chegou com link de anúncio só com
+   * `title` e `sources`: o pedido pago inteiro foi recusado por causa de um
+   * campo que só serve de relatório, e o cliente ficou sem o acesso.
    */
   link: z
-    .looseObject({ url: texto, sources: z.unknown(), query_params: z.unknown() })
+    .looseObject({
+      url: texto,
+      sources: z.unknown().optional(),
+      query_params: z.unknown().optional(),
+    })
     .nullish(),
   order_bumps: z.array(z.looseObject({ product: ProdutoSchema.nullish() })).nullish(),
   subscription: z
