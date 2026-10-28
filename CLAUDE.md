@@ -411,7 +411,7 @@ Endpoint: `POST /api/payt/postback`. Cadastrar na Payt em Ferramentas → Integr
 1. Validar `integration_key` contra o secret `PAYT_INTEGRATION_KEY` (no corpo ou no header `x-integration-key`). Se não bater, responde 401 e **não grava nada**.
 2. Gravar em `payt_events` com `dedupe_key`, **antes de qualquer validação de conteúdo** e com a `integration_key` mascarada como `"***"` (o segredo não fica guardado): o formato V1 real ainda não foi visto, e o primeiro postback de verdade precisa ficar inspecionável mesmo que o processamento quebre. Se for duplicado, responde 200 e para. Payload sem `transaction_id` entra com um ULID no `dedupe_key`, para não ser confundido com outro igualmente ilegível.
 3. Se `test === true` e `ENV=production`, para por aqui (já está gravado).
-4. Responder **200 rápido** e processar via `ctx.waitUntil`. Erro no processamento vai para `payt_events.error`, sem quebrar a resposta.
+4. Responder **200 rápido** e processar via `ctx.waitUntil`. Erro no processamento vai para `payt_events.error`, sem quebrar a resposta. **Se o postback é de venda paga, a falha também manda um e-mail de alerta para o `SUPPORT_EMAIL`** (`services/alerta-postback.ts`), com a transação, os status e o erro, **sem dado pessoal** (e-mail e sequência longa de dígitos saem do texto do erro). Venda paga sem acesso é cliente que pagou e ficou de fora: não pode depender de alguém ir olhar a fila.
 5. Encontrar ou criar o usuário:
    - por `customer.email` (lowercase), exceto se `customer.fake_email === true`;
    - senão, por `customer.phone`.

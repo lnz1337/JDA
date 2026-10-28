@@ -19,6 +19,7 @@ import { agoraIso } from '../lib/datas';
 import { novoId } from '../lib/ids';
 import { segredo } from '../lib/segredos';
 import type { AppBindings } from '../lib/types';
+import { alertarPostbackPagoComFalha, ehPostbackPago } from '../services/alerta-postback';
 import { extrairResumo, processarPostback, registrarEvento, textoDedupe } from '../services/payt';
 
 /** JSON, ou form-encoded (alguns postbacks mandam assim). Null = ilegível. */
@@ -204,6 +205,13 @@ export const payt = new Hono<AppBindings>().post('/postback', async (c) => {
       const msg = erro instanceof Error ? erro.message : String(erro);
       console.error('[payt] falha ao processar', id, msg);
       await marcarProcessado(db, id, msg, true);
+      // Venda paga que não virou acesso: avisa o suporte em vez de esperar
+      // alguém ir olhar a fila. Falha do alerta não pode esconder a do postback.
+      if (ehPostbackPago(resumo)) {
+        await alertarPostbackPagoComFalha(c.env, resumo, id, msg).catch((e) =>
+          console.error('[payt] alerta não saiu', id, e instanceof Error ? e.message : String(e)),
+        );
+      }
     }
   };
 
