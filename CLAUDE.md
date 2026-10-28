@@ -493,9 +493,21 @@ O modelo é markdown (`src/worker/emails/*.md`); o HTML sai de `emails/layout.ts
 - Todos os e-mails do app (login, boas-vindas e campanha) saem com
   **`Reply-To: suporte@jornadacomeuanjo.com`**, nos dois provedores. Esse endereço
   é do Email Routing e encaminha para a caixa do Leo.
+- **O suporte responde como `suporte@jornadacomeuanjo.com`** pelo "Enviar e-mail
+  como" do Gmail, desde 28/10, usando o **SMTP do Cloudflare Email Service**
+  (`smtp.mx.cloudflare.net:465`, usuário `api_token`). A senha é um token próprio,
+  com permissão **só de Email Sending**, e fica guardada **só no Gmail** — não está
+  no wrangler, no `.dev.vars` nem em lugar nenhum do projeto; se vazar ou for
+  perdido, gera-se outro no painel da Cloudflare e troca-se no Gmail. SPF, DKIM e
+  DMARC passaram no teste. É envio humano, não do app: o app continua mandando só
+  por `contato@mail.`.
 - **Cota de 1.000 envios por dia**, da conta inteira. A campanha reserva **300**
-  para o transacional (login e boas-vindas) e nunca encosta nessa fatia: ficar sem
-  cota de login deixaria cliente fora do app.
+  para o transacional e nunca encosta nessa fatia: ficar sem cota de login deixaria
+  cliente fora do app. **O transacional são login, boas-vindas e as respostas do
+  suporte**, que saem da mesma cota. Só que o app conta o que enviou pelo `events`
+  (`enviadosHoje`), e a resposta do Gmail não passa por ele: **ela consome a reserva
+  sem aparecer na conta**. Em dia de muito atendimento, a reserva de 300 é o que
+  protege o login — não reduzir.
 
 ## 9. Ofertas contextuais (`services/offers.ts`)
 

@@ -472,6 +472,29 @@ PAYT_INTEGRATION_KEY     # postback PayT V1 de produção, todos os eventos
 
 ---
 
+### Fora do wrangler: SMTP do suporte (28/10)
+
+O suporte responde como `suporte@jornadacomeuanjo.com` pelo "Enviar e-mail como"
+do Gmail, com o SMTP do Cloudflare Email Service:
+
+```
+servidor  smtp.mx.cloudflare.net
+porta     465 (SSL)
+usuário   api_token
+senha     token próprio, permissão só de Email Sending — guardado SÓ no Gmail
+```
+
+Configurado pelo Leo em 28/10; SPF, DKIM e DMARC passaram no teste. O token não
+existe em nenhum outro lugar: perdido ou vazado, gera-se outro na Cloudflare e
+troca-se no Gmail. Nada no código usa isso.
+
+**Cota:** as respostas saem da mesma cota diária de 1.000 da conta e entram na
+reserva de 300 do transacional (com login e boas-vindas). O `enviadosHoje` da
+campanha conta só o `events` do app, então **resposta do suporte gasta a reserva
+sem aparecer na conta** — mais um motivo para a campanha nunca encostar nela.
+
+---
+
 ## 4. Staging: o que existe lá e não vai para produção
 
 ### Usuários de teste (3)
