@@ -510,3 +510,30 @@ describe('modelo do anúncio', () => {
     expect(await enviados()).toBe(0);
   });
 });
+
+describe('quem já recebeu as boas-vindas', () => {
+  async function boasVindas(userId: string, nome: 'email_enviado' | 'email_falhou'): Promise<void> {
+    await env.DB.prepare(
+      'INSERT INTO events (id, user_id, name, props_json, created_at) VALUES (?, ?, ?, ?, ?)',
+    )
+      .bind(`ev-${userId}-${nome}`, userId, nome, JSON.stringify({ tipo: 'boas_vindas' }), new Date().toISOString())
+      .run();
+  }
+
+  it('fica fora da campanha: já tem o link de acesso', async () => {
+    const recebeu = await criarComprador(1);
+    const naoRecebeu = await criarComprador(2);
+    await boasVindas(recebeu, 'email_enviado');
+
+    const ids = (await destinatarios(env.DB, CAMPANHA, 10)).map((d) => d.user_id);
+    expect(ids).toEqual([naoRecebeu]);
+  });
+
+  it('boas-vindas que falhou não tira da campanha', async () => {
+    const id = await criarComprador(1);
+    await boasVindas(id, 'email_falhou');
+
+    const ids = (await destinatarios(env.DB, CAMPANHA, 10)).map((d) => d.user_id);
+    expect(ids).toEqual([id]);
+  });
+});

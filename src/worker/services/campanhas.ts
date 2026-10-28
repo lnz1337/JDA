@@ -133,6 +133,13 @@ function ordemPorProvedor(provedores: string[]): { sql: string; valores: string[
  * marca e reclama menos de receber — e, se vier `provedores`, o provedor manda
  * na ordem e a data desempata dentro de cada um.
  */
+/*
+ * Quem já recebeu o e-mail de boas-vindas fica de fora: comprou depois que o
+ * postback entrou no ar e já ganhou o link de acesso. O anúncio seria a mesma
+ * mensagem duas vezes — aconteceu com 8 dos 50 da primeira onda (28/10). Só o
+ * envio que deu certo conta: boas-vindas que falhou deixa a pessoa sem link, e
+ * aí o anúncio é justamente o que ela precisa.
+ */
 export async function destinatarios(
   db: D1Database,
   campanha: string,
@@ -156,6 +163,10 @@ export async function destinatarios(
           AND u.marketing_opt_out_at IS NULL
           AND EXISTS (SELECT 1 FROM entitlements e WHERE e.user_id = u.id AND e.status = 'active')
           AND NOT EXISTS (SELECT 1 FROM campaign_sends c WHERE c.campaign = ? AND c.user_id = u.id)
+          AND NOT EXISTS (
+                SELECT 1 FROM events x
+                 WHERE x.user_id = u.id AND x.name = 'email_enviado'
+                   AND json_extract(x.props_json, '$.tipo') = 'boas_vindas')
         ORDER BY ${ordem.sql ? `${ordem.sql}, ` : ''}compra DESC, u.created_at DESC
         LIMIT ?`,
     )
