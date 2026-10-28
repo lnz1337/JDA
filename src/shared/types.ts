@@ -100,3 +100,17 @@ export interface ProdutoDaLoja extends ItemDaLoja {
   /** O e-mail da conta, para o aviso logo acima do botão de compra. */
   email_da_conta: string | null;
 }
+
+/** Os pacotes que a Home oferece (CLAUDE.md §9). */
+export type PacoteOfertado = 'oracao-sao-miguel' | 'jornada-cura-padre-pio';
+
+/** A oferta da Home: no máximo uma por vez, abaixo do cartão do dia. */
+export interface Oferta {
+  produto: PacoteOfertado;
+  titulo: string;
+  texto: string;
+  /** Aviso obrigatório do §14, para pacote ligado a saúde. */
+  aviso: string | null;
+  /** O "dia de hoje" da jornada em que a oferta apareceu. */
+  dia: number;
+}

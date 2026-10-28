@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import type { Programa } from '../../shared/types';
+import type { Oferta, Programa } from '../../shared/types';
 import { APP_NAME } from '../../shared/constants';
-import { api, type Me } from '../lib/api';
+import { api, registrarEvento, type Me } from '../lib/api';
 import { permissaoDeNotificacao } from '../lib/dispositivo';
 import { irPara } from '../lib/rota';
 import type { Convite } from '../lib/convite';
@@ -47,6 +47,9 @@ export function Home({ me, aoSair }: { me: Me; aoSair: () => void }) {
       <ConviteDoAparelho />
 
       {jornada && <CartaoDoDia programa={jornada} />}
+
+      {/* Abaixo do cartão do dia, nunca acima: a oração vem antes da venda (§9). */}
+      {jornada && <CartaoDeOferta />}
 
       {outros.length > 0 && (
         <section className="space-y-3">
@@ -150,6 +153,57 @@ function ConviteDoAparelho() {
         onClick={() => {
           dispensar(instalar ? CHAVES.instalarDispensado : CHAVES.lembreteDispensado);
           setPasso(conviteAtual());
+        }}
+        className="min-h-[48px] w-full py-1 text-base text-noite-700 underline"
+      >
+        Agora não
+      </button>
+    </section>
+  );
+}
+
+/**
+ * O card de oferta da Home (§9): no máximo um, só quando o servidor diz que é
+ * hora (janela da jornada, sem o pacote, não dispensado). Sem push de oferta —
+ * só este card.
+ *
+ * "Agora não" some na hora e avisa o servidor, que esconde o pacote por 7 dias
+ * em qualquer aparelho da pessoa.
+ */
+function CartaoDeOferta() {
+  const [oferta, setOferta] = useState<Oferta | null>(null);
+
+  useEffect(() => {
+    api<{ oferta: Oferta | null }>('/api/oferta')
+      .then((r) => setOferta(r.oferta))
+      .catch(() => setOferta(null));
+  }, []);
+
+  if (!oferta) return null;
+
+  return (
+    <section className="space-y-3 rounded-2xl border-2 border-noite-100 bg-white px-5 py-5">
+      <h2 className="text-xl font-semibold leading-snug text-noite-900">{oferta.titulo}</h2>
+      <p className="text-lg leading-relaxed text-noite-700">{oferta.texto}</p>
+      {oferta.aviso && <p className="text-base leading-relaxed text-noite-700">{oferta.aviso}</p>}
+      <button
+        type="button"
+        onClick={() => {
+          registrarEvento('offer_clicked', { produto: oferta.produto, dia: oferta.dia, canal: 'home' });
+          irPara(`/produto/${oferta.produto}?origem=home`);
+        }}
+        className="min-h-[56px] w-full rounded-xl bg-noite-900 px-4 py-3 text-lg font-semibold text-white"
+      >
+        Conhecer
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          setOferta(null);
+          void api('/api/oferta/dispensar', {
+            method: 'POST',
+            body: JSON.stringify({ produto: oferta.produto }),
+          }).catch(() => undefined);
         }}
         className="min-h-[48px] w-full py-1 text-base text-noite-700 underline"
       >

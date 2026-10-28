@@ -517,11 +517,14 @@ Uma função `getOffer(user)` retorna no máximo **uma** oferta para a Home, ou 
 |---|---|---|
 | Jornada concluída (dia 19 marcado) e sem assinatura | Círculo de São Miguel (mensal) | Modal ao concluir o dia 19 + card fixo na Home |
 | 3 a 10 dias após concluir a jornada, sem assinatura | Plano anual com desconto | Card na Home + push único + e-mail (via cron) |
-| Dia 10 a 18 da jornada | Trilha temática de 7 dias | Card na Home |
-| Dia 2 a 9 da jornada | Novena avulsa | Card na Home |
-| Não tem UP1/UP2 | Fica **bloqueado com cadeado na Loja** | Sempre visível na Loja, nunca na Home |
+| Dia 10 a 18 da jornada, sem o UP2 | **UP2**, Jornada de Cura com Padre Pio (`jornada-cura-padre-pio`), com o aviso de saúde do §14 | Card na Home |
+| Dia 5 a 9 da jornada, sem o UP1 | **UP1**, Oração de São Miguel do Monte Gargano (`oracao-sao-miguel`) | Card na Home |
+| Dias 1 a 4, ou sem matrícula | **Nada**: a primeira impressão é a oração, não a venda | — |
+| Não tem UP1/UP2 | Fica **bloqueado com cadeado na Loja** e, na janela dele, aparece no card da Home | Loja sempre; Home só na janela |
 
-Registrar `offer_viewed` e `offer_clicked` em `events`. Uma oferta dispensada pelo usuário não volta por 7 dias.
+Os pacotes **deixaram de ser "nunca na Home"** (28/10). O dia é o mesmo "dia de hoje" do lembrete, `min(dias corridos + 1, 19)` desde a matrícula, no fuso da pessoa. Quem já tem o pacote (`hasAccess` no bundle) não vê o card dele; quem tem os dois não vê card nenhum. O card fica **abaixo do cartão da oração do dia, nunca acima**, e **sem push de oferta**. O toque abre a página do pacote na Loja com `?origem=home`, e o checkout sai com `utm_medium=home` — é o que o `purchase_from_app` (campo `canal`) usa para separar a venda da Home da venda da Loja. "Agora não" grava `offer_dismissed` no servidor e esconde **aquele pacote** por 7 dias, em qualquer aparelho. A Trilha temática (dias 10 a 18) e a Novena avulsa (dias 2 a 9), que ocupavam essas janelas, saíram da tabela: os produtos ainda não existem, e quando existirem a ordem entre eles e os pacotes precisa ser decidida.
+
+Registrar em `events`: `offer_viewed` (uma vez por dia e por pacote, no fuso da pessoa), `offer_clicked` e `offer_dismissed`. Uma oferta dispensada pelo usuário não volta por 7 dias.
 
 ## 10. Mural de intenções
 

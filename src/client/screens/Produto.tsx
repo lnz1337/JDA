@@ -18,12 +18,15 @@ import { irPara } from '../lib/rota';
 export function Produto({ id }: { id: string }) {
   const [produto, setProduto] = useState<ProdutoDaLoja | null>(null);
   const [erro, setErro] = useState<string | null>(null);
+  // Quem chegou pelo card de oferta da Home (§9): o checkout sai com
+  // utm_medium=home, e a venda não se confunde com a da Loja.
+  const canal = new URLSearchParams(location.search).get('origem') === 'home' ? 'home' : 'loja';
 
   useEffect(() => {
     setProduto(null);
     setErro(null);
-    registrarEvento('product_viewed', { produto: id });
-    api<{ produto: ProdutoDaLoja }>(`/api/loja/${id}`)
+    registrarEvento('product_viewed', { produto: id, canal });
+    api<{ produto: ProdutoDaLoja }>(`/api/loja/${id}${canal === 'home' ? '?origem=home' : ''}`)
       .then((r) => setProduto(r.produto))
       .catch((e) =>
         setErro(
@@ -32,7 +35,7 @@ export function Produto({ id }: { id: string }) {
             : 'Não consegui carregar agora. Confira a internet e tente de novo.',
         ),
       );
-  }, [id]);
+  }, [id, canal]);
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-5 px-5 py-8">
@@ -98,7 +101,7 @@ export function Produto({ id }: { id: string }) {
             ))}
           </section>
 
-          {!produto.tem_acesso && <Compra produto={produto} />}
+          {!produto.tem_acesso && <Compra produto={produto} canal={canal} />}
         </>
       )}
     </main>
@@ -112,7 +115,7 @@ export function Produto({ id }: { id: string }) {
  * estado normal do catálogo hoje (§17), e um botão que não leva a nada é pior
  * que nenhum botão.
  */
-function Compra({ produto }: { produto: ProdutoDaLoja }) {
+function Compra({ produto, canal }: { produto: ProdutoDaLoja; canal: 'loja' | 'home' }) {
   if (!produto.checkout_url) {
     return (
       <p className="rounded-2xl border-2 border-noite-100 px-5 py-4 text-lg leading-relaxed text-noite-700">
@@ -147,7 +150,7 @@ function Compra({ produto }: { produto: ProdutoDaLoja }) {
       <a
         href={produto.checkout_url}
         onClick={() => {
-          registrarEvento('checkout_clicked', { produto: produto.id });
+          registrarEvento('checkout_clicked', { produto: produto.id, canal });
           marcarCompra(produto.id);
         }}
         className="block min-h-[64px] w-full rounded-xl bg-noite-900 px-4 py-4 text-center text-xl font-semibold text-white"

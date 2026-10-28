@@ -39,6 +39,8 @@ const EVENTOS_DO_CLIENT = [
   'store_viewed',
   'product_viewed',
   'checkout_clicked',
+  /** O toque no card de oferta da Home (§9). Visto e dispensado saem do servidor. */
+  'offer_clicked',
 ] as const;
 
 /**
@@ -61,6 +63,8 @@ const EventoSchema = z.object({
   programa: z.string().trim().max(120).optional(),
   /** Fase 6: qual produto da loja o evento é. */
   produto: z.string().trim().max(120).optional(),
+  /** De onde veio a venda: a Loja ou o card de oferta da Home (§9). */
+  canal: z.enum(['loja', 'home']).optional(),
   /** Fase 8: só o `push_ativado` usa este. */
   origem: z.enum(ORIGENS_DE_ATIVACAO).optional(),
   /** Fase 8: só o `push_erro_cliente` usa os três de baixo. */

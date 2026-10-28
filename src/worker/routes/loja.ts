@@ -49,17 +49,30 @@ const SEM_ASSINATURA = "kind != 'subscription'";
  * para quem comprou. Telefone só se a conta tiver; nome não vai, porque o
  * checkout não pede.
  */
+/**
+ * De onde a pessoa chegou à página do produto: da Loja ou do card de oferta da
+ * Home (§9). Vai como `utm_medium`, e é por ele que o `purchase_from_app`
+ * separa a venda da Home da venda da Loja.
+ */
+export const CANAIS_DE_VENDA = ['loja', 'home'] as const;
+export type CanalDeVenda = (typeof CANAIS_DE_VENDA)[number];
+
+function canalDe(valor: string | undefined): CanalDeVenda {
+  return (CANAIS_DE_VENDA as readonly string[]).includes(valor ?? '') ? (valor as CanalDeVenda) : 'loja';
+}
+
 function comUtms(
   url: string | null,
   productId: string,
   conta?: { email: string | null; phone: string | null } | null,
+  canal: CanalDeVenda = 'loja',
 ): string | null {
   if (!url?.trim()) return null;
 
   try {
     const u = new URL(url.trim());
     u.searchParams.set('utm_source', 'app');
-    u.searchParams.set('utm_medium', 'loja');
+    u.searchParams.set('utm_medium', canal);
     u.searchParams.set('utm_campaign', productId);
     if (conta?.email) u.searchParams.set('email', conta.email);
     if (conta?.phone) u.searchParams.set('phone', conta.phone);
@@ -238,7 +251,7 @@ export const loja = new Hono<AppBindings>()
       descricao_md: produto.description_md,
       avisos: avisosDe(produto, partesCruas),
       partes,
-      checkout_url: comUtms(produto.checkout_url, produto.id, usuario),
+      checkout_url: comUtms(produto.checkout_url, produto.id, usuario, canalDe(c.req.query('origem'))),
       // Para o aviso logo acima do botão: compra com outro e-mail cria outra
       // conta pelo postback, e o conteúdo não aparece para quem comprou.
       email_da_conta: usuario?.email ?? null,

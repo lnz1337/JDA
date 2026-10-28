@@ -42,13 +42,16 @@ export function registrarEvento(
     | 'push_erro_cliente'
     | 'store_viewed'
     | 'product_viewed'
-    | 'checkout_clicked',
+    | 'checkout_clicked'
+    | 'offer_clicked',
   props: {
     lesson_id?: string;
     dia?: number;
     programa?: string;
     /** Fase 6: qual produto da loja o evento é. */
     produto?: string;
+    /** De onde veio a venda: a Loja ou o card de oferta da Home (§9). */
+    canal?: 'loja' | 'home';
     /** `push_ativado`: 'botao' (a pessoa tocou) ou 'automatico' (reassinou só). */
     origem?: string;
     /** `push_erro_cliente`: onde parou, o que explodiu e o status, se houver. */

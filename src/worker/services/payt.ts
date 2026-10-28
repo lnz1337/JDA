@@ -637,6 +637,8 @@ export async function processarPostback(
     await registrarEvento(db, usuario.userId, 'purchase_from_app', {
       produtos: ids,
       campanha: utms.utm_campaign ?? null,
+      // 'loja' ou 'home' (o card de oferta, §9).
+      canal: utms.utm_medium ?? null,
       transaction_id: resumo.transactionId,
     });
   }

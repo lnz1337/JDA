@@ -248,6 +248,8 @@ describe('aviso de conteúdo liberado', () => {
     ).first<{ props_json: string }>();
     expect(JSON.parse(evento?.props_json ?? '{}')).toMatchObject({
       campanha: 'oracao-sao-miguel',
+      // Separa a venda da Loja da venda do card da Home (§9).
+      canal: 'loja',
     });
   });
 
