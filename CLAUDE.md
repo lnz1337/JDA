@@ -702,3 +702,4 @@ e a limpeza exigiu apagar o usuário de todas as tabelas e mascarar o payload.
 - Datas em UTC no banco; conversão para fuso só na borda (regras de dia e push).
 - Commits pequenos e descritivos, em português. Não misturar refactor com feature.
 - Antes de dar uma fase por concluída: `npm run typecheck && npm test` sem erros.
+- **Push sem perguntar** (decisão do Leo, 28/10): terminado um item com `npm run typecheck && npm test` passando, os commits vão para o `origin/main` na hora. Isso vale só para o push: publicar em produção continua dependendo do que o Leo pediu.
