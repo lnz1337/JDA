@@ -163,7 +163,7 @@ modelo curto, então a correção ainda não foi vista com um upsell real.
 
 ### Card de oferta do UP1/UP2 na Home (28/10)
 
-**Só no staging**, esperando o Leo conferir no iPhone e liberar a produção. A conta de teste dele está no dia 6, com o UP1 revogado pelo reembolso de 26/10, e a `/api/oferta` do staging devolve o card do UP1 para ela (conferido com uma sessão temporária, apagada em seguida, junto com o `offer_viewed` que a conferência gerou). O checkout vindo do card sai com `utm_medium=home` e o e-mail preenchido.
+**Em produção desde 28/10**, depois de o Leo conferir no iPhone. No dia da publicação, as 7 matrículas de produção estavam nos dias 1 e 2: **o primeiro card de produção aparece só quando alguém chegar ao dia 5**, e o `offer_viewed` é o que mostra quando isso acontecer. A conta de teste dele está no dia 6, com o UP1 revogado pelo reembolso de 26/10, e a `/api/oferta` do staging devolve o card do UP1 para ela (conferido com uma sessão temporária, apagada em seguida, junto com o `offer_viewed` que a conferência gerou). O checkout vindo do card sai com `utm_medium=home` e o e-mail preenchido.
 
 No staging o UP2 **não aparece**: o seed de lá não rodou depois de 27/10 e o `jornada-cura-padre-pio` está sem `checkout_url`, e o `getOffer` não oferece pacote sem checkout. Em produção os dois têm checkout.
 
