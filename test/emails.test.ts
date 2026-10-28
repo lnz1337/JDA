@@ -164,3 +164,47 @@ describe('anúncio da campanha', () => {
     expect(montarAnuncio(variaveis).texto).not.toMatch(TAG);
   });
 });
+
+describe('anúncio da campanha, modelo curto', () => {
+  const variaveis = {
+    primeiro_nome: 'Maria',
+    link_acesso: 'https://exemplo.test/acesso?t=tok',
+    lista_produtos: '- Jornada com Meu Anjo',
+    link_parar: 'https://exemplo.test/parar?u=1&t=2',
+    email_suporte: 'suporte@jornadacomeuanjo.com',
+  };
+  // Estilo que só o botão tem (emails/layout.ts).
+  const BOTAO = 'padding:18px 32px';
+
+  it('lê o arquivo curto, com o assunto dele', () => {
+    expect(montarAnuncio(variaveis, 'curto').assunto).toBe(
+      'Maria, seu acesso ao app da Jornada está liberado',
+    );
+  });
+
+  it('o link de acesso fica dentro da frase, sem virar botão', () => {
+    const { html, texto } = montarAnuncio(variaveis, 'curto');
+    expect(html).toContain('href="https://exemplo.test/acesso?t=tok"');
+    expect(html).not.toContain(BOTAO);
+    expect(texto).toContain('toque aqui e o app abre já com o seu acesso');
+    // O completo continua com o botão: a diferença é do modelo, não do renderizador.
+    expect(montarAnuncio(variaveis).html).toContain(BOTAO);
+  });
+
+  it('leva os produtos e o rodapé uma vez só', () => {
+    const { html, texto } = montarAnuncio(variaveis, 'curto');
+    expect(texto).toContain('Jornada com Meu Anjo');
+    expect(texto.split(variaveis.link_parar)).toHaveLength(2);
+    expect(html.split('href="https://exemplo.test/parar?u=1&amp;t=2"')).toHaveLength(2);
+  });
+
+  it('sem nome, a saudação e o assunto não ficam com vírgula solta', () => {
+    const { texto, assunto } = montarAnuncio({ ...variaveis, primeiro_nome: '' }, 'curto');
+    expect(texto.startsWith('Olá!')).toBe(true);
+    expect(assunto).toBe('Seu acesso ao app da Jornada está liberado');
+  });
+
+  it('a versão em texto não tem tag nenhuma', () => {
+    expect(montarAnuncio(variaveis, 'curto').texto).not.toMatch(TAG);
+  });
+});

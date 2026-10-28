@@ -453,3 +453,60 @@ describe('cota diária', () => {
     expect((await res.json()) as { cotaRestante: number }).toMatchObject({ cotaRestante: 1000 });
   });
 });
+
+describe('modelo do anúncio', () => {
+  async function modeloGravado(userId: string): Promise<string | null | undefined> {
+    const r = await env.DB.prepare('SELECT model FROM campaign_sends WHERE campaign = ? AND user_id = ?')
+      .bind(CAMPANHA, userId)
+      .first<{ model: string | null }>();
+    return r?.model;
+  }
+
+  it('grava qual modelo foi para cada pessoa', async () => {
+    const id = await criarComprador(1);
+    await chamar('/api/campanha/enviar', {
+      method: 'POST',
+      headers: comChave(),
+      body: JSON.stringify({ campanha: CAMPANHA, limite: 1, modelo: 'curto' }),
+    });
+    expect(await modeloGravado(id)).toBe('curto');
+  });
+
+  it('sem --modelo, vai o completo', async () => {
+    const id = await criarComprador(1);
+    const res = await chamar('/api/campanha/enviar', {
+      method: 'POST',
+      headers: comChave(),
+      body: JSON.stringify({ campanha: CAMPANHA, limite: 1 }),
+    });
+    expect(await res.json()).toMatchObject({ modelo: 'padrao' });
+    expect(await modeloGravado(id)).toBe('padrao');
+  });
+
+  it('quem recebeu um modelo não recebe o outro', async () => {
+    const id = await criarComprador(1);
+    await env.DB.prepare(
+      `INSERT INTO campaign_sends (campaign, user_id, status, sent_at, model) VALUES (?, ?, 'sent', ?, 'padrao')`,
+    )
+      .bind(CAMPANHA, id, new Date().toISOString())
+      .run();
+
+    const res = await chamar('/api/campanha/enviar', {
+      method: 'POST',
+      headers: comChave(),
+      body: JSON.stringify({ campanha: CAMPANHA, limite: 2, dry_run: true, modelo: 'curto' }),
+    });
+    expect(await res.json()).toMatchObject({ enviados: 0 });
+  });
+
+  it('modelo desconhecido é recusado, sem cair no completo', async () => {
+    await criarComprador(1);
+    const res = await chamar('/api/campanha/enviar', {
+      method: 'POST',
+      headers: comChave(),
+      body: JSON.stringify({ campanha: CAMPANHA, limite: 1, modelo: 'curtinho' }),
+    });
+    expect(res.status).toBe(400);
+    expect(await enviados()).toBe(0);
+  });
+});

@@ -9,7 +9,7 @@
  * - ondas: o domínio é novo, então o script recusa um limite maior que o dobro
  *   da onda anterior e para sozinho se a taxa de falha passar de 5%.
  */
-import { montarAnuncio } from '../emails/anuncio';
+import { montarAnuncio, type ModeloAnuncio } from '../emails/anuncio';
 import { hmacHex } from '../lib/cripto';
 import { agoraIso } from '../lib/datas';
 import { segredo } from '../lib/segredos';
@@ -55,6 +55,7 @@ export interface RelatorioCampanha {
   ondaAnterior: number;
   dryRun: boolean;
   provedores: string[];
+  modelo: ModeloAnuncio;
   erros: string[];
 }
 
@@ -170,15 +171,19 @@ async function registrar(
   userId: string,
   status: 'sent' | 'failed',
   erro: string | null,
+  modelo: ModeloAnuncio,
 ): Promise<void> {
+  // O modelo fica gravado para comparar depois; a chave continua sendo só
+  // (campanha, usuário), e quem recebeu um modelo nunca recebe o outro.
   await db
     .prepare(
-      `INSERT INTO campaign_sends (campaign, user_id, status, error, sent_at)
-       VALUES (?, ?, ?, ?, ?)
+      `INSERT INTO campaign_sends (campaign, user_id, status, error, sent_at, model)
+       VALUES (?, ?, ?, ?, ?, ?)
        ON CONFLICT (campaign, user_id) DO UPDATE SET
-         status = excluded.status, error = excluded.error, sent_at = excluded.sent_at`,
+         status = excluded.status, error = excluded.error, sent_at = excluded.sent_at,
+         model = excluded.model`,
     )
-    .bind(campanha, userId, status, erro, agoraIso())
+    .bind(campanha, userId, status, erro, agoraIso(), modelo)
     .run();
 }
 
@@ -208,6 +213,8 @@ export interface OpcoesEnvio {
   testePara?: string | null;
   /** Provedores na frente da fila, na ordem dada (ver PROVEDORES). */
   provedores?: string[];
+  /** Qual texto do anúncio vai (emails/anuncio.ts). Sem isto, o completo. */
+  modelo?: ModeloAnuncio;
 }
 
 export async function enviarCampanha(
@@ -215,6 +222,7 @@ export async function enviarCampanha(
   opcoes: OpcoesEnvio,
 ): Promise<RelatorioCampanha> {
   const { campanha, limite, dryRun } = opcoes;
+  const modelo = opcoes.modelo ?? 'padrao';
   const anterior = await ondaAnterior(env.DB, campanha);
   const erros: string[] = [];
 
@@ -282,7 +290,7 @@ export async function enviarCampanha(
       email_suporte: env.SUPPORT_EMAIL ?? '',
     };
 
-    const corpo = montarAnuncio(variaveis);
+    const corpo = montarAnuncio(variaveis, modelo);
 
     if (dryRun) {
       enviados += 1;
@@ -309,7 +317,7 @@ export async function enviarCampanha(
     }
 
     if (!opcoes.testePara) {
-      await registrar(env.DB, campanha, d.user_id, r.ok ? 'sent' : 'failed', r.erro ?? null);
+      await registrar(env.DB, campanha, d.user_id, r.ok ? 'sent' : 'failed', r.erro ?? null, modelo);
     }
 
     const feitos = enviados + falhas;
@@ -335,6 +343,7 @@ export async function enviarCampanha(
     ondaAnterior: anterior,
     dryRun,
     provedores: opcoes.provedores ?? [],
+    modelo,
     erros: erros.slice(0, 20),
   };
 }

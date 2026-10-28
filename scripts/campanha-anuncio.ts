@@ -5,6 +5,7 @@
  *   ... --dry-run                 só mostra o que faria
  *   ... --teste-para eu@ex.com    manda só para esse endereço, sem tocar na base
  *   ... --provedores gmail        põe o Gmail na frente da fila (lista por vírgula)
+ *   ... --modelo curto            manda o texto curto (anuncio-app-curto.md)
  *
  * A seleção, o controle de onda e o corte por taxa de falha ficam no Worker
  * (services/campanhas.ts): é lá que estão o banco e o envio.
@@ -29,6 +30,7 @@ const limite = Number(valor('--limite') ?? 0);
 const testePara = valor('--teste-para');
 const dryRun = argv.includes('--dry-run');
 const campanha = valor('--campanha') ?? 'anuncio-app';
+const modelo = valor('--modelo') ?? 'padrao';
 const provedores = (valor('--provedores') ?? '')
   .split(',')
   .map((p) => p.trim().toLowerCase())
@@ -48,7 +50,8 @@ if (!base) {
 console.log(
   `campanha=${campanha} ambiente=${ambiente} limite=${limite}` +
     `${dryRun ? ' [dry-run]' : ''}${testePara ? ` [teste para ${testePara}]` : ''}` +
-    `${provedores.length > 0 ? ` [provedores: ${provedores.join(' > ')}]` : ''}`,
+    `${provedores.length > 0 ? ` [provedores: ${provedores.join(' > ')}]` : ''}` +
+    ` [modelo: ${modelo}]`,
 );
 
 const res = await fetch(`${base}/api/campanha/enviar`, {
@@ -58,6 +61,7 @@ const res = await fetch(`${base}/api/campanha/enviar`, {
     campanha,
     limite,
     dry_run: dryRun,
+    modelo,
     ...(testePara ? { teste_para: testePara } : {}),
     ...(provedores.length > 0 ? { provedores } : {}),
   }),

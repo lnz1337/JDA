@@ -9,6 +9,7 @@
  * funcionar sem login. Quem protege é a assinatura HMAC.
  */
 import { Hono } from 'hono';
+import { ehModeloAnuncio, MODELOS_ANUNCIO } from '../emails/anuncio';
 import { chaveAdminConfere } from '../lib/admin';
 import { agoraIso } from '../lib/datas';
 import { pagina } from '../lib/pagina';
@@ -29,6 +30,7 @@ export const campanha = new Hono<AppBindings>().post('/enviar', async (c) => {
     dry_run?: boolean;
     teste_para?: string;
     provedores?: string[];
+    modelo?: string;
   } | null;
 
   const nome = corpo?.campanha;
@@ -41,6 +43,13 @@ export const campanha = new Hono<AppBindings>().post('/enviar', async (c) => {
     .map((p) => String(p).trim().toLowerCase())
     .filter(Boolean);
 
+  // Modelo errado não pode cair calado no completo: a onda sairia com o texto
+  // que ninguém escolheu.
+  const modelo = corpo?.modelo ?? 'padrao';
+  if (!ehModeloAnuncio(modelo)) {
+    return c.json({ error: `modelo desconhecido: ${modelo}. Vale: ${Object.keys(MODELOS_ANUNCIO).join(', ')}` }, 400);
+  }
+
   try {
     const relatorio = await enviarCampanha(c.env, {
       campanha: nome,
@@ -48,6 +57,7 @@ export const campanha = new Hono<AppBindings>().post('/enviar', async (c) => {
       dryRun: corpo?.dry_run === true,
       testePara: corpo?.teste_para ?? null,
       provedores,
+      modelo,
     });
     return c.json({ ok: true, ...relatorio });
   } catch (erro) {
