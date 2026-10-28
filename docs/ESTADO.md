@@ -1,10 +1,10 @@
-# Estado do projeto — 27/10/2026
+# Estado do projeto — 28/10/2026
 
 Retrato para uma sessão nova continuar daqui. A spec é o [CLAUDE.md](../CLAUDE.md);
 este arquivo registra o que **não** cabe lá: o que já rodou, o que está só em
 staging, o que depende do Leo e as armadilhas que custaram caro.
 
-`npm run typecheck && npm test` limpo, **397 testes** em 28 arquivos.
+`npm run typecheck && npm test` limpo, **421 testes** em 29 arquivos.
 
 ## Os dois ambientes
 
@@ -35,7 +35,7 @@ roteiro descreve.
 | 3. Publicar produção | **feita**: migration `0006`, seed, os 34 áudios e deploy. Conta do Leo criada com a Jornada manual e e-mail de boas-vindas com link de acesso enviado. **Testada pelo Leo no iPhone em 27/10**: entrou pelo link, dia 1 com áudio, lembrete (push de confirmação chegou) e Loja até o checkout. O banco registrou `lesson_started`, `lesson_completed`, `push_ativado`, `push_enviado`, `store_viewed`, `product_viewed` e `checkout_clicked` |
 | 4. Postback de produção | **feita em 27/10**: postback PayT V1 com todos os eventos cadastrado pelo Leo, `PAYT_INTEGRATION_KEY` de produção gravada. O teste da Payt (`PAYTS2`, `test: true`, `paid/paid`) chegou às 17:58 UTC, foi gravado com a chave mascarada (`"***"`) e **parou no passo 3 do §7**: sem erro, sem revisão, nenhum usuário, entitlement ou e-mail criado |
 | 5. Importação da base (.xlsx) | **feita em 27/10**: 1.421 usuários e 1.904 entitlements em produção, conferidos no banco contra o dry-run. Os dois relatórios foram para a Lixeira do Windows. Detalhes: O importador lê o `.xlsx` direto e liga o produto pelo **sku** (o relatório não traz o `product.code`). Dry-run em produção com o relatório de 27/10 até 09:20: ver "Importação da base". ver "Importação da base" |
-| 6. Primeira onda | **envio de teste feito em 27/10**: o e-mail real da campanha `anuncio-app` saiu de produção só para o Leo (`--teste-para`, que não grava em `campaign_sends` nem conta como onda). Dry-run da onda de 50 pelo Gmail sem erro. **Esperando o ok do Leo** para disparar |
+| 6. Primeira onda | **em andamento (28/10)**. Envio de teste do modelo completo (27/10) e do **modelo curto** (28/10, `--modelo curto`) só para o Leo. **Esperando o Leo** dizer em que aba do Gmail o curto caiu e qual modelo vai na onda de 50 |
 
 **O que estava na raiz antes:** uma página estacionada da Hostinger
 (`A jornadacomeuanjo.com → 2.57.91.91`, proxied) e um `CNAME www → raiz`. Os dois
@@ -130,6 +130,36 @@ nome que estejam vazios; concessão que já existe **não muda** — se um
 reembolso chegou pelo postback depois da exportação, o relatório velho não
 devolve o acesso. Depois de aplicar, o script conta usuários e entitlements por
 produto no banco e compara com o plano.
+
+### Primeiras vendas pelo postback de produção (27 a 28/10)
+
+Do ar (27/10, 14:58) até 28/10, 13:13: **9 vendas pagas reais**. As 8 compras
+da Jornada viraram acesso, com usuário novo e e-mail de boas-vindas, sem falha.
+**O upsell `KY5W52D` (UP1, R$ 197, do cliente da `NPXB7O3`) foi recusado**:
+o postback do upsell de um clique chega com `link` só com `title` e
+`sources`, sem `url` e sem `query_params`, e no Zod 4 `z.unknown()` dentro
+de objeto é obrigatório — o pedido pago inteiro caiu por um campo de relatório.
+O mesmo erro pegou 4 eventos que não concediam nada (Pix vencido, cartão
+recusado).
+
+O que foi feito em 28/10, nesta ordem e com o ok do Leo:
+
+1. **Correção publicada** (`5204ea3`) com o `--modelo curto` e a migration
+   `0008`. Era urgente: todo UP1/UP2 do funil cairia no mesmo erro.
+2. **Reprocesso em produção** liberado só por transação, com
+   `--confirmo-revisado`, e registrado em `events` (`payt_reprocessado`).
+   O `KY5W52D` foi reprocessado: UP1 ativo com a `transaction_id` real e
+   e-mail de "conteúdo liberado" enviado. **Push não saiu porque o cliente não
+   tem lembrete ligado** (nenhuma assinatura de push), não por falha.
+3. `expired` e `refused` passaram a **só registrar**. A fila de revisão foi
+   zerada: as 15 linhas que estavam lá (12 `expired`, 1 cancelamento por Pix
+   vencido, 2 cartões recusados) estão descritas no evento `payt_fila_limpa`.
+4. **Schema tolerante**: só o que decide o acesso é obrigatório (§7).
+5. **Alerta por e-mail** ao suporte quando uma venda paga falha no
+   processamento, sem dado pessoal (`services/alerta-postback.ts`).
+
+Nenhum postback chegou entre as publicações de 28/10 e o envio de teste do
+modelo curto, então a correção ainda não foi vista com um upsell real.
 
 ---
 
