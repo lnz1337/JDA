@@ -426,7 +426,7 @@ Endpoint: `POST /api/payt/postback`. Cadastrar na Payt em Ferramentas → Integr
 | `subscription_activated`, `subscription_renewed`, `subscription_reactivated` | Upsert em `subscriptions` com `subscription.*` |
 | `subscription_overdue` | Atualizar status para `overdue` (a carência vale pela regra da seção 6) |
 | `subscription_canceled` | Atualizar status com `subscription.status` (ex.: `canceled_by_customer`) |
-| `waiting_payment`, `lost_cart`, `canceled` | Só registrar (futuro: recuperação) |
+| `waiting_payment`, `lost_cart`, `canceled`, `expired` (Pix vencido), `refused` (cartão recusado) | Só registrar (futuro: recuperação). `expired` e `refused` são o dia a dia do checkout: na fila de revisão, só atrapalhariam |
 | `refund_requested` | Só registrar. A revogação acontece quando chega o `refunded`; marcar revisão aqui encheria a fila com um item por reembolso |
 | Qualquer outro status | Registrar e marcar `needs_review`: status que ninguém previu é como um formato diferente do esperado aparece |
 

@@ -46,12 +46,18 @@ const TIPOS_DE_COMPRA = new Set(['order', 'upsell', 'manual_upsell']);
  * `refund_requested` entra aqui porque é estado intermediário: a revogação
  * acontece quando chega o `refunded`. Deixá-lo pedindo revisão encheria a fila
  * com um item por reembolso, e a fila é para o que precisa de alguém olhar.
+ *
+ * `expired` (Pix que venceu) e `refused` (cartão recusado) entram pelo mesmo
+ * motivo: são o dia a dia do checkout, não exceção. Em 28/10 a fila de produção
+ * tinha 12 `expired` em menos de um dia, e nenhum pedia alguém.
  */
 const SO_REGISTRAM = new Set([
   'waiting_payment',
   'lost_cart',
   'canceled',
   'refund_requested',
+  'expired',
+  'refused',
 ]);
 
 /**

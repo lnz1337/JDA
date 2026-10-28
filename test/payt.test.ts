@@ -432,6 +432,28 @@ describe('reembolso e chargeback', () => {
     expect(await entitlementsDe('joao.pereira@exemplo.com.br')).toEqual([]);
   });
 
+  it('Pix vencido e cartão recusado só registram, sem revisão', async () => {
+    // Os dois formatos vistos em produção em 28/10.
+    const comStatus = (transactionId: string, status: string, paymentStatus: string) =>
+      comChave({
+        ...pedidoPago,
+        transaction_id: transactionId,
+        status,
+        transaction: { ...pedidoPago.transaction, payment_status: paymentStatus },
+      });
+
+    await postar(comStatus('PIX-VENCIDO', 'expired', 'expired'));
+    await postar(comStatus('PIX-CANCELADO', 'canceled', 'expired'));
+    await postar(comStatus('CARTAO-RECUSADO', 'canceled', 'refused'));
+
+    const { results } = await env.DB.prepare(
+      "SELECT needs_review, error FROM payt_events WHERE transaction_id IN ('PIX-VENCIDO', 'PIX-CANCELADO', 'CARTAO-RECUSADO')",
+    ).all<{ needs_review: number; error: string | null }>();
+    expect(results).toHaveLength(3);
+    for (const linha of results) expect(linha).toEqual({ needs_review: 0, error: null });
+    expect(await entitlementsDe('cliente.exemplo@exemplo.com.br')).toEqual([]);
+  });
+
   it('pedido de reembolso só registra, sem revisão e sem revogar', async () => {
     await postar(comChave(pedidoPago));
     await postar(comChave(reembolsoSolicitado));
