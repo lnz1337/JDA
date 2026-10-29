@@ -1,4 +1,4 @@
-# Estado do projeto — 28/10/2026
+# Estado do projeto — 29/10/2026
 
 Retrato para uma sessão nova continuar daqui. A spec é o [CLAUDE.md](../CLAUDE.md);
 este arquivo registra o que **não** cabe lá: o que já rodou, o que está só em
@@ -35,7 +35,7 @@ roteiro descreve.
 | 3. Publicar produção | **feita**: migration `0006`, seed, os 34 áudios e deploy. Conta do Leo criada com a Jornada manual e e-mail de boas-vindas com link de acesso enviado. **Testada pelo Leo no iPhone em 27/10**: entrou pelo link, dia 1 com áudio, lembrete (push de confirmação chegou) e Loja até o checkout. O banco registrou `lesson_started`, `lesson_completed`, `push_ativado`, `push_enviado`, `store_viewed`, `product_viewed` e `checkout_clicked` |
 | 4. Postback de produção | **feita em 27/10**: postback PayT V1 com todos os eventos cadastrado pelo Leo, `PAYT_INTEGRATION_KEY` de produção gravada. O teste da Payt (`PAYTS2`, `test: true`, `paid/paid`) chegou às 17:58 UTC, foi gravado com a chave mascarada (`"***"`) e **parou no passo 3 do §7**: sem erro, sem revisão, nenhum usuário, entitlement ou e-mail criado |
 | 5. Importação da base (.xlsx) | **feita em 27/10**: 1.421 usuários e 1.904 entitlements em produção, conferidos no banco contra o dry-run. Os dois relatórios foram para a Lixeira do Windows. Detalhes: O importador lê o `.xlsx` direto e liga o produto pelo **sku** (o relatório não traz o `product.code`). Dry-run em produção com o relatório de 27/10 até 09:20: ver "Importação da base". ver "Importação da base" |
-| 6. Primeira onda | **disparada em 28/10, 14:00–14:03 UTC**: 50 enviados, 0 falhas, todos Gmail, **modelo curto** (o teste do Leo caiu em Principal). Foram os 50 de compra mais recente (26 a 28/10). **8 dos 50 já tinham recebido o e-mail de boas-vindas pelo postback** (compraram depois de 27/10, 14:58) e receberam o anúncio também; **desde 8d302a9 quem já recebeu as boas-vindas fica fora da seleção**. Restam 1.379 elegíveis para as próximas ondas. **Balanço em 29/10, no mesmo horário**, com: enviados e falhas por modelo; quantos pediram para parar; quantos tocaram no link e quantos entraram por código; quantos começaram o dia 1; quantos ligaram o lembrete; se algum UP1/UP2 real chegou depois da correção do link (5204ea3) e virou acesso; se algum alerta de postback pago com falha foi enviado. Separar os 8 que já tinham as boas-vindas |
+| 6. Ondas da campanha | **1ª (28/10)**: 50, modelo curto, 0 falhas — passou nos critérios. **2ª (29/10, 13:02–13:06 UTC)**: 100, modelo curto, 99 enviados e 1 falha (endereço com acento, `á` no começo: erro de digitação do cliente na Payt, falha permanente). Ver "Balanço das ondas". Balanço da 2ª em 30/10, no mesmo horário |
 
 **O que estava na raiz antes:** uma página estacionada da Hostinger
 (`A jornadacomeuanjo.com → 2.57.91.91`, proxied) e um `CNAME www → raiz`. Os dois
@@ -130,6 +130,40 @@ nome que estejam vazios; concessão que já existe **não muda** — se um
 reembolso chegou pelo postback depois da exportação, o relatório velho não
 devolve o acesso. Depois de aplicar, o script conta usuários e entitlements por
 produto no banco e compara com o plano.
+
+### Balanço das ondas
+
+**1ª onda (28/10, 50 pelo Gmail, modelo curto)**, medida em 29/10 de manhã.
+Os 8 que já tinham as boas-vindas do postback ficam à parte; a conta vale para
+os outros 42:
+
+| | 42 da conta | 8 com boas-vindas |
+|---|---|---|
+| Enviados / falhas | 42 / 0 | 8 / 0 |
+| Pediram para parar | 1 | 1 |
+| Entraram pelo link do e-mail | 9 | 1 |
+| Entraram por código | 2 | 1 |
+| **Entraram no app** (link ou código) | **10** | 2 |
+| Começaram o dia 1 (`lesson_started` do dia 1) | 5 | 2 |
+| Abriram a jornada (matrícula) | 7 | 6 |
+| Ligaram o lembrete (assinatura de push) | 1 | 1 |
+
+Como se mede: "pelo link" é o `access_links` da onda com `used_at` (o GET do
+link não consome, só o toque no botão); "por código" é `login_codes` de login
+usado depois do envio; uma pessoa entrou pelos dois, por isso 9 + 2 dá 10. O
+dia 1 conta o play do áudio; quem abriu e só leu aparece na matrícula.
+
+**Critérios do Leo nos 42**: falhas 0% (< 5%), 1 pedido para parar (≤ 2) e 10
+entradas (≥ 10). **Os três passaram**, no limite do terceiro, e a 2ª onda saiu
+com o mesmo modelo. Nenhum postback pago com falha desde a correção, nenhum
+alerta enviado e fila de revisão vazia.
+
+**Upsell real depois da correção do link (5204ea3)**: nenhum até 29/10, 09:34.
+Os 6 pagos que chegaram foram todos da Jornada, todos viraram acesso. A
+correção ainda não foi vista com um UP1/UP2 de verdade.
+
+**Lembrete é o ponto fraco**: 1 em 10 dos que entraram ligou. Os `push_ativado`
+de produção (18 desde 28/10) vêm quase todos dos compradores novos do postback.
 
 ### Primeiras vendas pelo postback de produção (27 a 28/10)
 
