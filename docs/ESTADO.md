@@ -35,7 +35,7 @@ roteiro descreve.
 | 3. Publicar produção | **feita**: migration `0006`, seed, os 34 áudios e deploy. Conta do Leo criada com a Jornada manual e e-mail de boas-vindas com link de acesso enviado. **Testada pelo Leo no iPhone em 27/10**: entrou pelo link, dia 1 com áudio, lembrete (push de confirmação chegou) e Loja até o checkout. O banco registrou `lesson_started`, `lesson_completed`, `push_ativado`, `push_enviado`, `store_viewed`, `product_viewed` e `checkout_clicked` |
 | 4. Postback de produção | **feita em 27/10**: postback PayT V1 com todos os eventos cadastrado pelo Leo, `PAYT_INTEGRATION_KEY` de produção gravada. O teste da Payt (`PAYTS2`, `test: true`, `paid/paid`) chegou às 17:58 UTC, foi gravado com a chave mascarada (`"***"`) e **parou no passo 3 do §7**: sem erro, sem revisão, nenhum usuário, entitlement ou e-mail criado |
 | 5. Importação da base (.xlsx) | **feita em 27/10**: 1.421 usuários e 1.904 entitlements em produção, conferidos no banco contra o dry-run. Os dois relatórios foram para a Lixeira do Windows. Detalhes: O importador lê o `.xlsx` direto e liga o produto pelo **sku** (o relatório não traz o `product.code`). Dry-run em produção com o relatório de 27/10 até 09:20: ver "Importação da base". ver "Importação da base" |
-| 6. Ondas da campanha | **1ª (28/10)**: 50, modelo curto, 0 falhas — passou nos critérios. **2ª (29/10, 13:02–13:06 UTC)**: 100, modelo curto, 99 enviados e 1 falha (endereço com acento, `á` no começo: erro de digitação do cliente na Payt, falha permanente). **Balanço da 2ª (30/10)**: 0 pedidos para parar, mas só 11 entradas (critério: 20) — **a 3ª onda (200) não saiu**. Ver "Balanço das ondas" |
+| 6. Ondas da campanha | **1ª (28/10)**: 50, modelo curto, 0 falhas — passou nos critérios. **2ª (29/10, 13:02–13:06 UTC)**: 100, modelo curto, 99 enviados e 1 falha (endereço com acento, `á` no começo: erro de digitação do cliente na Payt, falha permanente). **Balanço da 2ª (30/10)**: 0 pedidos para parar, mas só 11 entradas (critério: 20). **3ª (30/10, 15:25–15:36 UTC)**: 200 pelo Gmail, modelo curto, **disparada por decisão do Leo mesmo com o critério de entradas abaixo**; 200 enviados, 0 falhas, em três chamadas (ver "Balanço das ondas"). Balanço da 3ª em 31/10, no mesmo horário |
 
 **O que estava na raiz antes:** uma página estacionada da Hostinger
 (`A jornadacomeuanjo.com → 2.57.91.91`, proxied) e um `CNAME www → raiz`. Os dois
@@ -186,8 +186,8 @@ vieram entre 24 h e 49 h, por código, sem o link), mas os pedidos para parar
 também (os 2 novos são de depois das 24 h).
 
 **Critérios do Leo na 2ª**: falhas 1% (< 5%) e 0 pedidos para parar (≤ 5)
-passaram; **entradas 11, abaixo de 20 — não passou**, e a onda de 200 **não
-saiu**. A taxa de entrada caiu pela metade (24% na 1ª, 11% na 2ª), e a 2ª
+passaram; **entradas 11, abaixo de 20 — não passou**. Com os números na mão, o
+**Leo decidiu disparar a 3ª mesmo assim** (abaixo). A taxa de entrada caiu pela metade (24% na 1ª, 11% na 2ª), e a 2ª
 pegou compras mais antigas (22 a 26/10, contra 26 a 28/10 na 1ª), porque a fila
 vai da compra mais recente para a mais antiga. Fila restante em 30/10: **1.005
 Gmail**, 129 Outlook/Hotmail/Live e 145 de outros provedores — uma onda de 200
@@ -199,6 +199,23 @@ pago (um upsell em `waiting_payment`), nenhum `purchase_from_app` — nem da Hom
 (`utm_medium=home`) nem da Loja — e nenhum `offer_viewed`/`offer_clicked` ainda.
 **Nenhum alerta de postback pago com falha** foi enviado até hoje, e a fila de
 revisão está vazia.
+
+**3ª onda (30/10, 200 pelo Gmail, modelo curto)**: 200 enviados, 0 falhas, todos
+Gmail, compras de 11 a 22/10. Fila depois dela: 805 Gmail, 129
+Outlook/Hotmail/Live, 145 outros. Balanço em 31/10 por volta das 15:30 UTC.
+
+**Armadilha: onda acima de ~100 estoura o timeout do script.** O envio é
+sequencial dentro de **uma** requisição (~20 por minuto), e o `fetch` do Node
+desiste de esperar o cabeçalho da resposta em **300 s**
+(`UND_ERR_HEADERS_TIMEOUT`). Quando o cliente cai, a Cloudflare **corta o
+Worker** junto: a chamada de 200 parou em **108**, sem resposta e sem erro no
+banco. Cada e-mail é gravado em `campaign_sends` logo depois de sair, então
+nada foi perdido nem duplicado (108 `email_enviado` = 108 linhas), e os 92
+restantes saíram em duas chamadas de 46. **Não rodar de novo às cegas depois de
+um timeout**: contar `campaign_sends` do dia primeiro. Como `ondaAnterior` é o
+total acumulado de enviados, dividir a onda em chamadas menores não muda o teto
+da próxima. A onda de 400 precisa sair em lotes de até ~50 — ou o script passa a
+fazer isso sozinho.
 
 ### Primeiras vendas pelo postback de produção (27 a 28/10)
 
