@@ -1,4 +1,4 @@
-# Estado do projeto — 29/10/2026
+# Estado do projeto — 30/10/2026
 
 Retrato para uma sessão nova continuar daqui. A spec é o [CLAUDE.md](../CLAUDE.md);
 este arquivo registra o que **não** cabe lá: o que já rodou, o que está só em
@@ -31,11 +31,11 @@ roteiro descreve.
 | Etapa | Estado |
 |---|---|
 | 1. Catálogo | **feita**: UP1 `oracao-sao-miguel` (`LPG38N`, R$ 197) e UP2 `jornada-cura-padre-pio` (`RAO7YD`, R$ 97) com checkout normal da Payt e no `payt_map` ao lado do `RVEEJ8`. O checkout sai **preenchido com `email` e `phone`** da conta (telefone só se houver; sem nome, o checkout não pede) |
-| 2. Chave de administração | **feita**: `ADMIN_API_KEY` de produção gerada de novo pela receita do §15, no Git Bash; cópia local como `ADMIN_API_KEY_PRODUCTION` no `.dev.vars`. Os VAPID de produção **tinham BOM nos três valores** e passam pela leitura (ver "Secrets") |
+| 2. Chave de administração | **feita**: `ADMIN_API_KEY` de produção gerada de novo pela receita do §15, no Git Bash; cópia local como `ADMIN_API_KEY_PRODUCTION` no `.dev.vars`. **Trocada de novo em 30/10** na máquina nova: a cópia da máquina anterior não vale mais (ver "Secrets"). Os VAPID de produção **tinham BOM nos três valores** e passam pela leitura (ver "Secrets") |
 | 3. Publicar produção | **feita**: migration `0006`, seed, os 34 áudios e deploy. Conta do Leo criada com a Jornada manual e e-mail de boas-vindas com link de acesso enviado. **Testada pelo Leo no iPhone em 27/10**: entrou pelo link, dia 1 com áudio, lembrete (push de confirmação chegou) e Loja até o checkout. O banco registrou `lesson_started`, `lesson_completed`, `push_ativado`, `push_enviado`, `store_viewed`, `product_viewed` e `checkout_clicked` |
 | 4. Postback de produção | **feita em 27/10**: postback PayT V1 com todos os eventos cadastrado pelo Leo, `PAYT_INTEGRATION_KEY` de produção gravada. O teste da Payt (`PAYTS2`, `test: true`, `paid/paid`) chegou às 17:58 UTC, foi gravado com a chave mascarada (`"***"`) e **parou no passo 3 do §7**: sem erro, sem revisão, nenhum usuário, entitlement ou e-mail criado |
 | 5. Importação da base (.xlsx) | **feita em 27/10**: 1.421 usuários e 1.904 entitlements em produção, conferidos no banco contra o dry-run. Os dois relatórios foram para a Lixeira do Windows. Detalhes: O importador lê o `.xlsx` direto e liga o produto pelo **sku** (o relatório não traz o `product.code`). Dry-run em produção com o relatório de 27/10 até 09:20: ver "Importação da base". ver "Importação da base" |
-| 6. Ondas da campanha | **1ª (28/10)**: 50, modelo curto, 0 falhas — passou nos critérios. **2ª (29/10, 13:02–13:06 UTC)**: 100, modelo curto, 99 enviados e 1 falha (endereço com acento, `á` no começo: erro de digitação do cliente na Payt, falha permanente). Ver "Balanço das ondas". Balanço da 2ª em 30/10, no mesmo horário |
+| 6. Ondas da campanha | **1ª (28/10)**: 50, modelo curto, 0 falhas — passou nos critérios. **2ª (29/10, 13:02–13:06 UTC)**: 100, modelo curto, 99 enviados e 1 falha (endereço com acento, `á` no começo: erro de digitação do cliente na Payt, falha permanente). **Balanço da 2ª (30/10)**: 0 pedidos para parar, mas só 11 entradas (critério: 20) — **a 3ª onda (200) não saiu**. Ver "Balanço das ondas" |
 
 **O que estava na raiz antes:** uma página estacionada da Hostinger
 (`A jornadacomeuanjo.com → 2.57.91.91`, proxied) e um `CNAME www → raiz`. Os dois
@@ -164,6 +164,41 @@ correção ainda não foi vista com um UP1/UP2 de verdade.
 
 **Lembrete é o ponto fraco**: 1 em 10 dos que entraram ligou. Os `push_ativado`
 de produção (18 desde 28/10) vêm quase todos dos compradores novos do postback.
+
+**2ª onda (29/10, 100 pelo Gmail, modelo curto, sem divisão)**, medida em 30/10
+às 15:20 UTC (~26 h). Nenhum dos 100 tinha boas-vindas. Na mesma consulta, a
+1ª onda com ~49 h:
+
+| | 2ª onda (100) | 1ª, 42 com 24 h → 49 h | 1ª, 8 com boas-vindas |
+|---|---|---|---|
+| Enviados / falhas | 99 / 1 | 42 / 0 | 8 / 0 |
+| Pediram para parar | 0 | 1 → **3** | 1 |
+| Entraram pelo link do e-mail | 10 | 9 → 9 | 1 |
+| Entraram por código | 1 | 2 → 4 | 1 |
+| **Entraram no app** (link ou código) | **11** | 10 → **12** | 2 |
+| Começaram o dia 1 | 4 | 5 → 9 | 2 |
+| Abriram a jornada (matrícula) | 5 | 7 → 10 | 6 |
+| Ligaram o lembrete | 0 | 1 → 1 | 1 |
+
+Conferido por `sessions`: as 11 entradas da 2ª são 11 sessões novas, todas nas
+primeiras 24 h. Na 1ª, a entrada **continua depois do primeiro dia** (2 das 12
+vieram entre 24 h e 49 h, por código, sem o link), mas os pedidos para parar
+também (os 2 novos são de depois das 24 h).
+
+**Critérios do Leo na 2ª**: falhas 1% (< 5%) e 0 pedidos para parar (≤ 5)
+passaram; **entradas 11, abaixo de 20 — não passou**, e a onda de 200 **não
+saiu**. A taxa de entrada caiu pela metade (24% na 1ª, 11% na 2ª), e a 2ª
+pegou compras mais antigas (22 a 26/10, contra 26 a 28/10 na 1ª), porque a fila
+vai da compra mais recente para a mais antiga. Fila restante em 30/10: **1.005
+Gmail**, 129 Outlook/Hotmail/Live e 145 de outros provedores — uma onda de 200
+com `--provedores gmail` ainda seria só Gmail.
+
+**Vendas de 29/10 00:00 a 30/10 12:20 (Brasília)**: 13 pagas reais, **todas da
+Jornada** (`RVEEJ8`, `type: order`), todas processadas sem erro. Nenhum UP1/UP2
+pago (um upsell em `waiting_payment`), nenhum `purchase_from_app` — nem da Home
+(`utm_medium=home`) nem da Loja — e nenhum `offer_viewed`/`offer_clicked` ainda.
+**Nenhum alerta de postback pago com falha** foi enviado até hoje, e a fila de
+revisão está vazia.
 
 ### Primeiras vendas pelo postback de produção (27 a 28/10)
 
@@ -486,7 +521,7 @@ RESEND_API_KEY           # só se MAIL_PROVIDER virar "resend"
 ### Produção — cadastrados
 
 ```
-ADMIN_API_KEY            # REGERADA em 27/10; cópia local ADMIN_API_KEY_PRODUCTION no .dev.vars
+ADMIN_API_KEY            # REGERADA em 30/10, na máquina nova; cópia local ADMIN_API_KEY_PRODUCTION no .dev.vars
 CAMPAIGN_SIGNING_KEY     # 23/10, sem cópia (só o Worker precisa dela)
 VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY / VAPID_SUBJECT   # par próprio de produção, 23/10
 ```
@@ -495,6 +530,13 @@ A `ADMIN_API_KEY` de 23/10 não tinha cópia e foi **substituída** em 27/10 pel
 receita do §15, no Git Bash: o mesmo comando grava o wrangler e acrescenta
 `ADMIN_API_KEY_PRODUCTION` ao `.dev.vars`, sem a chave passar pela tela. Os
 scripts escolhem a cópia pelo `--env`; a chave de staging em produção é 401.
+
+**Trocada de novo em 30/10**, pela mesma receita, para operar produção de outra
+máquina (clone em `C:\JDA`) sem copiar segredo de um computador para o outro. A
+`ADMIN_API_KEY_PRODUCTION` do `.dev.vars` da **máquina anterior deixou de valer**:
+lá, qualquer script de produção (campanha, reprocesso, concessão, exclusão) leva
+401 até a chave ser **gerada de novo naquela máquina** pela receita do §15 — o
+que, por sua vez, invalida a desta. Uma chave só vale numa máquina por vez.
 
 **Os três VAPID de produção têm BOM gravado** — o pipe do PowerShell de 23/10,
 o mesmo que sujou o staging. `GET /api/admin/vapid` em 27/10: pública 88 → 87,
