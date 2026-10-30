@@ -214,8 +214,11 @@ nada foi perdido nem duplicado (108 `email_enviado` = 108 linhas), e os 92
 restantes saíram em duas chamadas de 46. **Não rodar de novo às cegas depois de
 um timeout**: contar `campaign_sends` do dia primeiro. Como `ondaAnterior` é o
 total acumulado de enviados, dividir a onda em chamadas menores não muda o teto
-da próxima. A onda de 400 precisa sair em lotes de até ~50 — ou o script passa a
-fazer isso sozinho.
+da próxima. **Corrigido no mesmo dia**: o `campanha:anuncio` agora faz um
+dry-run com o total (o Worker confere a trava de onda e a cota) e manda em lotes
+de até 40 (`scripts/lib/lotes.ts`), somando a taxa de falha da onda inteira. Se
+a rede cair no meio, ele para e avisa para contar o `campaign_sends` antes de
+rodar de novo.
 
 ### Primeiras vendas pelo postback de produção (27 a 28/10)
 
