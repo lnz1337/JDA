@@ -4,7 +4,7 @@ Retrato para uma sessão nova continuar daqui. A spec é o [CLAUDE.md](../CLAUDE
 este arquivo registra o que **não** cabe lá: o que já rodou, o que está só em
 staging, o que depende do Leo e as armadilhas que custaram caro.
 
-`npm run typecheck && npm test` limpo, **421 testes** em 29 arquivos.
+`npm run typecheck && npm test` limpo, **457 testes** em 31 arquivos (31/10).
 
 ## Os dois ambientes
 

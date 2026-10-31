@@ -69,7 +69,8 @@ export interface SeedProdutos {
     description_md: string | null;
     notice: string | null;
     listed: number;
-    bundle_id: string;
+    /** null = produto avulso, fora de bundle (ex.: o bônus `presentes-sao-miguel`). */
+    bundle_id: string | null;
   }>;
   programs: Array<{
     id: string;
@@ -268,6 +269,9 @@ export function conferirFontes(
   }
 
   for (const p of produtos.products) {
+    // Sem bundle de propósito: o produto vale sozinho e só precisa estar no catálogo,
+    // o que a checagem de conteúdo acima já cobre.
+    if (p.bundle_id === null) continue;
     const bundle = noCatalogo.get(p.bundle_id);
     if (!bundle) {
       erros.push(`bundle_id '${p.bundle_id}' (de '${p.id}') não existe em seed/catalogo.json`);
@@ -421,10 +425,13 @@ export function gerarSeedSql(): { sql: string; comDuracao: number; semDuracao: s
     ['duration_s'],
   );
 
+  // Produto avulso (bundle_id null) não vira item de bundle nenhum.
+  const itens = produtos.products.flatMap((p) => (p.bundle_id === null ? [] : [{ ...p, bundle_id: p.bundle_id }]));
+
   const sqlItens = upsert(
     'bundle_items',
     ['bundle_id', 'product_id'],
-    produtos.products.map((p) => linha([p.bundle_id, p.id])),
+    itens.map((p) => linha([p.bundle_id, p.id])),
     'bundle_id, product_id',
   );
 
@@ -443,8 +450,8 @@ export function gerarSeedSql(): { sql: string; comDuracao: number; semDuracao: s
     `   AND id NOT IN (${idsLicoes.map(sql).join(', ')})\n` +
     `   AND id NOT IN (SELECT lesson_id FROM progress);`;
 
-  const bundles = [...new Set(produtos.products.map((p) => p.bundle_id))];
-  const pares = produtos.products.map((p) => `${p.bundle_id}|${p.id}`);
+  const bundles = [...new Set(itens.map((p) => p.bundle_id))];
+  const pares = itens.map((p) => `${p.bundle_id}|${p.id}`);
   const sqlLimpaItens =
     `DELETE FROM bundle_items\n` +
     ` WHERE bundle_id IN (${bundles.map(sql).join(', ')})\n` +

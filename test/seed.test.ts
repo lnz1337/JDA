@@ -28,9 +28,9 @@ describe('seed', () => {
     const primeira = await contagens();
 
     expect(primeira).toEqual({
-      products: 10,
-      programs: 6,
-      lessons: 41,
+      products: 11,
+      programs: 7,
+      lessons: 45,
       bundle_items: 5,
       payt_map: 3,
       payt_sku: 3,
@@ -129,9 +129,10 @@ describe('seed', () => {
     await aplicarSeed();
 
     const { results } = await env.DB.prepare(
-      `SELECT program_id, COUNT(*) AS total, SUM(summary IS NOT NULL) AS com_resumo
-         FROM lessons WHERE program_id != 'jornada-19'
-        GROUP BY program_id ORDER BY program_id`,
+      `SELECT l.program_id, COUNT(*) AS total, SUM(l.summary IS NOT NULL) AS com_resumo
+         FROM lessons l JOIN programs g ON g.id = l.program_id
+        WHERE g.product_id IN (SELECT product_id FROM bundle_items)
+        GROUP BY l.program_id ORDER BY l.program_id`,
     ).all<{ program_id: string; total: number; com_resumo: number }>();
 
     expect(results).toEqual([
@@ -141,6 +142,41 @@ describe('seed', () => {
       { program_id: 'mapa-prosperidade', total: 4, com_resumo: 4 },
       { program_id: 'oracao-gargano', total: 3, com_resumo: 3 },
     ]);
+  });
+
+  /*
+   * Bônus grátis de quem tem a jornada (30/10): existe no banco, fora de bundle,
+   * sem preço, sem checkout e fora da Loja. A regra de acesso vem depois, com a
+   * Home; até lá ninguém tem acesso a ele.
+   */
+  it('cria os Presentes de São Miguel como produto avulso, sem venda', async () => {
+    await aplicarSeed();
+
+    const produto = await env.DB.prepare(
+      `SELECT kind, price_cents, checkout_url, listed, requires_subscription, sort
+         FROM products WHERE id = 'presentes-sao-miguel'`,
+    ).first();
+    expect(produto).toEqual({
+      kind: 'program',
+      price_cents: null,
+      checkout_url: null,
+      listed: 0,
+      requires_subscription: 0,
+      sort: 95,
+    });
+
+    const licoes = await env.DB.prepare(
+      `SELECT COUNT(*) AS total, SUM(l.summary IS NOT NULL) AS com_resumo
+         FROM lessons l JOIN programs g ON g.id = l.program_id
+        WHERE g.product_id = 'presentes-sao-miguel'`,
+    ).first();
+    expect(licoes).toEqual({ total: 4, com_resumo: 4 });
+
+    const itens = await env.DB.prepare(
+      `SELECT COUNT(*) AS n FROM bundle_items
+        WHERE bundle_id = 'presentes-sao-miguel' OR product_id = 'presentes-sao-miguel'`,
+    ).first<{ n: number }>();
+    expect(itens?.n).toBe(0);
   });
 
   it('guarda o aviso obrigatório dos produtos de saúde', async () => {

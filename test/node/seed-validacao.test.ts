@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   type Catalogo,
   conferirFontes,
+  gerarSeedSql,
   type SeedJornada,
   type SeedProdutos,
 } from '../../scripts/seed-sql.ts';
@@ -115,6 +116,38 @@ describe('conferirFontes', () => {
     expect(() => conferirFontes(jornada, produtos, catalogo)).toThrow(
       /bundle_id 'bundle-que-nao-existe' \(de 'oracao-gargano'\) não existe em seed\/catalogo\.json/,
     );
+  });
+
+  /*
+   * Produto avulso, fora de bundle (o bônus `presentes-sao-miguel`, 30/10). O
+   * `bundle_id: null` virava a string 'null' na busca do catálogo e derrubava o
+   * seed inteiro — e com ele o `npm test`, que monta o seed na config.
+   */
+  it('aceita produto avulso, com bundle_id null', () => {
+    const { jornada, produtos, catalogo } = fontes();
+    produtos.products[0]!.bundle_id = null;
+
+    expect(() => conferirFontes(jornada, produtos, catalogo)).not.toThrow();
+  });
+
+  it('produto avulso ainda precisa estar no catálogo', () => {
+    const { jornada, produtos, catalogo } = fontes();
+    produtos.products[0]!.bundle_id = null;
+    catalogo.products.splice(1, 1);
+
+    expect(() => conferirFontes(jornada, produtos, catalogo)).toThrow(
+      /produto 'oracao-gargano' tem conteúdo mas não está em seed\/catalogo\.json/,
+    );
+  });
+
+  it('o seed de verdade gera produto avulso sem linha em bundle_items', () => {
+    const { sql } = gerarSeedSql();
+    const itens = sql.slice(sql.indexOf('INSERT INTO bundle_items'));
+    const fimItens = itens.indexOf(';');
+
+    expect(sql).toContain("'presentes-sao-miguel'");
+    expect(itens.slice(0, fimItens)).not.toContain('presentes-sao-miguel');
+    expect(itens.slice(0, fimItens)).not.toMatch(/\bNULL\b/);
   });
 
   it('recusa bundle_id que aponta para algo que não é bundle', () => {

@@ -97,6 +97,13 @@
       "checkout_url": null,
       "requires_subscription": 0,
       "sort": 94
+    },
+    {
+      "id": "presentes-sao-miguel",
+      "price_cents": null,
+      "checkout_url": null,
+      "requires_subscription": 0,
+      "sort": 95
     }
   ],
   "payt_map": {
