@@ -35,7 +35,7 @@ roteiro descreve.
 | 3. Publicar produção | **feita**: migration `0006`, seed, os 34 áudios e deploy. Conta do Leo criada com a Jornada manual e e-mail de boas-vindas com link de acesso enviado. **Testada pelo Leo no iPhone em 27/10**: entrou pelo link, dia 1 com áudio, lembrete (push de confirmação chegou) e Loja até o checkout. O banco registrou `lesson_started`, `lesson_completed`, `push_ativado`, `push_enviado`, `store_viewed`, `product_viewed` e `checkout_clicked` |
 | 4. Postback de produção | **feita em 27/10**: postback PayT V1 com todos os eventos cadastrado pelo Leo, `PAYT_INTEGRATION_KEY` de produção gravada. O teste da Payt (`PAYTS2`, `test: true`, `paid/paid`) chegou às 17:58 UTC, foi gravado com a chave mascarada (`"***"`) e **parou no passo 3 do §7**: sem erro, sem revisão, nenhum usuário, entitlement ou e-mail criado |
 | 5. Importação da base (.xlsx) | **feita em 27/10**: 1.421 usuários e 1.904 entitlements em produção, conferidos no banco contra o dry-run. Os dois relatórios foram para a Lixeira do Windows. Detalhes: O importador lê o `.xlsx` direto e liga o produto pelo **sku** (o relatório não traz o `product.code`). Dry-run em produção com o relatório de 27/10 até 09:20: ver "Importação da base". ver "Importação da base" |
-| 6. Ondas da campanha | **1ª (28/10)**: 50, modelo curto, 0 falhas — passou nos critérios. **2ª (29/10, 13:02–13:06 UTC)**: 100, modelo curto, 99 enviados e 1 falha (endereço com acento, `á` no começo: erro de digitação do cliente na Payt, falha permanente). **Balanço da 2ª (30/10)**: 0 pedidos para parar, mas só 11 entradas (critério: 20). **3ª (30/10, 15:25–15:36 UTC)**: 200 pelo Gmail, modelo curto, **disparada por decisão do Leo mesmo com o critério de entradas abaixo**; 200 enviados, 0 falhas, em três chamadas (ver "Balanço das ondas"). Balanço da 3ª em 31/10, no mesmo horário |
+| 6. Ondas da campanha | **1ª (28/10)**: 50, modelo curto, 0 falhas — passou nos critérios. **2ª (29/10, 13:02–13:06 UTC)**: 100, modelo curto, 99 enviados e 1 falha (endereço com acento, `á` no começo: erro de digitação do cliente na Payt, falha permanente). **Balanço da 2ª (30/10)**: 0 pedidos para parar, mas só 11 entradas (critério: 20). **3ª (30/10, 15:25–15:36 UTC)**: 200 pelo Gmail, modelo curto, **disparada por decisão do Leo mesmo com o critério de entradas abaixo**; 200 enviados, 0 falhas, em três chamadas (ver "Balanço das ondas"). **Balanço da 3ª (31/10)**: 0 falhas e 2 pedidos para parar, mas só 18 entradas (critério: 40) — **a 4ª onda (400) não saiu** |
 
 **O que estava na raiz antes:** uma página estacionada da Hostinger
 (`A jornadacomeuanjo.com → 2.57.91.91`, proxied) e um `CNAME www → raiz`. Os dois
@@ -199,6 +199,37 @@ pago (um upsell em `waiting_payment`), nenhum `purchase_from_app` — nem da Hom
 (`utm_medium=home`) nem da Loja — e nenhum `offer_viewed`/`offer_clicked` ainda.
 **Nenhum alerta de postback pago com falha** foi enviado até hoje, e a fila de
 revisão está vazia.
+
+**Balanço de 31/10, 15:26 UTC** (3ª onda com ~24 h, 2ª com ~50 h, 1ª com ~73 h):
+
+| | 3ª (200) | 2ª (100): 26 h → 50 h | 1ª, 42: 49 h → 73 h | 1ª, 8 com boas-vindas |
+|---|---|---|---|---|
+| Enviados / falhas | 200 / 0 | 99 / 1 | 42 / 0 | 8 / 0 |
+| Pediram para parar | 2 | 0 → 0 | 3 → 3 | 1 |
+| Entraram pelo link | 18 | 10 → 11 | 9 → 9 | 2 |
+| Entraram por código | 3 | 1 → 1 | 4 → 4 | 1 |
+| **Entraram no app** | **18** | 11 → **12** | 12 → 12 | 3 |
+| Começaram o dia 1 | 15 | 4 → 6 | 9 → 9 | 2 |
+| Abriram a jornada | 17 | 5 → 7 | 10 → 10 | 6 |
+| Ligaram o lembrete | 2 | 0 → 0 | 1 → 1 | 1 |
+
+Na 3ª, os 3 por código também tocaram no link, por isso 18 + 3 dá 18. A
+entrada depois do primeiro dia existe, mas é pequena: a 2ª ganhou 1 entre 26 h
+e 50 h, e a 1ª parou em 12 depois das 49 h. A taxa de entrada segue caindo com
+a idade da compra: 29% na 1ª, 12% na 2ª, 9% na 3ª.
+
+**Critérios do Leo na 3ª**: falhas 0% (< 5%) e 2 pedidos para parar (≤ 10)
+passaram; **entradas 18, abaixo de 40 — não passou**, e a onda de 400 **não
+saiu**. Fila: 804 Gmail, 129 Outlook/Hotmail/Live, 145 outros — uma onda de 400
+com `--provedores gmail` ainda seria só Gmail.
+
+**Vendas de 30/10 15:20 a 31/10 15:26 UTC**: 7 pagas reais, **todas da Jornada**
+(`order`), sem erro. UP1 (`LPG38N`) apareceu como upsell, mas sem pagar: 4
+cartões recusados e 2 Pix vencidos. Nenhum UP2. Nenhum `purchase_from_app`
+(Home ou Loja) e nenhum `offer_viewed`: só 2 matrículas chegam ao dia 5 hoje,
+que é quando o card do UP1 começa. Um **chargeback** (`KYMYD96`, Jornada) chegou
+às 09:14 e revogou o acesso, como manda o §7. **Nenhum alerta de postback pago
+com falha**, desde sempre, e a fila de revisão está vazia.
 
 **3ª onda (30/10, 200 pelo Gmail, modelo curto)**: 200 enviados, 0 falhas, todos
 Gmail, compras de 11 a 22/10. Fila depois dela: 805 Gmail, 129
