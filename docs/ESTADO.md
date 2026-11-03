@@ -35,7 +35,7 @@ roteiro descreve.
 | 3. Publicar produção | **feita**: migration `0006`, seed, os 34 áudios e deploy. Conta do Leo criada com a Jornada manual e e-mail de boas-vindas com link de acesso enviado. **Testada pelo Leo no iPhone em 27/10**: entrou pelo link, dia 1 com áudio, lembrete (push de confirmação chegou) e Loja até o checkout. O banco registrou `lesson_started`, `lesson_completed`, `push_ativado`, `push_enviado`, `store_viewed`, `product_viewed` e `checkout_clicked` |
 | 4. Postback de produção | **feita em 27/10**: postback PayT V1 com todos os eventos cadastrado pelo Leo, `PAYT_INTEGRATION_KEY` de produção gravada. O teste da Payt (`PAYTS2`, `test: true`, `paid/paid`) chegou às 17:58 UTC, foi gravado com a chave mascarada (`"***"`) e **parou no passo 3 do §7**: sem erro, sem revisão, nenhum usuário, entitlement ou e-mail criado |
 | 5. Importação da base (.xlsx) | **feita em 27/10**: 1.421 usuários e 1.904 entitlements em produção, conferidos no banco contra o dry-run. Os dois relatórios foram para a Lixeira do Windows. Detalhes: O importador lê o `.xlsx` direto e liga o produto pelo **sku** (o relatório não traz o `product.code`). Dry-run em produção com o relatório de 27/10 até 09:20: ver "Importação da base". ver "Importação da base" |
-| 6. Ondas da campanha | **1ª (28/10)**: 50, modelo curto, 0 falhas — passou nos critérios. **2ª (29/10, 13:02–13:06 UTC)**: 100, modelo curto, 99 enviados e 1 falha (endereço com acento, `á` no começo: erro de digitação do cliente na Payt, falha permanente). **Balanço da 2ª (30/10)**: 0 pedidos para parar, mas só 11 entradas (critério: 20). **3ª (30/10, 15:25–15:36 UTC)**: 200 pelo Gmail, modelo curto, **disparada por decisão do Leo mesmo com o critério de entradas abaixo**; 200 enviados, 0 falhas, em três chamadas (ver "Balanço das ondas"). **Balanço da 3ª (31/10)**: 0 falhas e 2 pedidos para parar, mas só 18 entradas (critério: 40). **4ª (31/10, 15:31–15:39 UTC)**: 400 pelo Gmail, modelo curto, **disparada por decisão do Leo mesmo com o critério de entradas abaixo**; 400 enviados, 0 falhas, a primeira em lotes (10 × 40). Balanço da 4ª em 01/11, no mesmo horário, separado por provedor |
+| 6. Ondas da campanha | **1ª (28/10)**: 50, modelo curto, 0 falhas — passou nos critérios. **2ª (29/10, 13:02–13:06 UTC)**: 100, modelo curto, 99 enviados e 1 falha (endereço com acento, `á` no começo: erro de digitação do cliente na Payt, falha permanente). **Balanço da 2ª (30/10)**: 0 pedidos para parar, mas só 11 entradas (critério: 20). **3ª (30/10, 15:25–15:36 UTC)**: 200 pelo Gmail, modelo curto, **disparada por decisão do Leo mesmo com o critério de entradas abaixo**; 200 enviados, 0 falhas, em três chamadas (ver "Balanço das ondas"). **Balanço da 3ª (31/10)**: 0 falhas e 2 pedidos para parar, mas só 18 entradas (critério: 40). **4ª (31/10, 15:31–15:39 UTC)**: 400 pelo Gmail, modelo curto, **disparada por decisão do Leo mesmo com o critério de entradas abaixo**; 400 enviados, 0 falhas, a primeira em lotes (10 × 40). Balanço da 4ª (03/11): 0 falhas, 6 pedidos para parar, 32 entradas. **5ª (03/11)**: os 404 Gmail restantes, 404 enviados, 0 falhas; o Gmail acabou, restam 129 Outlook/Hotmail/Live e 145 outros |
 
 **O que estava na raiz antes:** uma página estacionada da Hostinger
 (`A jornadacomeuanjo.com → 2.57.91.91`, proxied) e um `CNAME www → raiz`. Os dois
@@ -269,6 +269,19 @@ Outlook/Hotmail/Live, 145 outros.**
 2. **A `ADMIN_API_KEY_PRODUCTION` daqui é a anterior a 30/10**: o Worker
    responde `nao_autorizado`. Nada foi enviado (`campaign_sends` de 03/11 = 0,
    total 750).
+
+**Resolvido no mesmo dia, com o ok do Leo**: a `ADMIN_API_KEY` de produção foi
+**gerada de novo nesta máquina** (`C:\JDA.PWA`), substituindo a linha antiga do
+`.dev.vars` em vez de acrescentar outra — a receita do §15 faz `appendFileSync`,
+e o leitor fica com a **primeira** linha do nome, ou seja, a velha. **A cópia da
+máquina nova (`C:\JDA`) deixou de valer** e dá 401 até ser gerada lá de novo.
+
+**5ª onda (03/11, 14:15–14:19 UTC)**: os **404 Gmail restantes**, modelo curto,
+11 lotes, **404 enviados e 0 falhas**, pela rota alternativa (borda `104.16.0.1`).
+Conferido: 404 linhas em `campaign_sends`, 404 `email_enviado` de campanha.
+**O Gmail acabou.** Fila: **129 Outlook/Hotmail/Live e 145 outros** — a próxima
+onda é decisão do Leo, porque o Outlook manda o domínio novo para o lixo
+eletrônico. Balanço da 5ª em 04/11.
 
 **3ª onda (30/10, 200 pelo Gmail, modelo curto)**: 200 enviados, 0 falhas, todos
 Gmail, compras de 11 a 22/10. Fila depois dela: 805 Gmail, 129
