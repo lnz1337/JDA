@@ -240,6 +240,36 @@ que é quando o card do UP1 começa. Um **chargeback** (`KYMYD96`, Jornada) cheg
 às 09:14 e revogou o acesso, como manda o §7. **Nenhum alerta de postback pago
 com falha**, desde sempre, e a fila de revisão está vazia.
 
+**Balanço da 4ª (03/11, ~3 dias depois do envio)**, nos 400:
+
+| | 4ª (400) |
+|---|---|
+| Enviados / falhas | 400 / 0 |
+| Pediram para parar | 6 (1,5%) |
+| Entraram no app (link ou código) | **32** (8%) |
+| Começaram o dia 1 | 26 |
+| Ligaram o lembrete | 6 |
+
+Na mesma consulta: **nenhum alerta de postback pago com falha**, fila de revisão
+vazia, 15 opt-outs no total da campanha. **Os dois primeiros upsells reais
+depois da correção do link viraram acesso**: `JXZAVDP` (UP1) e `NPW6EQE`
+(UP2). O card de oferta já foi visto (40 `offer_viewed`), mas ainda sem
+`offer_clicked` nem `purchase_from_app`. **Fila em 03/11: 404 Gmail, 129
+Outlook/Hotmail/Live, 145 outros.**
+
+**5ª onda (03/11) não saiu, por dois motivos desta máquina (`C:\JDA.PWA`)**:
+
+1. **A rede local não alcança os IPs da zona** `jornadacomeuanjo.com`
+   (172.67.169.69 e 104.21.27.120, também em IPv6): conexão recusada,
+   enquanto o `workers.dev` e o resto da Cloudflare respondem. **O site está
+   no ar para os usuários** (19 eventos na última hora, postbacks chegando);
+   é a rota desta rede. A borda `104.16.0.1` atende o domínio pelo SNI, e um
+   `--require` que resolve o domínio para ela, só na execução do script,
+   contornou o problema sem mexer no sistema.
+2. **A `ADMIN_API_KEY_PRODUCTION` daqui é a anterior a 30/10**: o Worker
+   responde `nao_autorizado`. Nada foi enviado (`campaign_sends` de 03/11 = 0,
+   total 750).
+
 **3ª onda (30/10, 200 pelo Gmail, modelo curto)**: 200 enviados, 0 falhas, todos
 Gmail, compras de 11 a 22/10. Fila depois dela: 805 Gmail, 129
 Outlook/Hotmail/Live, 145 outros. Balanço em 31/10 por volta das 15:30 UTC.
