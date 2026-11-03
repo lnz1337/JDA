@@ -637,11 +637,19 @@ para staging e `ADMIN_API_KEY_PRODUCTION` para produção (`chaveAdmin` em
 separado é só da cópia local, para guardar uma não apagar a outra.
 
 Para produção, a receita grava o wrangler e a cópia local de uma vez, sem a
-chave passar pela tela:
+chave passar pela tela. **Ela troca a linha `ADMIN_API_KEY_PRODUCTION=` que já
+existir**, em vez de acrescentar outra: o leitor dos scripts fica com a
+**primeira** linha do nome, e a receita antiga (`appendFileSync`) deixava a chave
+velha valendo na cópia local — o Worker respondia 401 e parecia que a chave nova
+não tinha pegado (03/11). Sem `!` no comando de propósito: no Git Bash
+interativo, `!` entre aspas duplas vira expansão de histórico.
 
 ```bash
-node -e "const k=require('crypto').randomBytes(32).toString('hex'); require('fs').appendFileSync('.dev.vars', '\nADMIN_API_KEY_PRODUCTION='+k+'\n'); process.stdout.write(k)" | npx wrangler secret put ADMIN_API_KEY --env production
+node -e "const fs=require('fs'),k=require('crypto').randomBytes(32).toString('hex'),l=fs.existsSync('.dev.vars')?fs.readFileSync('.dev.vars','utf8').split(/\r?\n/).filter(x=>x&&x.indexOf('ADMIN_API_KEY_PRODUCTION=')<0):[];fs.writeFileSync('.dev.vars',[...l,'ADMIN_API_KEY_PRODUCTION='+k,''].join('\n'));process.stdout.write(k)" | npx wrangler secret put ADMIN_API_KEY --env production
 ```
+
+**Uma chave só vale numa máquina por vez.** Gerar de novo numa máquina invalida a
+cópia da outra, que passa a dar 401 até ser gerada lá.
 
 Rede de segurança, não substituto da receita: todo segredo do Worker é lido por
 `src/worker/lib/segredos.ts` e todo segredo dos scripts por

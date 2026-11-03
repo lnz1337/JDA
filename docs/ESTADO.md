@@ -272,8 +272,8 @@ Outlook/Hotmail/Live, 145 outros.**
 
 **Resolvido no mesmo dia, com o ok do Leo**: a `ADMIN_API_KEY` de produção foi
 **gerada de novo nesta máquina** (`C:\JDA.PWA`), substituindo a linha antiga do
-`.dev.vars` em vez de acrescentar outra — a receita do §15 faz `appendFileSync`,
-e o leitor fica com a **primeira** linha do nome, ou seja, a velha. **A cópia da
+`.dev.vars` em vez de acrescentar outra — a receita do §15 fazia `appendFileSync`,
+e o leitor fica com a **primeira** linha do nome, ou seja, a velha. **A receita foi corrigida em 03/11** para trocar a linha que já existir. **A cópia da
 máquina nova (`C:\JDA`) deixou de valer** e dá 401 até ser gerada lá de novo.
 
 **5ª onda (03/11, 14:15–14:19 UTC)**: os **404 Gmail restantes**, modelo curto,
