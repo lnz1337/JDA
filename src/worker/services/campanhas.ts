@@ -52,7 +52,10 @@ export interface RelatorioCampanha {
   taxaFalha: number;
   parouPorFalha: boolean;
   limite: number;
-  ondaAnterior: number;
+  /** Maior volume de e-mail do domínio num dia, nos 14 dias antes de hoje. */
+  maiorDia: number;
+  /** Quanto o domínio pode mandar hoje: o dobro do maior dia, com piso. */
+  tetoDoDia: number;
   dryRun: boolean;
   provedores: string[];
   modelo: ModeloAnuncio;
@@ -77,23 +80,48 @@ export async function conferirAssinaturaParar(
   return (await hmacHex(chave, `parar:${userId}`)) === token;
 }
 
-/** Quantos e-mails já saíram hoje (qualquer tipo), para a cota da conta. */
-export async function enviadosHoje(db: D1Database): Promise<number> {
-  const inicioDoDia = `${new Date().toISOString().slice(0, 10)}T00:00:00.000Z`;
-  const r = await db
-    .prepare("SELECT COUNT(*) AS n FROM events WHERE name = 'email_enviado' AND created_at >= ?")
-    .bind(inicioDoDia)
-    .first<{ n: number }>();
-  return r?.n ?? 0;
-}
 
-/** Quanto a última onda desta campanha enviou. */
-export async function ondaAnterior(db: D1Database, campanha: string): Promise<number> {
+/**
+ * A trava de volume é **do domínio, por dia**, não da campanha (§14).
+ *
+ * Quem o Gmail e o Outlook avaliam é o domínio de envio, não a campanha: um
+ * lembrete que começasse do zero não seria um domínio novo. Até 04/11 a trava
+ * contava por campanha, pelo total acumulado, e campanha nova — com 0 — não
+ * tinha teto nenhum além da cota.
+ *
+ * O teto de hoje é **o dobro do maior dia dos últimos 14**, contando todo
+ * `email_enviado` (campanha, login e boas-vindas). Hoje fica de fora da conta do
+ * maior dia: senão cada lote enviado subiria o teto do próprio dia. Em vez
+ * disso, **o que já saiu hoje conta contra o teto**, e várias chamadas no mesmo
+ * dia somam. Os 14 dias fazem o teto baixar sozinho depois de uma pausa,
+ * porque a reputação também esfria. Sem histórico, vale o piso da primeira onda.
+ */
+export const DIAS_DO_HISTORICO = 14;
+export const PISO_DA_ONDA = 50;
+
+export async function volumeDoDominio(
+  db: D1Database,
+  agora = agoraIso(),
+): Promise<{ maiorDia: number; hoje: number; tetoDoDia: number }> {
+  const inicioDeHoje = `${agora.slice(0, 10)}T00:00:00.000Z`;
+  const inicioDoHistorico = somarDias(inicioDeHoje, -DIAS_DO_HISTORICO) ?? inicioDeHoje;
+
   const r = await db
-    .prepare("SELECT COUNT(*) AS n FROM campaign_sends WHERE campaign = ? AND status = 'sent'")
-    .bind(campanha)
+    .prepare(
+      `SELECT COALESCE(MAX(n), 0) AS maior FROM (
+         SELECT COUNT(*) AS n FROM events
+          WHERE name = 'email_enviado' AND created_at >= ? AND created_at < ?
+          GROUP BY substr(created_at, 1, 10))`,
+    )
+    .bind(inicioDoHistorico, inicioDeHoje)
+    .first<{ maior: number }>();
+  const hoje = await db
+    .prepare("SELECT COUNT(*) AS n FROM events WHERE name = 'email_enviado' AND created_at >= ?")
+    .bind(inicioDeHoje)
     .first<{ n: number }>();
-  return r?.n ?? 0;
+
+  const maiorDia = r?.maior ?? 0;
+  return { maiorDia, hoje: hoje?.n ?? 0, tetoDoDia: Math.max(PISO_DA_ONDA, maiorDia * 2) };
 }
 
 
@@ -295,22 +323,24 @@ export async function enviarCampanha(
   if (!aceitos.includes(modelo)) {
     throw new Error(`a campanha ${campanha} não usa o modelo ${modelo}. Vale: ${aceitos.join(', ')}`);
   }
-  const anterior = await ondaAnterior(env.DB, campanha);
   const erros: string[] = [];
 
-  // Onda só pode dobrar. Domínio novo que dispara 1.000 de uma vez vira spam.
-  const tetoOnda = anterior === 0 ? limite : anterior * 2;
+  // Volume só pode dobrar, e quem conta é o domínio, não a campanha. Domínio
+  // novo que dispara 1.000 de uma vez vira spam.
+  const volume = await volumeDoDominio(env.DB);
+  const jaHoje = volume.hoje;
+  const tetoVolume = volume.tetoDoDia - jaHoje;
 
   // E a cota do dia é da conta inteira: o que sobra para campanha é o total
   // menos o que já saiu hoje menos a reserva do transacional.
-  const jaHoje = await enviadosHoje(env.DB);
   const tetoCota = COTA_DIARIA - RESERVA_TRANSACIONAL - jaHoje;
 
-  const teto = Math.min(tetoOnda, tetoCota);
+  const teto = Math.min(tetoVolume, tetoCota);
   if (limite > teto) {
     throw new Error(
       `limite ${limite} acima do máximo agora, que é ${Math.max(teto, 0)}. ` +
-        `Onda anterior: ${anterior} (teto ${tetoOnda}). ` +
+        `Volume do domínio: maior dia dos últimos ${DIAS_DO_HISTORICO} = ${volume.maiorDia}, ` +
+        `teto do dia ${volume.tetoDoDia}, ${jaHoje} já enviado(s) hoje (sobram ${Math.max(tetoVolume, 0)}). ` +
         `Cota do dia: ${COTA_DIARIA} no total, ${jaHoje} já enviado(s), ` +
         `${RESERVA_TRANSACIONAL} reservado(s) para login e boas-vindas (teto ${tetoCota}).`,
     );
@@ -412,7 +442,8 @@ export async function enviarCampanha(
     taxaFalha: feitos === 0 ? 0 : falhas / feitos,
     parouPorFalha,
     limite,
-    ondaAnterior: anterior,
+    maiorDia: volume.maiorDia,
+    tetoDoDia: volume.tetoDoDia,
     dryRun,
     provedores: opcoes.provedores ?? [],
     modelo,

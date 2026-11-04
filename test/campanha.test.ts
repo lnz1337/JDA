@@ -153,55 +153,76 @@ describe('seleção', () => {
   });
 });
 
-describe('ondas', () => {
-  it('a primeira onda define o tamanho', async () => {
-    for (let i = 1; i <= 3; i += 1) await criarComprador(i);
+/**
+ * E-mails enviados num dia, de qualquer tipo: é o volume que a trava lê.
+ * Centenas de linhas num comando só: uma por uma estoura o tempo do teste.
+ */
+async function marcarEnviados(n: number, quando: string): Promise<void> {
+  await env.DB.prepare(
+    `INSERT INTO events (id, name, props_json, created_at)
+     WITH RECURSIVE contador(i) AS (
+       SELECT 1 UNION ALL SELECT i + 1 FROM contador WHERE i < ?
+     )
+     SELECT 'ev-' || ? || '-' || i, 'email_enviado', '{}', ? FROM contador`,
+  )
+    .bind(n, quando, quando)
+    .run();
+}
 
-    const res = await chamar('/api/campanha/enviar', {
-      method: 'POST',
-      headers: comChave(),
-      body: JSON.stringify({ campanha: CAMPANHA, limite: 50, dry_run: true }),
-    });
-    expect(res.status).toBe(200);
+const diasAtras = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString();
+
+async function disparar(corpo: Record<string, unknown>): Promise<Response> {
+  return chamar('/api/campanha/enviar', {
+    method: 'POST',
+    headers: comChave(),
+    body: JSON.stringify({ campanha: CAMPANHA, dry_run: true, ...corpo }),
+  });
+}
+
+describe('volume do domínio (trava de onda)', () => {
+  it('sem histórico, vale o piso da primeira onda (50)', async () => {
+    await criarComprador(1);
+    expect((await disparar({ limite: 50 })).status).toBe(200);
+    expect((await disparar({ limite: 51 })).status).toBe(400);
   });
 
-  it('recusa limite maior que o dobro da onda anterior', async () => {
-    const id = await criarComprador(1);
-    await env.DB.prepare(
-      `INSERT INTO campaign_sends (campaign, user_id, status, sent_at) VALUES (?, ?, 'sent', ?)`,
-    )
-      .bind(CAMPANHA, id, new Date().toISOString())
-      .run();
+  it('o teto é o dobro do maior dia dos últimos 14', async () => {
+    await criarComprador(1);
+    await marcarEnviados(60, diasAtras(1));
+    await marcarEnviados(30, diasAtras(3));
 
-    // Onda anterior: 1 envio. Teto: 2.
-    const res = await chamar('/api/campanha/enviar', {
-      method: 'POST',
-      headers: comChave(),
-      body: JSON.stringify({ campanha: CAMPANHA, limite: 10 }),
-    });
-
+    expect((await disparar({ limite: 120 })).status).toBe(200);
+    const res = await disparar({ limite: 121 });
     expect(res.status).toBe(400);
     const corpo = (await res.json()) as { error: string };
-    // A mensagem diz o teto efetivo e de onde ele veio: onda e cota do dia.
-    expect(corpo.error).toContain('máximo agora, que é 2');
-    expect(corpo.error).toContain('Onda anterior: 1');
-    expect(corpo.error).toContain('Cota do dia: 1000');
+    // A mensagem diz de onde veio o teto.
+    expect(corpo.error).toContain('máximo agora, que é 120');
+    expect(corpo.error).toContain('maior dia dos últimos 14 = 60');
   });
 
-  it('aceita exatamente o dobro', async () => {
-    const id = await criarComprador(1);
-    await env.DB.prepare(
-      `INSERT INTO campaign_sends (campaign, user_id, status, sent_at) VALUES (?, ?, 'sent', ?)`,
-    )
-      .bind(CAMPANHA, id, new Date().toISOString())
-      .run();
+  it('o que já saiu hoje conta contra o teto do dia', async () => {
+    await criarComprador(1);
+    await marcarEnviados(60, diasAtras(1));
+    await marcarEnviados(30, new Date().toISOString());
 
-    const res = await chamar('/api/campanha/enviar', {
-      method: 'POST',
-      headers: comChave(),
-      body: JSON.stringify({ campanha: CAMPANHA, limite: 2, dry_run: true }),
-    });
+    // Teto 120, 30 já saíram: sobram 90. Hoje não sobe o próprio teto.
+    expect((await disparar({ limite: 90 })).status).toBe(200);
+    expect((await disparar({ limite: 91 })).status).toBe(400);
+  });
+
+  it('dia fora da janela de 14 não conta', async () => {
+    await criarComprador(1);
+    await marcarEnviados(400, diasAtras(15));
+    expect((await disparar({ limite: 51 })).status).toBe(400);
+  });
+
+  it('campanha nova não recomeça do zero: conta o domínio', async () => {
+    await criarComprador(1);
+    // 400 do anúncio ontem: o lembrete, que nunca enviou nada, pode mandar 800.
+    await marcarEnviados(400, diasAtras(1));
+    const res = await disparar({ campanha: 'lembrete-app', limite: 400 });
     expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({ maiorDia: 400, tetoDoDia: 800 });
   });
 });
 
@@ -399,17 +420,13 @@ describe('separação de credenciais', () => {
 });
 
 describe('cota diária', () => {
-  /** Centenas de linhas num comando só: uma por uma estoura o tempo do teste. */
+  /**
+   * 650 hoje e um dia de 500 ontem: a trava de volume (teto 1.000) fica folgada
+   * e o que limita é só a cota.
+   */
   async function marcarEnviadosHoje(n: number): Promise<void> {
-    await env.DB.prepare(
-      `INSERT INTO events (id, name, props_json, created_at)
-       WITH RECURSIVE contador(i) AS (
-         SELECT 1 UNION ALL SELECT i + 1 FROM contador WHERE i < ?
-       )
-       SELECT 'ev-' || i, 'email_enviado', '{}', ? FROM contador`,
-    )
-      .bind(n, new Date().toISOString())
-      .run();
+    await marcarEnviados(500, diasAtras(1));
+    await marcarEnviados(n, new Date().toISOString());
   }
 
   it('reserva 300 envios para o transacional', async () => {
