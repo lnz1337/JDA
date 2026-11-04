@@ -80,7 +80,6 @@ export async function conferirAssinaturaParar(
   return (await hmacHex(chave, `parar:${userId}`)) === token;
 }
 
-
 /**
  * A trava de volume é **do domínio, por dia**, não da campanha (§14).
  *
@@ -123,7 +122,6 @@ export async function volumeDoDominio(
   const maiorDia = r?.maior ?? 0;
   return { maiorDia, hoje: hoje?.n ?? 0, tetoDoDia: Math.max(PISO_DA_ONDA, maiorDia * 2) };
 }
-
 
 /**
  * Monta a prioridade por provedor. Os domínios vão como parâmetro; só a posição
@@ -194,11 +192,16 @@ export const DIAS_ATE_O_LEMBRETE = 7;
  *
  * - `anuncio-app`: fora quem já recebeu as boas-vindas (abaixo).
  * - `lembrete-app`: só quem recebeu o anúncio há pelo menos 7 dias e **nunca
- *   entrou** — nenhum link de acesso usado, nenhum código de login usado,
- *   nenhuma sessão. A sessão sozinha não basta: "Sair do app" apaga a linha, e
- *   quem entrou e saiu não pode receber "você ainda não entrou".
+ *   entrou** — nenhum link de acesso usado, nenhum código de login usado (o
+ *   que vale para quem entrou antes de 04/11), nenhum `login` em `events` (a
+ *   entrada sem código) e nenhuma sessão. A sessão sozinha não basta: "Sair do
+ *   app" apaga a linha, e quem entrou e saiu não pode receber "você ainda não
+ *   entrou".
  */
-function filtroDaCampanha(campanha: NomeCampanha, agora: string): { sql: string; valores: string[] } {
+function filtroDaCampanha(
+  campanha: NomeCampanha,
+  agora: string,
+): { sql: string; valores: string[] } {
   if (campanha === 'lembrete-app') {
     return {
       sql: `AND EXISTS (
@@ -209,7 +212,8 @@ function filtroDaCampanha(campanha: NomeCampanha, agora: string): { sql: string;
           AND NOT EXISTS (SELECT 1 FROM access_links l WHERE l.user_id = u.id AND l.used_at IS NOT NULL)
           AND NOT EXISTS (
                 SELECT 1 FROM login_codes c
-                 WHERE c.user_id = u.id AND c.purpose = 'login' AND c.used_at IS NOT NULL)`,
+                 WHERE c.user_id = u.id AND c.purpose = 'login' AND c.used_at IS NOT NULL)
+          AND NOT EXISTS (SELECT 1 FROM events e WHERE e.user_id = u.id AND e.name = 'login')`,
       valores: [somarDias(agora, -DIAS_ATE_O_LEMBRETE) ?? agora],
     };
   }
@@ -316,12 +320,16 @@ export async function enviarCampanha(
   const { limite, dryRun } = opcoes;
   const campanha = opcoes.campanha;
   if (!ehCampanha(campanha)) {
-    throw new Error(`campanha desconhecida: ${campanha}. Vale: ${Object.keys(CAMPANHAS).join(', ')}`);
+    throw new Error(
+      `campanha desconhecida: ${campanha}. Vale: ${Object.keys(CAMPANHAS).join(', ')}`,
+    );
   }
   const aceitos: readonly ModeloAnuncio[] = CAMPANHAS[campanha].modelos;
   const modelo = opcoes.modelo ?? aceitos[0]!;
   if (!aceitos.includes(modelo)) {
-    throw new Error(`a campanha ${campanha} não usa o modelo ${modelo}. Vale: ${aceitos.join(', ')}`);
+    throw new Error(
+      `a campanha ${campanha} não usa o modelo ${modelo}. Vale: ${aceitos.join(', ')}`,
+    );
   }
   const erros: string[] = [];
 
@@ -388,7 +396,9 @@ export async function enviarCampanha(
         .join('\n'),
       // Usuário de verdade ganha link assinado, mesmo em teste.
       link_parar:
-        d.user_id === 'teste' ? `${env.APP_URL}/parar?u=teste&t=invalido` : await linkParar(env, d.user_id),
+        d.user_id === 'teste'
+          ? `${env.APP_URL}/parar?u=teste&t=invalido`
+          : await linkParar(env, d.user_id),
       email_suporte: env.SUPPORT_EMAIL ?? '',
     };
 
@@ -419,7 +429,14 @@ export async function enviarCampanha(
     }
 
     if (!opcoes.testePara) {
-      await registrar(env.DB, campanha, d.user_id, r.ok ? 'sent' : 'failed', r.erro ?? null, modelo);
+      await registrar(
+        env.DB,
+        campanha,
+        d.user_id,
+        r.ok ? 'sent' : 'failed',
+        r.erro ?? null,
+        modelo,
+      );
     }
 
     const feitos = enviados + falhas;

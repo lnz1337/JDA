@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { Oferta, Programa } from '../../shared/types';
+import { primeiroNome } from '../../shared/nome';
 import { Arte } from '../components/Visual';
 import { api, registrarEvento, type Me } from '../lib/api';
 import { permissaoDeNotificacao } from '../lib/dispositivo';
@@ -23,7 +24,8 @@ export function Home({ me, aoSair }: { me: Me; aoSair: () => void }) {
       .catch(() => setErro(true));
   }, []);
 
-  const primeiro = me.usuario.nome?.split(' ')[0];
+  // "ELIANA" da Payt aparece como "Eliana"; o que está gravado não muda.
+  const primeiro = primeiroNome(me.usuario.nome);
   const jornada = programas?.find((p) => p.unlock_rule === 'daily');
   const outros = programas?.filter((p) => p.unlock_rule !== 'daily') ?? [];
 

@@ -17,7 +17,7 @@ export function SemAcesso({ suporte, aoSair }: { suporte: string | null; aoSair:
         <p>Isso costuma acontecer por um destes motivos:</p>
         <ul className="list-disc space-y-1 pl-5">
           <li>a compra acabou de ser feita e ainda está sendo confirmada;</li>
-          <li>a compra foi feita com outro e-mail;</li>
+          <li>a compra foi feita com outro e-mail ou outro celular;</li>
           <li>o acesso foi encerrado por reembolso.</li>
         </ul>
         {suporte && (

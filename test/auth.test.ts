@@ -64,207 +64,12 @@ function cookieDa(res: Response): string {
 
 beforeEach(prepararBanco);
 
-describe('pedir código', () => {
-  it('responde igual para e-mail que existe e que não existe', async () => {
-    await criarUsuario();
-
-    const existe = await chamar('/api/auth/codigo', {
-      method: 'POST',
-      body: JSON.stringify({ email: EMAIL }),
-    });
-    const naoExiste = await chamar('/api/auth/codigo', {
-      method: 'POST',
-      body: JSON.stringify({ email: 'ninguem@exemplo.com.br' }),
-    });
-
-    expect(existe.status).toBe(naoExiste.status);
-    expect(await existe.json()).toEqual(await naoExiste.json());
-  });
-
-  it('só cria código para quem existe', async () => {
-    const id = await criarUsuario();
-
-    await chamar('/api/auth/codigo', { method: 'POST', body: JSON.stringify({ email: EMAIL }) });
-    await chamar('/api/auth/codigo', {
-      method: 'POST',
-      body: JSON.stringify({ email: 'ninguem@exemplo.com.br' }),
-    });
-
-    const { results } = await env.DB.prepare('SELECT user_id FROM login_codes').all<{
-      user_id: string;
-    }>();
-    expect(results.map((r) => r.user_id)).toEqual([id]);
-  });
-
-  it('guarda o código com hash, nunca em claro', async () => {
-    const id = await criarUsuario();
-    await chamar('/api/auth/codigo', { method: 'POST', body: JSON.stringify({ email: EMAIL }) });
-
-    const codigo = await fixarCodigo(id);
-    const linha = await env.DB.prepare('SELECT code_hash FROM login_codes WHERE user_id = ?')
-      .bind(id)
-      .first<{ code_hash: string }>();
-
-    expect(linha?.code_hash).not.toContain(codigo);
-    expect(linha?.code_hash).toHaveLength(64); // sha256 em hex
-  });
-
-  it('recusa e-mail malformado', async () => {
-    const res = await chamar('/api/auth/codigo', {
-      method: 'POST',
-      body: JSON.stringify({ email: 'nao-e-email' }),
-    });
-    expect(res.status).toBe(400);
-  });
-
-  it('limita a 5 pedidos por hora para o mesmo e-mail', async () => {
-    const id = await criarUsuario();
-
-    for (let i = 0; i < 7; i += 1) {
-      await chamar('/api/auth/codigo', {
-        method: 'POST',
-        body: JSON.stringify({ email: EMAIL }),
-        ip: `10.0.0.${i}`, // IP diferente a cada vez: o limite testado é o do e-mail
-      });
-    }
-
-    const r = await env.DB.prepare('SELECT COUNT(*) AS n FROM login_codes WHERE user_id = ?')
-      .bind(id)
-      .first<{ n: number }>();
-    expect(r?.n).toBe(5);
-  });
-
-  it('limita a 5 pedidos por hora para o mesmo IP', async () => {
-    for (let i = 0; i < 7; i += 1) {
-      await criarUsuario(`p${i}@exemplo.com.br`, 'Pessoa');
-      await chamar('/api/auth/codigo', {
-        method: 'POST',
-        body: JSON.stringify({ email: `p${i}@exemplo.com.br` }),
-        ip: '203.0.113.9',
-      });
-    }
-
-    const r = await env.DB.prepare('SELECT COUNT(*) AS n FROM login_codes').first<{ n: number }>();
-    expect(r?.n).toBe(5);
-  });
-
-  it('registra o envio em events, sem o código', async () => {
-    const id = await criarUsuario();
-    await chamar('/api/auth/codigo', { method: 'POST', body: JSON.stringify({ email: EMAIL }) });
-
-    const codigo = await fixarCodigo(id);
-    const linha = await env.DB.prepare(
-      "SELECT name, props_json FROM events WHERE name LIKE 'email_%'",
-    ).first<{ name: string; props_json: string }>();
-
-    expect(linha?.name).toMatch(/^email_(enviado|falhou)$/);
-    expect(JSON.parse(linha?.props_json ?? '{}')).toMatchObject({ tipo: 'codigo_login' });
-    expect(linha?.props_json).not.toContain(codigo);
-  });
-});
-
-describe('entrar', () => {
-  it('entra com o código e abre sessão', async () => {
-    const id = await criarUsuario();
-    await chamar('/api/auth/codigo', { method: 'POST', body: JSON.stringify({ email: EMAIL }) });
-    const codigo = await fixarCodigo(id);
-
-    const res = await chamar('/api/auth/entrar', {
-      method: 'POST',
-      body: JSON.stringify({ email: EMAIL, codigo }),
-    });
-
-    expect(res.status).toBe(200);
-    const cookie = res.headers.get('set-cookie') ?? '';
-    expect(cookie).toContain('HttpOnly');
-    expect(cookie).toContain('Secure');
-    expect(cookie).toContain('SameSite=Lax');
-
-    const sessoes = await env.DB.prepare('SELECT user_id FROM sessions').first<{
-      user_id: string;
-    }>();
-    expect(sessoes?.user_id).toBe(id);
-  });
-
-  it('marca o código como usado', async () => {
-    const id = await criarUsuario();
-    await chamar('/api/auth/codigo', { method: 'POST', body: JSON.stringify({ email: EMAIL }) });
-    const codigo = await fixarCodigo(id);
-
-    await chamar('/api/auth/entrar', {
-      method: 'POST',
-      body: JSON.stringify({ email: EMAIL, codigo }),
-    });
-    const segunda = await chamar('/api/auth/entrar', {
-      method: 'POST',
-      body: JSON.stringify({ email: EMAIL, codigo }),
-    });
-
-    expect(segunda.status).toBe(401);
-  });
-
-  it('conta tentativa errada e trava na sexta', async () => {
-    const id = await criarUsuario();
-    await chamar('/api/auth/codigo', { method: 'POST', body: JSON.stringify({ email: EMAIL }) });
-    const codigo = await fixarCodigo(id);
-
-    for (let i = 0; i < 5; i += 1) {
-      const res = await chamar('/api/auth/entrar', {
-        method: 'POST',
-        body: JSON.stringify({ email: EMAIL, codigo: '000000' === codigo ? '111111' : '000000' }),
-      });
-      expect(await res.json()).toEqual({ error: 'codigo_invalido' });
-    }
-
-    // Esgotadas as tentativas, nem o código certo entra.
-    const res = await chamar('/api/auth/entrar', {
-      method: 'POST',
-      body: JSON.stringify({ email: EMAIL, codigo }),
-    });
-    expect(await res.json()).toEqual({ error: 'tentativas_esgotadas' });
-  });
-
-  it('recusa código expirado', async () => {
-    const id = await criarUsuario();
-    await chamar('/api/auth/codigo', { method: 'POST', body: JSON.stringify({ email: EMAIL }) });
-    const codigo = await fixarCodigo(id);
-
-    await env.DB.prepare('UPDATE login_codes SET expires_at = ? WHERE user_id = ?')
-      .bind('2020-01-01T00:00:00.000Z', id)
-      .run();
-
-    const res = await chamar('/api/auth/entrar', {
-      method: 'POST',
-      body: JSON.stringify({ email: EMAIL, codigo }),
-    });
-    expect(res.status).toBe(401);
-  });
-
-  it('não aceita o código de um usuário no outro', async () => {
-    const um = await criarUsuario('um@exemplo.com.br');
-    await criarUsuario('dois@exemplo.com.br');
-    await chamar('/api/auth/codigo', {
-      method: 'POST',
-      body: JSON.stringify({ email: 'um@exemplo.com.br' }),
-    });
-    const codigo = await fixarCodigo(um);
-
-    const res = await chamar('/api/auth/entrar', {
-      method: 'POST',
-      body: JSON.stringify({ email: 'dois@exemplo.com.br', codigo }),
-    });
-    expect(res.status).toBe(401);
-  });
-});
-
 describe('sessão', () => {
   async function entrar(): Promise<{ cookie: string; id: string }> {
     const id = await criarUsuario();
-    await chamar('/api/auth/codigo', { method: 'POST', body: JSON.stringify({ email: EMAIL }) });
-    const codigo = await fixarCodigo(id);
-    const res = await chamar('/api/auth/entrar', {
+    const res = await chamar('/api/entrar', {
       method: 'POST',
-      body: JSON.stringify({ email: EMAIL, codigo }),
+      body: JSON.stringify({ email: EMAIL }),
     });
     return { cookie: cookieDa(res), id };
   }
@@ -344,12 +149,10 @@ describe('sessão', () => {
   });
 
   it('a sessão vale um ano e o cookie acompanha', async () => {
-    const id = await criarUsuario();
-    await chamar('/api/auth/codigo', { method: 'POST', body: JSON.stringify({ email: EMAIL }) });
-    const codigo = await fixarCodigo(id);
-    const res = await chamar('/api/auth/entrar', {
+    await criarUsuario();
+    const res = await chamar('/api/entrar', {
       method: 'POST',
-      body: JSON.stringify({ email: EMAIL, codigo }),
+      body: JSON.stringify({ email: EMAIL }),
     });
 
     expect(SESSAO_DIAS).toBe(365);
@@ -471,7 +274,10 @@ describe('link de acesso direto', () => {
 
     const vencido = await criarLinkDeAcesso(env.DB, id);
     await env.DB.prepare('UPDATE access_links SET expires_at = ? WHERE token_hash <> ?')
-      .bind('2020-01-01T00:00:00.000Z', await (await import('../src/worker/lib/cripto')).sha256Hex(valido))
+      .bind(
+        '2020-01-01T00:00:00.000Z',
+        await (await import('../src/worker/lib/cripto')).sha256Hex(valido),
+      )
       .run();
 
     const corpos = await Promise.all(
@@ -534,9 +340,9 @@ describe('link de acesso direto', () => {
     const destino = new URL(res.headers.get('location') ?? '', BASE);
     expect(destino.searchParams.get('motivo')).toBe('link_expirado');
     expect(destino.searchParams.get('e')).toBe(EMAIL);
-    expect(await env.DB.prepare('SELECT COUNT(*) AS n FROM sessions').first<{ n: number }>()).toMatchObject(
-      { n: 0 },
-    );
+    expect(
+      await env.DB.prepare('SELECT COUNT(*) AS n FROM sessions').first<{ n: number }>(),
+    ).toMatchObject({ n: 0 });
   });
 
   it('token desconhecido não vaza e-mail nenhum', async () => {
@@ -570,11 +376,9 @@ describe('link de acesso direto', () => {
 describe('ação sensível', () => {
   async function comSessao(): Promise<{ cookie: string; id: string }> {
     const id = await criarUsuario();
-    await chamar('/api/auth/codigo', { method: 'POST', body: JSON.stringify({ email: EMAIL }) });
-    const codigo = await fixarCodigo(id);
-    const res = await chamar('/api/auth/entrar', {
+    const res = await chamar('/api/entrar', {
       method: 'POST',
-      body: JSON.stringify({ email: EMAIL, codigo }),
+      body: JSON.stringify({ email: EMAIL }),
     });
     return { cookie: cookieDa(res), id };
   }
@@ -608,29 +412,16 @@ describe('ação sensível', () => {
     expect(await res.json()).toEqual({ error: 'codigo_invalido' });
   });
 
-  it('o código de login não autoriza exclusão', async () => {
-    const { cookie, id } = await comSessao();
-    // Pede um código de LOGIN e tenta usá-lo para excluir a conta.
-    await chamar('/api/auth/codigo', { method: 'POST', body: JSON.stringify({ email: EMAIL }) });
-    const codigo = await fixarCodigo(id, '111111');
-
-    const res = await chamar('/api/me/excluir', {
-      method: 'POST',
-      headers: { cookie },
-      body: JSON.stringify({ codigo }),
-    });
-    expect(res.status).toBe(401);
-  });
-
-  it('o código de ação não abre sessão', async () => {
+  it('a entrada não aceita código nenhum: só celular ou e-mail', async () => {
     const { cookie, id } = await comSessao();
     const codigo = await codigoDaAcao(cookie, id, 'excluir_conta');
 
-    const res = await chamar('/api/auth/entrar', {
+    // O código de exclusão não vira chave de entrada: o corpo com código é recusado.
+    const res = await chamar('/api/entrar', {
       method: 'POST',
       body: JSON.stringify({ email: EMAIL, codigo }),
     });
-    expect(res.status).toBe(401);
+    expect(res.status).toBe(400);
   });
 
   it('com o código certo, exclui e anonimiza', async () => {
@@ -651,11 +442,14 @@ describe('ação sensível', () => {
 
     expect(res.status).toBe(200);
 
-    const u = await env.DB.prepare(
-      'SELECT email, phone, name, deleted_at FROM users WHERE id = ?',
-    )
+    const u = await env.DB.prepare('SELECT email, phone, name, deleted_at FROM users WHERE id = ?')
       .bind(id)
-      .first<{ email: string | null; phone: string | null; name: string | null; deleted_at: string | null }>();
+      .first<{
+        email: string | null;
+        phone: string | null;
+        name: string | null;
+        deleted_at: string | null;
+      }>();
     expect(u?.deleted_at).toBeTruthy();
     expect(u?.email).toBeNull();
     expect(u?.name).toBeNull();
@@ -690,7 +484,6 @@ describe('ação sensível', () => {
       .bind(id)
       .first<{ email: string }>();
     expect(u?.email).toBe('novo@exemplo.com.br');
-
   });
 
   it('o código da troca vai para o e-mail atual, não para o novo', async () => {

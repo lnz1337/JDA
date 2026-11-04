@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api, type Me, registrarEvento } from './lib/api';
-import { assinaturaAtual, permissaoDeNotificacao } from './lib/dispositivo';
+import { assinaturaAtual, lerLocal, permissaoDeNotificacao } from './lib/dispositivo';
 import { garantirAssinatura } from './lib/lembrete';
 import { irPara, useRota } from './lib/rota';
 import { Entrar } from './screens/Entrar';
@@ -14,6 +14,7 @@ import { Licao } from './screens/Licao';
 import { Loja } from './screens/Loja';
 import { Onboarding, deveRodarOnboarding, marcarOnboardingFeito } from './screens/Onboarding';
 import { PassoHorario } from './screens/PassoHorario';
+import { CHAVE_NOME_PULADO, PerguntarNome } from './screens/PerguntarNome';
 import { PassoInstalar } from './screens/PassoInstalar';
 import { PassoLembrete } from './screens/PassoLembrete';
 import { Produto } from './screens/Produto';
@@ -123,6 +124,19 @@ export function App() {
       <>
         <Cabecalho />
         <SemAcesso suporte={estado.me.suporte} aoSair={sair} />
+      </>
+    );
+  }
+
+  /*
+   * Conta sem nome (comum para quem veio da importação): pergunta uma vez, logo
+   * depois de entrar. "Pular" fica lembrado no aparelho.
+   */
+  if (!estado.me.usuario.nome?.trim() && !lerLocal(CHAVE_NOME_PULADO) && rota.nome === 'inicio') {
+    return (
+      <>
+        <Cabecalho />
+        <PerguntarNome aoTerminar={() => void carregar()} />
       </>
     );
   }

@@ -32,9 +32,7 @@ const comChave = () => ({ 'x-admin-key': envTeste.ADMIN_API_KEY ?? '' });
 
 async function criarComprador(n: number): Promise<string> {
   const id = `comprador-${n}`;
-  await env.DB.prepare(
-    'INSERT INTO users (id, email, name, created_at) VALUES (?, ?, ?, ?)',
-  )
+  await env.DB.prepare('INSERT INTO users (id, email, name, created_at) VALUES (?, ?, ?, ?)')
     .bind(id, `c${n}@exemplo.com.br`, `Pessoa ${n}`, new Date(2026, 0, n + 1).toISOString())
     .run();
   await env.DB.prepare(
@@ -148,7 +146,9 @@ describe('seleção', () => {
       body: JSON.stringify({ campanha: CAMPANHA, limite: 1, teste_para: 'eu@exemplo.com.br' }),
     });
 
-    const r = await env.DB.prepare('SELECT COUNT(*) AS n FROM campaign_sends').first<{ n: number }>();
+    const r = await env.DB.prepare('SELECT COUNT(*) AS n FROM campaign_sends').first<{
+      n: number;
+    }>();
     expect(r?.n).toBe(0);
   });
 });
@@ -254,18 +254,19 @@ describe('parar de receber', () => {
     expect(u?.marketing_opt_out_at).toBeNull();
   });
 
-  it('quem optou por sair continua podendo pedir código de login', async () => {
+  it('quem optou por sair continua podendo entrar no app', async () => {
     const id = await criarComprador(1);
     await env.DB.prepare('UPDATE users SET marketing_opt_out_at = ? WHERE id = ?')
       .bind(new Date().toISOString(), id)
       .run();
 
-    await chamar('/api/auth/codigo', {
+    const res = await chamar('/api/entrar', {
       method: 'POST',
       body: JSON.stringify({ email: 'c1@exemplo.com.br' }),
     });
 
-    const r = await env.DB.prepare('SELECT COUNT(*) AS n FROM login_codes WHERE user_id = ?')
+    expect(res.status).toBe(200);
+    const r = await env.DB.prepare('SELECT COUNT(*) AS n FROM sessions WHERE user_id = ?')
       .bind(id)
       .first<{ n: number }>();
     expect(r?.n).toBe(1);
@@ -311,9 +312,10 @@ describe('texto da campanha', () => {
       body: JSON.stringify({ campanha: CAMPANHA, limite: 2 }),
     });
 
-    const { results } = await env.DB.prepare(
-      'SELECT user_id, token_hash FROM access_links',
-    ).all<{ user_id: string; token_hash: string }>();
+    const { results } = await env.DB.prepare('SELECT user_id, token_hash FROM access_links').all<{
+      user_id: string;
+      token_hash: string;
+    }>();
 
     expect(results).toHaveLength(2);
     expect(new Set(results.map((r) => r.user_id)).size).toBe(2);
@@ -473,7 +475,9 @@ describe('cota diária', () => {
 
 describe('modelo do anúncio', () => {
   async function modeloGravado(userId: string): Promise<string | null | undefined> {
-    const r = await env.DB.prepare('SELECT model FROM campaign_sends WHERE campaign = ? AND user_id = ?')
+    const r = await env.DB.prepare(
+      'SELECT model FROM campaign_sends WHERE campaign = ? AND user_id = ?',
+    )
       .bind(CAMPANHA, userId)
       .first<{ model: string | null }>();
     return r?.model;
@@ -533,7 +537,13 @@ describe('quem já recebeu as boas-vindas', () => {
     await env.DB.prepare(
       'INSERT INTO events (id, user_id, name, props_json, created_at) VALUES (?, ?, ?, ?, ?)',
     )
-      .bind(`ev-${userId}-${nome}`, userId, nome, JSON.stringify({ tipo: 'boas_vindas' }), new Date().toISOString())
+      .bind(
+        `ev-${userId}-${nome}`,
+        userId,
+        nome,
+        JSON.stringify({ tipo: 'boas_vindas' }),
+        new Date().toISOString(),
+      )
       .run();
   }
 
@@ -607,11 +617,25 @@ describe('campanha lembrete-app', () => {
     )
       .bind('lc-1', codigo, AGORA, diasAtras(9), diasAtras(9))
       .run();
-    await env.DB.prepare('INSERT INTO sessions (id, user_id, expires_at, created_at) VALUES (?, ?, ?, ?)')
+    await env.DB.prepare(
+      'INSERT INTO sessions (id, user_id, expires_at, created_at) VALUES (?, ?, ?, ?)',
+    )
       .bind('s-lembrete', sessao, AGORA, diasAtras(9))
       .run();
 
     expect(await selecionados()).toEqual([nunca]);
+  });
+
+  it('quem entrou pelo celular e saiu do app fica fora', async () => {
+    // Sair apaga a sessão; o login em events é o que lembra que a pessoa entrou.
+    const id = await criarComprador(1);
+    await recebeuAnuncio(id, diasAtras(8));
+    await env.DB.prepare(
+      "INSERT INTO events (id, user_id, name, props_json, created_at) VALUES ('ev-login', ?, 'login', '{\"metodo\":\"celular\"}', ?)",
+    )
+      .bind(id, diasAtras(7))
+      .run();
+    expect(await selecionados()).toEqual([]);
   });
 
   it('código pedido e não usado não conta como entrada', async () => {
@@ -628,7 +652,9 @@ describe('campanha lembrete-app', () => {
   it('quem pediu para parar fica fora', async () => {
     const id = await criarComprador(1);
     await recebeuAnuncio(id, diasAtras(8));
-    await env.DB.prepare('UPDATE users SET marketing_opt_out_at = ? WHERE id = ?').bind(AGORA, id).run();
+    await env.DB.prepare('UPDATE users SET marketing_opt_out_at = ? WHERE id = ?')
+      .bind(AGORA, id)
+      .run();
     expect(await selecionados()).toEqual([]);
   });
 
@@ -652,7 +678,9 @@ describe('campanha lembrete-app', () => {
       body: JSON.stringify({ campanha: LEMBRETE, limite: 1 }),
     });
     expect(await res.json()).toMatchObject({ modelo: 'lembrete' });
-    const r = await env.DB.prepare("SELECT model FROM campaign_sends WHERE campaign = 'lembrete-app' AND user_id = ?")
+    const r = await env.DB.prepare(
+      "SELECT model FROM campaign_sends WHERE campaign = 'lembrete-app' AND user_id = ?",
+    )
       .bind(id)
       .first<{ model: string }>();
     expect(r?.model).toBe('lembrete');
@@ -675,7 +703,9 @@ describe('campanha lembrete-app', () => {
       body: JSON.stringify({ campanha: 'anuncio-ap', limite: 1 }),
     });
     expect(res.status).toBe(400);
-    const n = await env.DB.prepare('SELECT COUNT(*) AS n FROM campaign_sends').first<{ n: number }>();
+    const n = await env.DB.prepare('SELECT COUNT(*) AS n FROM campaign_sends').first<{
+      n: number;
+    }>();
     expect(n?.n).toBe(0);
   });
 });

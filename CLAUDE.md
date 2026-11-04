@@ -156,7 +156,7 @@ jornadacomeuanjo.com sem sessão
       (com sessão, vai direto para a Home; links nossos caem direto em /entrar)
 
 Acesso pós-compra (link do e-mail/WhatsApp)
-  └─ Onboarding: login por código → instalar na tela inicial → ativar push → escolher horário
+  └─ Onboarding: entrada pelo celular ou e-mail (sem código) → nome, se faltar → instalar na tela inicial → ativar push → escolher horário
       └─ Home (oração do dia + card de oferta contextual)
           ├─ Jornada  → Player do dia (áudio + reflexão + "concluí")
           ├─ Tesouros → Produto (prévia + botão de compra; itens bloqueados com cadeado)
@@ -200,12 +200,18 @@ CREATE TABLE login_codes (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL REFERENCES users(id),
   code_hash TEXT NOT NULL,
-  purpose TEXT NOT NULL DEFAULT 'login',  -- 'login' | 'excluir_conta' | 'trocar_email'
+  purpose TEXT NOT NULL DEFAULT 'login',  -- 'excluir_conta' | 'trocar_email' ('login' só no histórico, antes de 04/11)
   expires_at TEXT NOT NULL,
   attempts INTEGER NOT NULL DEFAULT 0,
   used_at TEXT,
   created_at TEXT,
   ip TEXT
+);
+
+CREATE TABLE login_tentativas (      -- limite da entrada sem código (§8): 10/h por IP e por identificador
+  id TEXT PRIMARY KEY,
+  chave TEXT NOT NULL,               -- 'ip:<ip>' ou 'id:<sha256 do celular ou e-mail normalizado>'
+  created_at TEXT NOT NULL
 );
 
 CREATE TABLE access_links (          -- link do e-mail que já entra (§8)
@@ -457,21 +463,26 @@ Usar `fixtures/payt/*.json`: pedido pago, pedido com order bump, upsell, reembol
 
 ## 8. Autenticação
 
-- Login por **código de 6 dígitos no e-mail**. Código com hash (sha256 do código + id do usuário), expira em 15 min, máximo de 5 tentativas.
-- **A resposta de "pedir código" é sempre a mesma**, exista o e-mail ou não: senão o endpoint vira um verificador de quem é cliente.
-- Limite de **5 pedidos por hora por e-mail e por IP**. Só por e-mail deixaria varrer uma lista; só por IP não protegeria um e-mail específico.
+- **Entrada sem código** (decisão do Leo em 04/11, `docs/entrada-sem-codigo.md`): **o celular ou o e-mail da compra, e pronto** (`POST /api/entrar`, `services/entrada.ts`). O código de 6 números era o que mais barrava o público mais velho — sair do app, achar o e-mail em Promoções ou no Spam, decorar seis números, voltar —, e das 1.427 pessoas que receberam o anúncio perto de 100 entraram. O nome sozinho não serve, como no app da Novena das 9 Palavras: o app precisa saber **quem comprou**, e há centenas de Marias. O que a pessoa sabe de cabeça, e que a Payt pede no checkout, é o celular.
+  - **Celular**: só dígitos; o `55` da frente sai quando sobram 12 ou 13; compara **DDD + os 8 últimos dígitos** com o `users.phone` normalizado do mesmo jeito (`chaveDoCelular`), o que casa número com e sem o 9, que convivem na base. **E-mail**: minúsculo e sem espaço.
+  - Só conta não excluída. Achou uma: abre a sessão de sempre (abaixo); sem produto ativo, cai em Sem acesso. **Mais de uma conta com o mesmo celular** (família que comprou com o mesmo número): não escolhe pela pessoa e pede o e-mail.
+  - **A resposta diz se não achou** (`nao_encontrado`, `varios`, `limite`): é o preço de tirar o código — dá para testar se um número é cliente, e ser cliente de um app católico diz a religião, dado sensível na LGPD. Quem segura é o **limite de 10 tentativas por hora por IP e 10 por identificador** (`login_tentativas`, com o identificador em hash), contadas antes de procurar: testar uma lista vira trabalho de semanas. Maior que os 5 do código porque o erro comum aqui é dígito trocado.
+  - `events`: `login` com `metodo` (`celular`, `email` ou `link`) e `login_falhou` com o `motivo`. **Nunca o e-mail nem o número.**
+  - **A entrada não manda e-mail nenhum** — e sobra cota: o código de login saía da reserva de 300 do transacional.
+  - **O app nunca mostra o e-mail nem o telefone completos** (no Perfil, quando vier: `ma•••@gmail.com`, `(18) •••••-1234`): quem sabe o celular de outra pessoa entra e vê o primeiro nome, o que ela comprou e o progresso, e não deve ver mais que isso.
 - Sessão em cookie `httpOnly; Secure; SameSite=Lax`, validade de **365 dias**, renovada a cada uso. O público é 55+: pedir e-mail de novo a cada três meses é atrito que faz desistir do app.
 - **Link de acesso direto.** O e-mail de boas-vindas e o de campanha levam `/acesso?t={token}`, que entra sem digitar código. Token de 256 bits, guardado com **hash** (`access_links`), **uso único**, preso ao usuário e válido por **7 dias**.
   - A busca é pelo hash do token, sem id na URL: 256 bits sorteados não precisam de sal, diferente do código de 6 dígitos, que repete entre usuários.
   - **O GET não consome o token.** Outlook, Gmail e WhatsApp abrem link de mensagem sozinhos para checagem, e token de uso único gasto por robô deixa a pessoa de fora. O `GET /acesso` só mostra uma tela com um botão grande ("Toque no botão para entrar no app"); quem gasta o token é o `POST` do botão, que verificador de link não dispara porque não preenche formulário. **Sem envio automático por JavaScript** — a tela precisa abrir em qualquer navegador de e-mail, e script é justamente o que um pré-visualizador consegue imitar.
   - **A tela do GET é igual para token válido, vencido ou inventado**: ela nem consulta o banco. Dizer "este link venceu" antes do toque transformaria a página num verificador de token e vazaria o e-mail da conta. A diferença só aparece depois do toque.
   - Marcar como usado é um `UPDATE ... WHERE used_at IS NULL` e vale pelo número de linhas afetadas: é a reivindicação atômica do token, para dois toques ao mesmo tempo não virarem duas sessões.
-  - Vencido, já usado ou desconhecido **cai na tela de login** com o e-mail preenchido e uma frase simples ("Este link já foi usado. Vamos te enviar um código."), nunca numa página de erro. Token desconhecido não preenche e-mail nenhum.
-- **Ação sensível pede código mesmo com sessão aberta**: excluir a conta e trocar o e-mail. O código vai para o e-mail **atual** da conta — é o acesso àquela caixa que prova que é a pessoa; mandar para o endereço novo deixaria um celular destravado virar perda de conta. `login_codes.purpose` separa os códigos: o de login não autoriza exclusão, e o de exclusão não abre sessão.
-- **A tela de código é feita para 55+**: um passo por tela, letra grande, `autocomplete="one-time-code"` e `inputmode="numeric"`, e o aviso "Não chegou? Confira a pasta Spam ou Lixo eletrônico" **visível desde o início**, com o botão de reenviar logo abaixo. O reenvio respeita o limite de 5 por hora e, no limite, oferece o suporte em vez de um botão que não funciona.
-- Usuário com `fake_email`: login por telefone, com o código enviado por WhatsApp (**fase 2**; no MVP, contato manual pelo suporte).
+  - Vencido, já usado ou desconhecido **cai na tela de entrada** com o e-mail preenchido e uma frase simples ("Este link já foi usado. Entre com o seu celular ou e-mail."), nunca numa página de erro. Token desconhecido não preenche e-mail nenhum.
+- **Ação sensível pede código mesmo com sessão aberta**: excluir a conta e trocar o e-mail. O código vai para o e-mail **atual** da conta — é o acesso àquela caixa que prova que é a pessoa; mandar para o endereço novo deixaria um celular destravado virar perda de conta. `login_codes.purpose` separa os códigos: o de exclusão não troca o e-mail, e vice-versa. **É o único lugar onde o código continua**: são as ações que fazem estrago se outra pessoa estiver com o celular na mão.
+- **A tela de entrada é feita para 55+**: "Entrar no app" e dois botões grandes, **"📱 Com o meu celular"** em cima e **"✉️ Com o meu e-mail"**; depois do toque, um campo só, com o teclado certo (`inputmode="tel"` ou de e-mail), o dourado "Entrar" e o link para trocar de método. Dois botões em vez de um campo que aceita os dois porque o teclado certo importa. Quem chega com `?e=` cai no campo de e-mail preenchido. Não achou, várias contas ou limite: a frase diz o que fazer e o suporte aparece embaixo (e-mail; o WhatsApp entra quando `WHATSAPP_SUPORTE` tiver o número).
+- Usuário com `fake_email` entra **pelo celular**, como qualquer um.
+- **O nome é da saudação.** Conta sem nome vê, logo depois de entrar, "Como podemos te chamar?" (`PATCH /api/me`, até 60 caracteres), com "Continuar" e "Pular" — o pular fica lembrado no aparelho. Nome que veio todo em maiúsculas da Payt ("ELIANA") aparece com a primeira letra maiúscula (`src/shared/nome.ts`), sem mexer no que está gravado.
 - Quem entra sem nenhum produto ativo **vê uma tela explicando** (compra processando, e-mail diferente, reembolso) com o contato do suporte — não um erro.
-- Todo envio de e-mail vira linha em `events` (`email_enviado` / `email_falhou`) com tipo, provedor e erro. **Nunca o código.** Falha de código de login sai no log como `[EMAIL][FALHA CRITICA]`: deixa alguém de fora do app.
+- Todo envio de e-mail vira linha em `events` (`email_enviado` / `email_falhou`) com tipo, provedor e erro. **Nunca o código.** Falha de código de ação sensível sai no log como `[EMAIL][FALHA CRITICA]`: sem ele a pessoa não exclui a conta nem troca o e-mail.
 
 ### Como os e-mails são escritos
 
@@ -489,7 +500,7 @@ O modelo é markdown (`src/worker/emails/*.md`); o HTML sai de `emails/layout.ts
   peso de imagem conta contra a reputação de quem começou a enviar agora.
 - **A versão `text/plain` não tem nenhuma tag.** Era o bug que fazia sair
   `<small>` literal para quem lê em texto puro.
-- `:destaque: {{codigo}}` vira o bloco grande do código de login, e um link
+- `:destaque: {{codigo}}` vira o bloco grande do código (hoje, o das ações sensíveis), e um link
   sozinho na linha (`[ Entrar ](url)`) vira botão.
 
 ### E-mail: remetente, resposta e cota
@@ -510,8 +521,9 @@ O modelo é markdown (`src/worker/emails/*.md`); o HTML sai de `emails/layout.ts
   por `contato@mail.`.
 - **Cota de 1.000 envios por dia**, da conta inteira. A campanha reserva **300**
   para o transacional e nunca encosta nessa fatia: ficar sem cota de login deixaria
-  cliente fora do app. **O transacional são login, boas-vindas e as respostas do
-  suporte**, que saem da mesma cota. Só que o app conta o que enviou pelo `events`
+  cliente fora do app. **O transacional são boas-vindas, conteúdo liberado, o
+  código das ações sensíveis e as respostas do suporte**, que saem da mesma cota
+  (a entrada sem código, desde 04/11, não manda e-mail). Só que o app conta o que enviou pelo `events`
   (`enviadosHoje`), e a resposta do Gmail não passa por ele: **ela consome a reserva
   sem aparecer na conta**. Em dia de muito atendimento, a reserva de 300 é o que
   protege o login — não reduzir.
@@ -602,7 +614,7 @@ Registrar em `events`: `offer_viewed` (uma vez por dia e por pacote, no fuso da 
     Cancelar é no painel da Payt, antes. O script já dá esse aviso; a tela do
     Perfil precisa dar também, e de forma que não dê para passar batido.
 - Suporte visível no Perfil (e-mail + WhatsApp).
-- **Campanha de e-mail** (aviso de novidade, promoção) leva link de "parar de receber" assinado por HMAC, sem exigir login; marca `users.marketing_opt_out_at`. Quem opta por sair **continua recebendo** código de login e e-mail de compra, que são transacionais. Cada envio fica em `campaign_sends`, com chave única por campanha e usuário: nunca reenvia. O anúncio tem **dois modelos** (`--modelo curto` lê `conteudo/emails/anuncio-app-curto.md`; sem a opção, o `anuncio-app.md`), com a mesma chave de campanha — quem recebeu um nunca recebe o outro — e o modelo gravado em `campaign_sends.model` para comparar. O link do curto fica dentro da frase, de propósito: não vira botão. **Quem já recebeu o e-mail de boas-vindas fica fora da campanha**: comprou depois do postback e já tem o link (boas-vindas que falhou não conta). **Campanha `lembrete-app`** (`--campanha lembrete-app`, texto `conteudo/emails/lembrete-app.md`): só quem recebeu o `anuncio-app` há 7 dias ou mais, **nunca entrou** (nenhum link de acesso usado, nenhum código de login usado, nenhuma sessão — a sessão sozinha não basta, porque "Sair do app" apaga a linha) e não pediu para parar; link de acesso novo para cada um. As campanhas que existem estão em `CAMPANHAS` (`services/campanhas.ts`): nome desconhecido é recusado, para um erro de digitação não virar campanha nova com a base inteira pela frente.
+- **Campanha de e-mail** (aviso de novidade, promoção) leva link de "parar de receber" assinado por HMAC, sem exigir login; marca `users.marketing_opt_out_at`. Quem opta por sair **continua recebendo** os e-mails de compra e o código das ações sensíveis, que são transacionais. Cada envio fica em `campaign_sends`, com chave única por campanha e usuário: nunca reenvia. O anúncio tem **dois modelos** (`--modelo curto` lê `conteudo/emails/anuncio-app-curto.md`; sem a opção, o `anuncio-app.md`), com a mesma chave de campanha — quem recebeu um nunca recebe o outro — e o modelo gravado em `campaign_sends.model` para comparar. O link do curto fica dentro da frase, de propósito: não vira botão. **Quem já recebeu o e-mail de boas-vindas fica fora da campanha**: comprou depois do postback e já tem o link (boas-vindas que falhou não conta). **Campanha `lembrete-app`** (`--campanha lembrete-app`, texto `conteudo/emails/lembrete-app.md`): só quem recebeu o `anuncio-app` há 7 dias ou mais, **nunca entrou** (nenhum link de acesso usado, nenhum código de login usado, nenhum `login` em `events`, nenhuma sessão — a sessão sozinha não basta, porque "Sair do app" apaga a linha) e não pediu para parar; link de acesso novo para cada um. As campanhas que existem estão em `CAMPANHAS` (`services/campanhas.ts`): nome desconhecido é recusado, para um erro de digitação não virar campanha nova com a base inteira pela frente.
 - Domínio de envio novo sobe volume em ondas (50, 100, 250, 500, 1.000/dia). **A trava de volume é do domínio, por dia** (desde 04/11): o teto de hoje é o dobro do maior número de `email_enviado` (de qualquer tipo) num único dia dos 14 anteriores, com piso de 50, e o que já saiu hoje conta contra ele — campanha nova não recomeça do zero, porque quem o Gmail avalia é o domínio. Até 04/11 contava por campanha, pelo total acumulado, e campanha nova não tinha teto. O disparo para sozinho acima de 5% de falha. O Worker envia um por um dentro de uma requisição, então o script manda a onda **em lotes de até 40**, depois de um dry-run com o total que deixa o Worker conferir a trava e a cota: uma chamada só com 200 estourou o timeout de 300 s do `fetch`, e a Cloudflare corta o Worker quando o cliente cai.
 - **Ordem das ondas**: compra mais recente primeiro — quem comprou há pouco lembra da marca e reclama menos de receber. `--provedores gmail` põe um provedor na frente da fila (a data desempata dentro dele, e quem não está na lista vai para o fim, sem sair da seleção). Serve para subir reputação onde ela já existe: o Gmail entrega na caixa de entrada desde o primeiro dia e o Outlook manda para o lixo eletrônico enquanto o domínio é novo. A data de compra vem do `granted_at` do entitlement, que a importação do CSV preenche com a data da venda — não com a data da importação, senão a ordem não diria nada.
 
@@ -695,7 +707,7 @@ apex** — em `mail.` o `rua` da Cloudflare entra à mão.
 1. **Scaffold**: Worker + Hono + Vite React + Tailwind + wrangler.toml + rota de health check + deploy de staging.
 2. **Banco**: migration inicial (seção 5) + seed com a Jornada de 19 dias (lições placeholder) e os produtos do funil (front, UP1 como bundle, UP2 como bundle).
 3. **Postback Payt**: endpoint + `entitlements.ts` + fixtures + testes da seção 7.
-4. **Auth**: código por e-mail, sessão, e-mail de boas-vindas.
+4. **Auth**: código por e-mail, sessão, e-mail de boas-vindas. (Desde 04/11 a entrada é sem código, pelo celular ou e-mail: §8.)
 5. **Jornada**: Home, lista de dias, Player (áudio com Range + reflexão + "concluí"), regra de liberação diária.
 6. **Loja**: listagem, página de produto, cadeado, link de checkout, polling pós-compra.
 7. **Assinatura**: paywall, tela de assinatura no Perfil, conteúdo `requires_subscription`, modal do dia 19.

@@ -3,7 +3,7 @@ import { enviarLembretes } from './cron';
 import type { ApiErrorResponse } from '../shared/types';
 import type { AppBindings } from './lib/types';
 import { admin } from './routes/admin';
-import { acesso, auth, me } from './routes/auth';
+import { acesso, auth, entrada, me } from './routes/auth';
 import { campanha, parar } from './routes/campanha';
 import { health } from './routes/health';
 import { eventos, jornada, licoes } from './routes/jornada';
@@ -31,6 +31,7 @@ app.use('/parar', async (c, next) => {
 });
 
 app.route('/api/auth', auth);
+app.route('/api/entrar', entrada);
 app.route('/api/me', me);
 app.route('/api/programas', jornada);
 app.route('/api/loja', loja);

@@ -1,13 +1,11 @@
 /**
- * Login por código de 6 dígitos no e-mail (CLAUDE.md §8).
+ * Sessão, link de acesso direto e o código das ações sensíveis (CLAUDE.md §8).
  *
- * Decisões que importam:
- * - a resposta de "pedir código" é **sempre a mesma**, exista o e-mail ou não:
- *   senão o endpoint vira um verificador de quem é cliente;
- * - o código é guardado com hash (sha256 do código + id do usuário), nunca em
- *   claro, e some do processo assim que o e-mail sai;
- * - limite por e-mail **e** por IP, porque limitar só por e-mail deixa alguém
- *   varrer uma lista, e limitar só por IP não protege um e-mail específico.
+ * **A entrada não tem mais código** (04/11): é pelo celular ou pelo e-mail da
+ * compra, em services/entrada.ts. O código de 6 números ficou só onde protege —
+ * excluir a conta e trocar o e-mail —, mandado para o e-mail atual:
+ * - guardado com hash (sha256 do código + id do usuário), nunca em claro;
+ * - separado por propósito: o de exclusão não troca e-mail, e vice-versa.
  */
 import {
   CODIGO_DIGITOS,
@@ -27,18 +25,11 @@ export const COOKIE_SESSAO = 'sessao';
 export const ACOES_SENSIVEIS = ['excluir_conta', 'trocar_email'] as const;
 export type AcaoSensivel = (typeof ACOES_SENSIVEIS)[number];
 
-/** `login` abre sessão; o resto só autoriza uma ação de quem já está dentro. */
-type Proposito = 'login' | AcaoSensivel;
-
-export interface PedidoDeCodigo {
-  /** Sempre true para quem chama: não revela se o e-mail existe. */
-  aceito: boolean;
-  /** Preenchidos só quando há código novo para enviar. */
-  codigo?: string;
-  userId?: string;
-  nome?: string | null;
-  motivo?: 'limite_por_email' | 'limite_por_ip' | 'email_desconhecido';
-}
+/**
+ * Propósito do código. Só sobram as ações sensíveis: o `login` saiu com a
+ * entrada sem código, e as linhas antigas com ele ficam só como histórico.
+ */
+type Proposito = AcaoSensivel;
 
 function codigoNovo(): string {
   const max = 10 ** CODIGO_DIGITOS;
@@ -66,38 +57,6 @@ async function pedidosNaUltimaHora(
     .bind(valor, limite)
     .first<{ n: number }>();
   return r?.n ?? 0;
-}
-
-/**
- * Cria um código para o e-mail, se ele existir e os limites permitirem.
- * Quem chama envia o e-mail; este serviço não conhece provedor.
- */
-export async function pedirCodigo(
-  db: D1Database,
-  email: string,
-  ip: string | null,
-): Promise<PedidoDeCodigo> {
-  const normalizado = normalizarEmail(email);
-
-  if (ip && (await pedidosNaUltimaHora(db, 'ip', ip)) >= CODIGO_MAX_POR_HORA) {
-    return { aceito: true, motivo: 'limite_por_ip' };
-  }
-
-  const usuario = await db
-    .prepare('SELECT id, name FROM users WHERE email = ? AND deleted_at IS NULL')
-    .bind(normalizado)
-    .first<{ id: string; name: string | null }>();
-
-  if (!usuario) {
-    return { aceito: true, motivo: 'email_desconhecido' };
-  }
-
-  if ((await pedidosNaUltimaHora(db, 'user_id', usuario.id)) >= CODIGO_MAX_POR_HORA) {
-    return { aceito: true, motivo: 'limite_por_email' };
-  }
-
-  const codigo = await gravarCodigo(db, usuario.id, 'login', ip);
-  return { aceito: true, codigo, userId: usuario.id, nome: usuario.name };
 }
 
 /** Sorteia, grava com hash e devolve o código em claro para quem vai enviar. */
@@ -128,35 +87,6 @@ async function gravarCodigo(
   return codigo;
 }
 
-export type ResultadoEntrada =
-  | { ok: true; sessionId: string; userId: string; expiraEm: string }
-  | { ok: false; motivo: 'codigo_invalido' | 'tentativas_esgotadas' };
-
-/** Confere o código e abre a sessão. */
-export async function entrarComCodigo(
-  db: D1Database,
-  email: string,
-  codigo: string,
-): Promise<ResultadoEntrada> {
-  const normalizado = normalizarEmail(email);
-
-  const usuario = await db
-    .prepare('SELECT id FROM users WHERE email = ? AND deleted_at IS NULL')
-    .bind(normalizado)
-    .first<{ id: string }>();
-
-  // Sem usuário a resposta é a mesma de código errado: nada vaza daqui.
-  if (!usuario) return { ok: false, motivo: 'codigo_invalido' };
-
-  const conferida = await conferirCodigo(db, usuario.id, 'login', codigo);
-  if (!conferida.ok) return conferida;
-
-  await consumirCodigo(db, conferida.codigoId);
-  const { sessionId, expiraEm } = await abrirSessao(db, usuario.id);
-
-  return { ok: true, sessionId, userId: usuario.id, expiraEm };
-}
-
 export type CodigoConferido =
   | { ok: true; codigoId: string }
   | { ok: false; motivo: 'codigo_invalido' | 'tentativas_esgotadas' };
@@ -166,8 +96,8 @@ export type CodigoConferido =
  * usado depois de a ação dar certo, para um erro posterior (e-mail já em uso,
  * por exemplo) não obrigar a pessoa a pedir outro código.
  *
- * O propósito separa os códigos: o de login não autoriza excluir a conta, e o de
- * exclusão não abre sessão.
+ * O propósito separa os códigos: o de exclusão não troca o e-mail, e o de troca
+ * não exclui a conta.
  */
 export async function conferirCodigo(
   db: D1Database,
@@ -209,7 +139,7 @@ export async function consumirCodigo(db: D1Database, codigoId: string): Promise<
     .run();
 }
 
-async function abrirSessao(
+export async function abrirSessao(
   db: D1Database,
   userId: string,
 ): Promise<{ sessionId: string; expiraEm: string }> {

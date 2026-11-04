@@ -115,8 +115,8 @@ export function provedorDeEmail(env: Ambiente): ProvedorEmail {
 }
 
 /**
- * Envia e registra em `events`. `tipo` identifica o e-mail (codigo_login,
- * boas_vindas, campanha_anuncio) e vai para a análise junto do resultado.
+ * Envia e registra em `events`. `tipo` identifica o e-mail (boas_vindas,
+ * campanha_anuncio, codigo_excluir_conta…) e vai para a análise junto do resultado.
  */
 export async function enviarEmail(
   env: Ambiente,
@@ -128,8 +128,10 @@ export async function enviarEmail(
   const resultado = await provedor.enviar(msg);
 
   if (!resultado.ok) {
-    // Falha de código de login deixa alguém de fora do app: tem que gritar no log.
-    const grito = tipo === 'codigo_login' ? '[EMAIL][FALHA CRITICA]' : '[EMAIL][falha]';
+    // Desde a entrada sem código, nenhum e-mail tranca alguém fora do app; o
+    // código de ação sensível é o que mais pesa, porque sem ele a pessoa não
+    // exclui a conta nem troca o e-mail.
+    const grito = tipo.startsWith('codigo_') ? '[EMAIL][FALHA CRITICA]' : '[EMAIL][falha]';
     console.error(grito, tipo, resultado.provedor, resultado.erro);
   }
 

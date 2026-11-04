@@ -1,11 +1,11 @@
 /**
- * Login por código, link de acesso direto e a sessão (CLAUDE.md §8).
+ * Entrada, link de acesso direto e a sessão (CLAUDE.md §8).
  *
- * `POST /api/auth/codigo`    pede o código por e-mail
- * `POST /api/auth/entrar`    troca o código por uma sessão
+ * `POST /api/entrar`         entra com o celular ou o e-mail da compra, sem código
  * `POST /api/auth/sair`      encerra a sessão
  * `GET  /acesso?t=...`       link do e-mail: já entra e manda para a Home
  * `GET  /api/me`             quem está logado e a que tem acesso
+ * `PATCH /api/me`            grava o nome da saudação
  * `POST /api/me/confirmar`   pede o código de uma ação sensível
  * `POST /api/me/email`       troca o e-mail (pede código)
  * `POST /api/me/excluir`     exclui a conta (pede código)
@@ -21,7 +21,6 @@ import {
   SESSAO_DIAS,
 } from '../../shared/constants';
 import modeloAcao from '../emails/codigo-acao.md?raw';
-import modeloCodigo from '../emails/codigo-login.md?raw';
 import { renderizarEmail } from '../emails/render';
 import { escaparHtml, pagina } from '../lib/pagina';
 import { fusoValido } from '../lib/datas';
@@ -33,27 +32,33 @@ import {
   conferirCodigo,
   consumirCodigo,
   encerrarSessao,
-  entrarComCodigo,
   entrarComLink,
   normalizarEmail,
-  pedirCodigo,
   pedirCodigoDeAcao,
   usuarioDaSessao,
 } from '../services/auth';
+import { entrarSemCodigo } from '../services/entrada';
+import { registrarEvento } from '../services/payt';
 import { excluirConta, trocarEmail } from '../services/conta';
 import { enviarEmail } from '../services/mail';
 
-const PedirSchema = z.object({ email: z.string().trim().email().max(320) });
+/**
+ * Celular **ou** e-mail, nunca os dois: são dois botões na tela, cada um com o
+ * teclado certo. O celular chega como a pessoa digitou (com máscara, com 55) e
+ * é normalizado no serviço.
+ */
+const EntradaSchema = z.union([
+  z.object({ celular: z.string().trim().min(8).max(30) }).strict(),
+  z.object({ email: z.string().trim().email().max(320) }).strict(),
+]);
+
+/** O nome da saudação. Vazio apaga. */
+const NomeSchema = z.object({ nome: z.string().trim().max(60) });
 
 const CodigoSchema = z
   .string()
   .trim()
   .regex(new RegExp(`^\\d{${CODIGO_DIGITOS}}$`), `código de ${CODIGO_DIGITOS} dígitos`);
-
-const EntrarSchema = z.object({
-  email: z.string().trim().email().max(320),
-  codigo: CodigoSchema,
-});
 
 const ConfirmarSchema = z.object({ acao: z.enum(ACOES_SENSIVEIS) });
 
@@ -92,67 +97,38 @@ function primeiroNome(nome: string | null | undefined): string {
   return p ? `, ${p}` : '';
 }
 
-export const auth = new Hono<AppBindings>()
-  .post('/codigo', async (c) => {
-    const corpo = PedirSchema.safeParse(await c.req.json().catch(() => null));
-    if (!corpo.success) {
-      return c.json({ error: 'email_invalido' }, 400);
-    }
+/**
+ * A entrada sem código (docs/entrada-sem-codigo.md). Achou uma conta: abre a
+ * sessão de sempre. Não achou, achou mais de uma ou passou do limite: diz qual,
+ * para a tela dar a orientação certa. Isso revela se um celular é cliente — o
+ * preço de tirar o código — e quem segura é o limite por IP e por identificador.
+ *
+ * `events` guarda o método e o motivo, **nunca o e-mail nem o número**.
+ */
+export const entrada = new Hono<AppBindings>().post('/', async (c) => {
+  const corpo = EntradaSchema.safeParse(await c.req.json().catch(() => null));
+  if (!corpo.success) return c.json({ error: 'dados_invalidos' }, 400);
 
-    const pedido = await pedirCodigo(c.env.DB, corpo.data.email, ipDoPedido(c));
+  const r = await entrarSemCodigo(c.env.DB, corpo.data, ipDoPedido(c));
 
-    if (pedido.codigo && pedido.userId) {
-      const email = renderizarEmail(
-        modeloCodigo,
-        {
-          codigo: pedido.codigo,
-          app: APP_NAME,
-          nome: primeiroNome(pedido.nome),
-          digitos: String(CODIGO_DIGITOS),
-          validade: String(CODIGO_VALIDADE_MIN),
-          suporte: c.env.SUPPORT_EMAIL ?? '',
-        },
-        { motivo: 'Você recebeu este e-mail porque pediu um código para entrar no app.' },
-      );
+  if (!r.ok) {
+    await registrarEvento(c.env.DB, null, 'login_falhou', { metodo: r.metodo, motivo: r.motivo });
+    const status = ({ nao_encontrado: 404, varios: 409, limite: 429, invalido: 400 } as const)[
+      r.motivo
+    ];
+    return c.json({ error: r.motivo, suporte: c.env.SUPPORT_EMAIL ?? null }, status);
+  }
 
-      await enviarEmail(
-        c.env,
-        'codigo_login',
-        {
-          para: normalizarEmail(corpo.data.email),
-          assunto: email.assunto,
-          texto: email.texto,
-          html: email.html,
-          ...(c.env.SUPPORT_EMAIL ? { responderPara: c.env.SUPPORT_EMAIL } : {}),
-        },
-        pedido.userId,
-      );
-    }
+  await registrarEvento(c.env.DB, r.userId, 'login', { metodo: r.metodo });
+  gravarCookie(c, r.sessionId);
+  return c.json({ ok: true });
+});
 
-    // Mesma resposta para e-mail existente, inexistente ou acima do limite.
-    return c.json({ ok: true, validade_min: CODIGO_VALIDADE_MIN });
-  })
-
-  .post('/entrar', async (c) => {
-    const corpo = EntrarSchema.safeParse(await c.req.json().catch(() => null));
-    if (!corpo.success) {
-      return c.json({ error: 'dados_invalidos' }, 400);
-    }
-
-    const r = await entrarComCodigo(c.env.DB, corpo.data.email, corpo.data.codigo);
-    if (!r.ok) {
-      return c.json({ error: r.motivo }, 401);
-    }
-
-    gravarCookie(c, r.sessionId);
-    return c.json({ ok: true });
-  })
-
-  .post('/sair', async (c) => {
-    await encerrarSessao(c.env.DB, getCookie(c, COOKIE_SESSAO));
-    deleteCookie(c, COOKIE_SESSAO, { path: '/' });
-    return c.json({ ok: true });
-  });
+export const auth = new Hono<AppBindings>().post('/sair', async (c) => {
+  await encerrarSessao(c.env.DB, getCookie(c, COOKIE_SESSAO));
+  deleteCookie(c, COOKIE_SESSAO, { path: '/' });
+  return c.json({ ok: true });
+});
 
 /**
  * O link que o e-mail leva. Não é rota de API: quem chega aqui é uma pessoa no
@@ -207,6 +183,7 @@ export const acesso = new Hono<AppBindings>()
       return c.redirect(`/entrar?${params.toString()}`, 302);
     }
 
+    await registrarEvento(c.env.DB, r.userId, 'login', { metodo: 'link' });
     gravarCookie(c, r.sessionId);
     return c.redirect('/', 302);
   });
@@ -261,6 +238,22 @@ export const me = new Hono<AppBindings>()
   })
 
   /**
+   * O nome da saudação ("Bom dia, Maria"), para quem entrou e a conta não tinha
+   * nome. Vazio volta a ser sem nome.
+   */
+  .patch('/', async (c) => {
+    const userId = await exigirSessao(c);
+    if (!userId) return c.json({ error: 'nao_autenticado' }, 401);
+
+    const corpo = NomeSchema.safeParse(await c.req.json().catch(() => null));
+    if (!corpo.success) return c.json({ error: 'dados_invalidos' }, 400);
+
+    const nome = corpo.data.nome || null;
+    await c.env.DB.prepare('UPDATE users SET name = ? WHERE id = ?').bind(nome, userId).run();
+    return c.json({ ok: true, nome });
+  })
+
+  /**
    * Só os produtos liberados, para o polling de depois da compra (§7).
    *
    * Existe separado do `/api/me` porque é chamado a cada 5 segundos por até 2
@@ -303,9 +296,10 @@ export const me = new Hono<AppBindings>()
 
     // Fuso que este runtime não conhece viraria uma conta sem lembrete nenhum,
     // em silêncio: melhor cair no padrão e avisar quem chamou o que foi gravado.
-    const fuso = corpo.data.timezone && fusoValido(corpo.data.timezone)
-      ? corpo.data.timezone
-      : DEFAULT_TIMEZONE;
+    const fuso =
+      corpo.data.timezone && fusoValido(corpo.data.timezone)
+        ? corpo.data.timezone
+        : DEFAULT_TIMEZONE;
 
     await c.env.DB.prepare('UPDATE users SET prayer_hour = ?, timezone = ? WHERE id = ?')
       .bind(corpo.data.prayer_hour, fuso, userId)

@@ -1,207 +1,201 @@
-import { type FormEvent, useEffect, useState } from 'react';
-import {
-  CODIGO_DIGITOS,
-  CODIGO_MAX_POR_HORA,
-  CODIGO_VALIDADE_MIN,
-  EMAIL_SUPORTE,
-} from '../../shared/constants';
+import { type FormEvent, useState } from 'react';
+import { EMAIL_SUPORTE, WHATSAPP_SUPORTE } from '../../shared/constants';
 import { api, ErroApi } from '../lib/api';
 
-const MENSAGENS: Record<string, string> = {
-  codigo_invalido: 'Código errado ou expirado. Confira e tente de novo.',
-  tentativas_esgotadas: 'Muitas tentativas. Peça um código novo.',
-  dados_invalidos: 'Confira o e-mail e o código.',
-  email_invalido: 'Esse e-mail não parece válido.',
-};
+type Metodo = 'celular' | 'email';
 
 /**
  * O que dizer para quem chegou pelo link do e-mail e o link não serviu mais.
  * Não é erro da pessoa, então o tom é o de quem já está resolvendo.
  */
 const MOTIVOS: Record<string, string> = {
-  link_usado: 'Este link já foi usado. Vamos te enviar um código.',
-  link_expirado: 'Este link venceu. Vamos te enviar um código.',
-  link_invalido: 'Não conseguimos abrir este link. Vamos te enviar um código.',
+  link_usado: 'Este link já foi usado. Entre com o seu celular ou e-mail.',
+  link_expirado: 'Este link venceu. Entre com o seu celular ou e-mail.',
+  link_invalido: 'Não conseguimos abrir este link. Entre com o seu celular ou e-mail.',
 };
 
-/** Espera entre dois pedidos de código, para o botão não virar martelo. */
-const ESPERA_S = 60;
+function mensagemDeErro(codigo: string, metodo: Metodo): string {
+  switch (codigo) {
+    case 'nao_encontrado':
+      return metodo === 'celular'
+        ? 'Não encontramos uma compra com esse celular. Confira o número ou tente com o e-mail.'
+        : 'Não encontramos uma compra com esse e-mail. Confira ou tente com o celular.';
+    case 'varios':
+      return 'Este número está em mais de uma compra. Entre com o e-mail.';
+    case 'limite':
+      return 'Foram muitas tentativas seguidas. Espere um pouco, ou fale com a gente que ajudamos você a entrar.';
+    case 'dados_invalidos':
+    case 'invalido':
+      return metodo === 'celular'
+        ? 'Digite o celular com o DDD, por exemplo (11) 98765-4321.'
+        : 'Esse e-mail não parece completo. Confira e tente de novo.';
+    default:
+      return 'Algo deu errado. Tente de novo.';
+  }
+}
 
 /**
- * Login em dois passos: pede o código, depois confere. Um passo por tela, letra
- * grande e o aviso de spam visível desde o começo — o público é 55+, e o e-mail
- * cai na pasta de lixo eletrônico do Outlook enquanto o domínio é novo.
+ * A entrada sem código (CLAUDE.md §8, docs/entrada-sem-codigo.md): o celular
+ * ou o e-mail da compra, e pronto.
+ *
+ * Dois botões em vez de um campo que aceita os dois, porque o teclado certo
+ * importa para quem tem 60 anos: o de números para o celular, o de e-mail para
+ * o e-mail. Celular em cima — é o que a pessoa sabe de cabeça.
  */
 export function Entrar({ aoEntrar }: { aoEntrar: () => void }) {
   const parametros = new URLSearchParams(location.search);
-  // O e-mail dos nossos links vem preenchido: /entrar?e=...
-  const [email, setEmail] = useState(() => parametros.get('e') ?? '');
-  const [codigo, setCodigo] = useState('');
-  const [etapa, setEtapa] = useState<'email' | 'codigo'>('email');
-  const [erro, setErro] = useState<string | null>(null);
+  // Link nosso com e-mail (/entrar?e=...): já cai no campo de e-mail preenchido.
+  const emailDoLink = parametros.get('e') ?? '';
+  const [metodo, setMetodo] = useState<Metodo | null>(emailDoLink ? 'email' : null);
+  const [valor, setValor] = useState(emailDoLink);
+  const [erro, setErro] = useState<{ codigo: string; metodo: Metodo } | null>(null);
   const [enviando, setEnviando] = useState(false);
-  const [envios, setEnvios] = useState(0);
-  const [espera, setEspera] = useState(0);
   const [aviso] = useState(() => MOTIVOS[parametros.get('motivo') ?? ''] ?? null);
 
-  useEffect(() => {
-    if (espera <= 0) return;
-    const t = setTimeout(() => setEspera((s) => s - 1), 1000);
-    return () => clearTimeout(t);
-  }, [espera]);
-
-  const comErro = (e: unknown) =>
-    setErro(
-      e instanceof ErroApi
-        ? (MENSAGENS[e.codigo] ?? 'Algo deu errado. Tente de novo.')
-        : 'Sem conexão. Confira a internet e tente de novo.',
-    );
-
-  async function pedirCodigo(ev?: FormEvent) {
-    ev?.preventDefault();
+  function escolher(m: Metodo) {
+    setMetodo(m);
+    setValor(m === 'email' ? emailDoLink : '');
     setErro(null);
-    setEnviando(true);
-    try {
-      await api('/api/auth/codigo', { method: 'POST', body: JSON.stringify({ email }) });
-      setEnvios((n) => n + 1);
-      setEspera(ESPERA_S);
-      setEtapa('codigo');
-    } catch (e) {
-      comErro(e);
-    } finally {
-      setEnviando(false);
-    }
   }
 
   async function entrar(ev: FormEvent) {
     ev.preventDefault();
+    if (!metodo) return;
     setErro(null);
     setEnviando(true);
     try {
-      await api('/api/auth/entrar', { method: 'POST', body: JSON.stringify({ email, codigo }) });
+      await api('/api/entrar', {
+        method: 'POST',
+        body: JSON.stringify(metodo === 'celular' ? { celular: valor } : { email: valor }),
+      });
       aoEntrar();
     } catch (e) {
-      comErro(e);
+      setErro({ codigo: e instanceof ErroApi ? e.codigo : 'sem_conexao', metodo });
     } finally {
       setEnviando(false);
     }
   }
 
-  // O servidor limita a 5 pedidos por hora e responde sempre igual, sem dizer
-  // que travou. Então a tela conta os envios e, no limite, oferece o suporte.
-  const podeReenviar = espera === 0 && envios < CODIGO_MAX_POR_HORA && !enviando;
-  const limiteBatido = envios >= CODIGO_MAX_POR_HORA;
-
-  const rotuloReenvio = () => {
-    if (espera > 0) return `Reenviar em ${espera}s`;
-    if (enviando) return 'Enviando…';
-    return 'Reenviar o código';
-  };
+  const precisaDeAjuda = erro && ['nao_encontrado', 'limite', 'varios'].includes(erro.codigo);
+  const outro: Metodo = metodo === 'celular' ? 'email' : 'celular';
 
   return (
     <main className="mx-auto flex max-w-md flex-col gap-7 px-5 py-8">
       <header className="space-y-3">
-        <h1 className="text-3xl font-bold text-titulo">
-          {etapa === 'email' ? 'Entrar no app' : 'Digite o código'}
-        </h1>
+        <h1 className="text-3xl font-bold text-titulo">Entrar no app</h1>
         <p className="text-lg leading-relaxed text-texto2">
-          {etapa === 'email'
-            ? 'Digite o e-mail da sua compra. Vamos enviar um código de acesso.'
-            : `Enviamos um código de ${CODIGO_DIGITOS} números para ${email}. Ele vale por ${CODIGO_VALIDADE_MIN} minutos.`}
+          {metodo === null
+            ? 'Use o celular ou o e-mail que você usou na compra.'
+            : metodo === 'celular'
+              ? 'Digite o celular que você usou na compra.'
+              : 'Digite o e-mail que você usou na compra.'}
         </p>
       </header>
 
-      {aviso && etapa === 'email' && (
-        <p className="caixa-destaque text-lg leading-relaxed text-texto">{aviso}</p>
-      )}
+      {aviso && <p className="caixa-destaque text-lg leading-relaxed text-texto">{aviso}</p>}
 
-      {etapa === 'email' ? (
-        <form onSubmit={pedirCodigo} className="space-y-5">
-          <label className="block space-y-2">
-            <span className="text-lg font-medium text-texto">Seu e-mail</span>
-            <input
-              type="email"
-              required
-              autoFocus
-              autoComplete="email"
-              inputMode="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="campo"
-              placeholder="voce@exemplo.com.br"
-            />
-          </label>
-          <button type="submit" disabled={enviando} className="botao botao-dourado">
-            {enviando ? 'Enviando…' : 'Receber código'}
+      {metodo === null ? (
+        <div className="space-y-4">
+          <button
+            type="button"
+            onClick={() => escolher('celular')}
+            className="botao botao-secundario min-h-[64px] text-xl"
+          >
+            <span aria-hidden="true">📱</span> Com o meu celular
           </button>
-        </form>
+          <button
+            type="button"
+            onClick={() => escolher('email')}
+            className="botao botao-secundario min-h-[64px] text-xl"
+          >
+            <span aria-hidden="true">✉️</span> Com o meu e-mail
+          </button>
+        </div>
       ) : (
         <form onSubmit={entrar} className="space-y-5">
           <label className="block space-y-2">
-            <span className="text-lg font-medium text-texto">Código</span>
-            <input
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              required
-              autoFocus
-              maxLength={CODIGO_DIGITOS}
-              value={codigo}
-              onChange={(e) => setCodigo(e.target.value.replace(/\D/g, ''))}
-              className="campo text-center text-4xl tracking-[0.3em]"
-              placeholder="000000"
-            />
+            <span className="text-lg font-medium text-texto">
+              {metodo === 'celular' ? 'O celular da sua compra, com DDD' : 'O e-mail da sua compra'}
+            </span>
+            {metodo === 'celular' ? (
+              <input
+                key="celular"
+                type="tel"
+                inputMode="tel"
+                autoComplete="tel"
+                required
+                autoFocus
+                value={valor}
+                onChange={(e) => setValor(e.target.value)}
+                className="campo"
+                placeholder="(11) 98765-4321"
+              />
+            ) : (
+              <input
+                key="email"
+                type="email"
+                inputMode="email"
+                autoComplete="email"
+                required
+                autoFocus={!emailDoLink}
+                value={valor}
+                onChange={(e) => setValor(e.target.value)}
+                className="campo"
+                placeholder="voce@exemplo.com.br"
+              />
+            )}
           </label>
-          <button
-            type="submit"
-            disabled={enviando || codigo.length < CODIGO_DIGITOS}
-            className="botao botao-dourado"
-          >
+
+          <button type="submit" disabled={enviando} className="botao botao-dourado">
             {enviando ? 'Entrando…' : 'Entrar'}
           </button>
 
-          {/* Visível desde o começo, não só depois de dar errado. */}
-          <section className="space-y-3 rounded-2xl border border-linha bg-cartao px-5 py-4">
-            <p className="text-lg font-medium leading-relaxed text-texto">
-              Não chegou? Confira a pasta Spam ou Lixo eletrônico.
-            </p>
-            {limiteBatido ? (
-              <p className="text-base leading-relaxed text-texto2">
-                Já enviamos {envios} códigos para esse e-mail. Se nenhum chegou, escreva para{' '}
-                <a
-                  className="font-semibold text-ouro-forte underline"
-                  href={`mailto:${EMAIL_SUPORTE}`}
-                >
-                  {EMAIL_SUPORTE}
-                </a>{' '}
-                que a gente te coloca dentro.
-              </p>
-            ) : (
-              <button
-                type="button"
-                onClick={() => void pedirCodigo()}
-                disabled={!podeReenviar}
-                className="botao botao-secundario"
-              >
-                {rotuloReenvio()}
-              </button>
-            )}
-          </section>
-
           <button
             type="button"
-            onClick={() => {
-              setEtapa('email');
-              setCodigo('');
-              setErro(null);
-            }}
+            onClick={() => escolher(outro)}
             className="link w-full justify-center text-lg"
           >
-            Usar outro e-mail
+            {outro === 'email' ? 'Prefiro entrar com o e-mail' : 'Prefiro entrar com o celular'}
           </button>
         </form>
       )}
 
-      {erro && <p className="text-lg font-medium text-red-700">{erro}</p>}
+      {erro && (
+        <p role="alert" className="caixa-destaque text-lg font-medium leading-relaxed text-texto">
+          {erro.codigo === 'sem_conexao'
+            ? 'Sem conexão. Confira a internet e tente de novo.'
+            : mensagemDeErro(erro.codigo, erro.metodo)}
+        </p>
+      )}
+
+      {precisaDeAjuda && <Suporte />}
     </main>
+  );
+}
+
+/** E-mail e, quando houver número cadastrado, WhatsApp do suporte. */
+function Suporte() {
+  return (
+    <section className="cartao space-y-2 px-5 py-4 text-lg leading-relaxed text-texto">
+      <p>Precisa de ajuda para entrar? Fale com a gente:</p>
+      <p>
+        <a
+          className="break-all font-semibold text-ouro-forte underline"
+          href={`mailto:${EMAIL_SUPORTE}`}
+        >
+          {EMAIL_SUPORTE}
+        </a>
+      </p>
+      {WHATSAPP_SUPORTE && (
+        <p>
+          <a
+            className="font-semibold text-ouro-forte underline"
+            href={`https://wa.me/${WHATSAPP_SUPORTE}`}
+          >
+            WhatsApp do suporte
+          </a>
+        </p>
+      )}
+    </section>
   );
 }

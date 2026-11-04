@@ -19,6 +19,7 @@ const TABELAS = [
   'push_envios',
   'payt_events',
   'login_codes',
+  'login_tentativas',
   'access_links',
   'sessions',
   'bundle_items',

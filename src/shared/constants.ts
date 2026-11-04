@@ -7,6 +7,11 @@ export const APP_DESCRIPTION =
 /** Domínio de produção. O staging continua em workers.dev. */
 export const APP_DOMINIO = 'jornadacomeuanjo.com';
 export const EMAIL_SUPORTE = 'suporte@jornadacomeuanjo.com';
+/**
+ * WhatsApp do suporte, só dígitos com o 55 (ex.: '5511987654321'). Enquanto for
+ * null, as telas mostram só o e-mail: número inventado seria pior que nenhum.
+ */
+export const WHATSAPP_SUPORTE: string | null = null;
 
 export const THEME_COLOR = '#f1eadb';
 export const BACKGROUND_COLOR = '#f7f2e8';
