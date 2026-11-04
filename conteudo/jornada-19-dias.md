@@ -2,6 +2,15 @@
 
 Conteúdo da jornada liberada com o front. Este arquivo é a **fonte da verdade**: o script `gerar_seed.py` lê este markdown e gera `seed/jornada-19-dias.json`. Mantenha a estrutura de cada dia (título no `##`, campos em lista, roteiro após `### Roteiro do áudio`). O **Resumo** é a frase curta do cartão da Home e da lista de dias (até ~60 caracteres).
 
+## Etapas
+
+O mapa da jornada no app agrupa os dias nestas etapas, na ordem. Formato de cada linha: `- **Dias A a B:** Título — frase curta`. As etapas cobrem os 19 dias sem buraco nem sobreposição, e o `gerar_seed.py` confere isso.
+
+- **Dias 1 a 7:** O chamado — conhecer São Miguel e entregar o seu pedido
+- **Dias 8 a 10:** Libertar o coração — soltar a mágoa, o medo e a ansiedade
+- **Dias 11 a 15:** Pela sua casa — a família, o sustento, a saúde e a partilha
+- **Dias 16 a 19:** A consagração — confiar, ouvir e se consagrar a São Miguel
+
 ## Produção
 
 **Estrutura de cada áudio (6 a 8 min):**

@@ -10,7 +10,33 @@
     "product_id": "jornada-meu-anjo",
     "title": "Jornada de 19 dias com São Miguel",
     "unlock_rule": "daily",
-    "total_days": 19
+    "total_days": 19,
+    "stages": [
+      {
+        "from_day": 1,
+        "to_day": 7,
+        "title": "O chamado",
+        "subtitle": "conhecer São Miguel e entregar o seu pedido"
+      },
+      {
+        "from_day": 8,
+        "to_day": 10,
+        "title": "Libertar o coração",
+        "subtitle": "soltar a mágoa, o medo e a ansiedade"
+      },
+      {
+        "from_day": 11,
+        "to_day": 15,
+        "title": "Pela sua casa",
+        "subtitle": "a família, o sustento, a saúde e a partilha"
+      },
+      {
+        "from_day": 16,
+        "to_day": 19,
+        "title": "A consagração",
+        "subtitle": "confiar, ouvir e se consagrar a São Miguel"
+      }
+    ]
   },
   "lessons": [
     {

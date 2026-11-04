@@ -39,12 +39,40 @@ def parse_dia(numero: int, titulo: str, bloco: str) -> dict:
 
 
 def body_md(d: dict) -> str:
+    # O app separa a lição em passos pelos três rótulos abaixo ("Leitura do dia",
+    # "Prática de hoje", "Intenção"). Mudar um rótulo quebra essa separação:
+    # avise a aplicação antes.
     return (
         f"**Leitura do dia:** {d['leitura']}\n\n"
         f"{d['reflexao']}\n\n"
         f"**Prática de hoje:** {d['pratica']}\n\n"
         f"**Intenção:** {d['intencao']}"
     )
+
+
+def carregar_etapas(texto: str) -> list[dict]:
+    m = re.search(r"^## Etapas\s*\n(.*?)(?=^## )", texto, re.S | re.M)
+    if not m:
+        raise ValueError("Seção '## Etapas' ausente")
+    etapas = [
+        {
+            "from_day": int(a),
+            "to_day": int(b),
+            "title": titulo.strip(),
+            "subtitle": frase.strip(),
+        }
+        for a, b, titulo, frase in re.findall(
+            r"^- \*\*Dias (\d+) a (\d+):\*\*\s*(.+?) — (.+)$", m.group(1), re.M
+        )
+    ]
+    esperado = 1
+    for e in etapas:
+        if e["from_day"] != esperado or e["to_day"] < e["from_day"]:
+            raise ValueError(f"Etapas com buraco ou sobreposição em '{e['title']}'")
+        esperado = e["to_day"] + 1
+    if esperado != 20:
+        raise ValueError(f"As etapas terminam no dia {esperado - 1}, não no 19")
+    return etapas
 
 
 def carregar_dias() -> list[dict]:
@@ -63,6 +91,7 @@ def carregar_dias() -> list[dict]:
 
 def main() -> None:
     dias = carregar_dias()
+    etapas = carregar_etapas(ORIGEM.read_text(encoding="utf-8"))
 
     seed = {
         "product": {
@@ -77,6 +106,8 @@ def main() -> None:
             "title": "Jornada de 19 dias com São Miguel",
             "unlock_rule": "daily",
             "total_days": 19,
+            # Os blocos do mapa da jornada (Título — frase), em ordem de dia.
+            "stages": etapas,
         },
         "lessons": [
             {
@@ -99,7 +130,7 @@ def main() -> None:
 
     prontos = sum(1 for d in dias if d["audio_script"])
     palavras = [len(d["audio_script"].split()) for d in dias if d["audio_script"]]
-    print(f"OK: {len(dias)} dias -> {DESTINO.relative_to(RAIZ)}")
+    print(f"OK: {len(dias)} dias, {len(etapas)} etapas -> {DESTINO.relative_to(RAIZ)}")
     print(f"Roteiros prontos: {prontos}/19 | palavras por roteiro: {palavras}")
 
 
