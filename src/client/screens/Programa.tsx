@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { LicaoNaLista, Programa as DadosPrograma } from '../../shared/types';
 import { api, ErroApi } from '../lib/api';
+import { Arte } from '../components/Visual';
 import { irPara } from '../lib/rota';
 
 /**
@@ -32,44 +33,43 @@ export function Programa({ id }: { id: string }) {
   }, [id]);
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-5 px-5 py-8">
-      <button
-        type="button"
-        onClick={() => irPara('/')}
-        className="min-h-[48px] self-start text-lg text-noite-700 underline"
-      >
-        ← Voltar para o início
-      </button>
+    <main className="mx-auto flex min-h-dvh max-w-md flex-col">
+      <Arte />
+      <div className="relative -mt-10 flex flex-col gap-5 px-5 pb-8">
+        <button type="button" onClick={() => irPara('/')} className="link self-start text-lg">
+          ‹ Voltar para o início
+        </button>
 
-      {erro && <p className="text-lg text-noite-900">{erro}</p>}
-      {!dados && !erro && <p className="text-lg text-noite-700">carregando…</p>}
+        {erro && <p className="text-lg text-texto">{erro}</p>}
+        {!dados && !erro && <p className="text-lg text-texto2">carregando…</p>}
 
-      {dados && (
-        <>
-          <header className="space-y-2">
-            <h1 className="text-3xl font-semibold leading-tight text-noite-900">
-              {dados.programa.titulo}
-            </h1>
-            <p className="text-lg text-noite-700">
-              {dados.programa.concluidos} de {dados.programa.total_days} concluídos
-            </p>
-          </header>
+        {dados && (
+          <>
+            <header className="space-y-2">
+              <h1 className="text-3xl font-bold leading-tight text-titulo">
+                {dados.programa.titulo}
+              </h1>
+              <p className="text-lg text-texto2">
+                {dados.programa.concluidos} de {dados.programa.total_days} concluídos
+              </p>
+            </header>
 
-          {dados.programa.notice && (
-            <p className="rounded-2xl border-2 border-ouro-300 bg-ouro-300/15 px-5 py-4 text-base leading-relaxed text-noite-900">
-              {dados.programa.notice}
-            </p>
-          )}
+            {dados.programa.notice && (
+              <p className="caixa-destaque px-5 py-4 text-base leading-relaxed text-texto">
+                {dados.programa.notice}
+              </p>
+            )}
 
-          <ol className="space-y-3">
-            {dados.licoes.map((licao) => (
-              <li key={licao.id}>
-                <ItemDoDia licao={licao} diario={dados.programa.unlock_rule === 'daily'} />
-              </li>
-            ))}
-          </ol>
-        </>
-      )}
+            <ol className="space-y-3">
+              {dados.licoes.map((licao) => (
+                <li key={licao.id}>
+                  <ItemDoDia licao={licao} diario={dados.programa.unlock_rule === 'daily'} />
+                </li>
+              ))}
+            </ol>
+          </>
+        )}
+      </div>
     </main>
   );
 }
@@ -85,35 +85,35 @@ function ItemDoDia({ licao, diario }: { licao: LicaoNaLista; diario: boolean }) 
   const bloqueado = licao.estado === 'bloqueado';
 
   const moldura = {
-    hoje: 'border-noite-900 bg-white',
-    concluido: 'border-noite-100 bg-white',
-    liberado: 'border-noite-100 bg-white',
-    bloqueado: 'border-noite-100 bg-noite-50',
+    hoje: 'border-2 border-ouro bg-cartao',
+    concluido: 'border border-linha bg-verde-fundo',
+    liberado: 'border border-linha bg-cartao',
+    bloqueado: 'border border-linha bg-fundo2',
   }[licao.estado];
 
   const conteudo = (
     <>
       <span className="flex items-baseline justify-between gap-3">
-        <span className="text-base font-semibold uppercase tracking-[0.12em] text-ouro-500">
+        <span className="rotulo">
           {rotulo}
           {licao.estado === 'hoje' && ' · hoje'}
         </span>
         {licao.estado === 'concluido' && (
-          <span className="text-base font-semibold text-noite-900">Concluído ✓</span>
+          <span className="text-base font-bold text-verde">Concluído ✓</span>
         )}
       </span>
 
-      <span className="mt-1 block text-lg font-semibold leading-snug text-noite-900">
+      <span className="mt-1 block text-lg font-semibold leading-snug text-texto">
         {licao.titulo}
       </span>
 
       {licao.frase && !bloqueado && (
-        <span className="mt-1 block text-base leading-relaxed text-noite-700">{licao.frase}</span>
+        <span className="mt-1 block text-base leading-relaxed text-texto2">{licao.frase}</span>
       )}
 
       {bloqueado && (
         <>
-          <span className="mt-1 block text-base font-medium text-noite-700">
+          <span className="mt-1 block text-base font-medium text-texto2">
             {textoDeLiberacao(licao.dias_para_liberar)}
           </span>
           {/*
@@ -124,9 +124,7 @@ function ItemDoDia({ licao, diario }: { licao: LicaoNaLista; diario: boolean }) 
            * letra apagada é o primeiro problema de quem lê com 60 anos.
            */}
           {licao.frase && (
-            <span className="mt-1 block text-base leading-relaxed text-noite-700/80">
-              {licao.frase}
-            </span>
+            <span className="mt-1 block text-base leading-relaxed text-texto2">{licao.frase}</span>
           )}
         </>
       )}
@@ -135,18 +133,14 @@ function ItemDoDia({ licao, diario }: { licao: LicaoNaLista; diario: boolean }) 
 
   if (bloqueado) {
     // Nada de clicar: mas o motivo está escrito, não escondido atrás de cadeado.
-    return (
-      <div className={`block min-h-[72px] rounded-2xl border-2 px-5 py-4 ${moldura}`}>
-        {conteudo}
-      </div>
-    );
+    return <div className={`block min-h-[72px] rounded-2xl px-5 py-4 ${moldura}`}>{conteudo}</div>;
   }
 
   return (
     <button
       type="button"
       onClick={() => irPara(`/licao/${licao.id}`)}
-      className={`block min-h-[72px] w-full rounded-2xl border-2 px-5 py-4 text-left ${moldura}`}
+      className={`block min-h-[72px] w-full rounded-2xl px-5 py-4 text-left ${moldura}`}
     >
       {conteudo}
     </button>

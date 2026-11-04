@@ -99,10 +99,10 @@ export function PassoInstalar({
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-6 px-5 py-10">
       <header className="space-y-3">
-        <h1 className="text-3xl font-semibold leading-tight text-noite-900">
+        <h1 className="text-3xl font-bold leading-tight text-titulo">
           Coloque o {APP_SHORT_NAME} na tela do seu celular
         </h1>
-        <p className="text-lg leading-relaxed text-noite-700">
+        <p className="text-lg leading-relaxed text-texto2">
           Assim você abre o app com um toque, todos os dias, como qualquer outro aplicativo.
         </p>
       </header>
@@ -110,28 +110,24 @@ export function PassoInstalar({
       {ios ? (
         <PassosIPhone />
       ) : prompt ? (
-        <button
-          type="button"
-          onClick={() => void instalar()}
-          className="min-h-[64px] w-full rounded-xl bg-noite-900 px-4 py-4 text-xl font-semibold text-white"
-        >
+        <button type="button" onClick={() => void instalar()} className="botao botao-dourado">
           Colocar na tela inicial
         </button>
       ) : esperou ? (
         <PassosAndroid />
       ) : (
-        <p className="text-lg text-noite-700">preparando…</p>
+        <p className="text-lg text-texto2">preparando…</p>
       )}
 
       {ios && (
-        <section className="space-y-3 border-t-2 border-noite-100 pt-5">
-          <p className="text-base leading-relaxed text-noite-700">
+        <section className="space-y-3 border-t-2 border-linha pt-5">
+          <p className="text-base leading-relaxed text-texto2">
             Não encontrou a opção? Abra este link no Safari.
           </p>
           <button
             type="button"
             onClick={() => void copiarLink()}
-            className="min-h-[48px] w-full rounded-xl border-2 border-noite-900 px-4 py-3 text-lg font-semibold text-noite-900"
+            className="botao botao-secundario"
           >
             {copiado ? 'Link copiado ✓' : 'Copiar link'}
           </button>
@@ -141,7 +137,7 @@ export function PassoInstalar({
       <button
         type="button"
         onClick={aoPular}
-        className="mt-auto min-h-[48px] w-full py-2 text-lg text-noite-700 underline"
+        className="link mt-auto w-full justify-center text-lg"
       >
         Agora não
       </button>
@@ -152,38 +148,36 @@ export function PassoInstalar({
 function Passo({ numero, children }: { numero: number; children: React.ReactNode }) {
   return (
     <li className="flex gap-3">
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-noite-900 text-lg font-semibold text-white">
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ouro text-lg font-extrabold text-cartao">
         {numero}
       </span>
-      <span className="pt-1 text-lg leading-relaxed text-noite-900">{children}</span>
+      <span className="pt-1 text-lg leading-relaxed text-texto">{children}</span>
     </li>
   );
 }
 
 function PassosIPhone() {
   return (
-    <ol className="space-y-4 rounded-2xl border-2 border-noite-100 bg-white px-5 py-5">
+    <ol className="space-y-4 cartao px-5 py-5">
       <Passo numero={1}>
         Toque no botão Compartilhar <IconeCompartilhar />. Se ele não aparecer, toque primeiro em{' '}
         <IconeMaisOpcoes />.
       </Passo>
       <Passo numero={2}>
-        Desça a lista e toque em <strong className="font-semibold">Adicionar à Tela de Início</strong>{' '}
-        <IconeAdicionar />.
+        Desça a lista e toque em{' '}
+        <strong className="font-semibold">Adicionar à Tela de Início</strong> <IconeAdicionar />.
       </Passo>
       <Passo numero={3}>
         Toque em <strong className="font-semibold">Adicionar</strong>.
       </Passo>
-      <Passo numero={4}>
-        Feche o Safari e abra o app pelo ícone do {APP_SHORT_NAME}.
-      </Passo>
+      <Passo numero={4}>Feche o Safari e abra o app pelo ícone do {APP_SHORT_NAME}.</Passo>
     </ol>
   );
 }
 
 function PassosAndroid() {
   return (
-    <ol className="space-y-4 rounded-2xl border-2 border-noite-100 bg-white px-5 py-5">
+    <ol className="space-y-4 cartao px-5 py-5">
       <Passo numero={1}>
         Toque nos três pontinhos <IconeMenuAndroid />, no canto de cima.
       </Passo>

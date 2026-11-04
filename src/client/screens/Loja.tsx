@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import type { ItemDaLoja } from '../../shared/types';
 import { api, registrarEvento } from '../lib/api';
 import { emReais } from '../lib/dinheiro';
+import { Arte } from '../components/Visual';
 import { irPara } from '../lib/rota';
 
 /**
@@ -26,42 +27,45 @@ export function Loja() {
   }, []);
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-5 px-5 py-8">
-      <header className="space-y-2">
-        <h1 className="text-3xl font-semibold leading-tight text-noite-900">Loja</h1>
-        <p className="text-lg leading-relaxed text-noite-700">
-          Conteúdos para rezar além da sua jornada.
-        </p>
-      </header>
+    <main className="mx-auto flex min-h-dvh max-w-md flex-col">
+      <Arte />
+      <div className="relative -mt-10 flex flex-col gap-5 px-5 pb-8">
+        <header className="space-y-2">
+          <h1 className="text-3xl font-bold leading-tight text-titulo">Tesouros</h1>
+          <p className="text-lg leading-relaxed text-texto2">
+            Conteúdos para rezar além da sua jornada.
+          </p>
+        </header>
 
-      {erro && (
-        <p className="text-lg text-noite-900">
-          Não consegui carregar a loja agora. Confira a internet e tente de novo.
-        </p>
-      )}
-      {!itens && !erro && <p className="text-lg text-noite-700">carregando…</p>}
+        {erro && (
+          <p className="text-lg text-texto">
+            Não consegui carregar os Tesouros agora. Confira a internet e tente de novo.
+          </p>
+        )}
+        {!itens && !erro && <p className="text-lg text-texto2">carregando…</p>}
 
-      {itens?.length === 0 && (
-        <p className="text-lg leading-relaxed text-noite-700">
-          Nada por aqui ainda. Em breve teremos novos conteúdos.
-        </p>
-      )}
+        {itens?.length === 0 && (
+          <p className="text-lg leading-relaxed text-texto2">
+            Nada por aqui ainda. Em breve teremos novos conteúdos.
+          </p>
+        )}
 
-      <ul className="space-y-4">
-        {itens?.map((item) => (
-          <li key={item.id}>
-            <CartaoDaLoja item={item} />
-          </li>
-        ))}
-      </ul>
+        <ul className="space-y-4">
+          {itens?.map((item) => (
+            <li key={item.id}>
+              <CartaoDaLoja item={item} />
+            </li>
+          ))}
+        </ul>
+      </div>
     </main>
   );
 }
 
 function CartaoDaLoja({ item }: { item: ItemDaLoja }) {
   return (
-    <article className="space-y-3 rounded-2xl border-2 border-noite-100 bg-white px-5 py-5">
-      <h2 className="text-xl font-semibold leading-snug text-noite-900">
+    <article className="space-y-3 cartao px-5 py-5">
+      <h2 className="text-xl font-semibold leading-snug text-titulo">
         {/* Cadeado só em quem não tem: ele é a informação, não enfeite. */}
         {!item.tem_acesso && <span aria-hidden="true">🔒 </span>}
         {item.nome}
@@ -69,10 +73,10 @@ function CartaoDaLoja({ item }: { item: ItemDaLoja }) {
 
       {item.inclui.length > 0 && (
         <div className="space-y-1">
-          <p className="text-base font-semibold text-noite-700">Vem com:</p>
+          <p className="text-base font-semibold text-texto2">Vem com:</p>
           <ul className="space-y-1">
             {item.inclui.map((nome) => (
-              <li key={nome} className="text-base leading-relaxed text-noite-700">
+              <li key={nome} className="text-base leading-relaxed text-texto2">
                 • {nome}
               </li>
             ))}
@@ -82,11 +86,11 @@ function CartaoDaLoja({ item }: { item: ItemDaLoja }) {
 
       {item.tem_acesso ? (
         <>
-          <p className="text-lg font-semibold text-noite-900">Liberado ✓</p>
+          <p className="text-lg font-bold text-verde">Liberado ✓</p>
           <button
             type="button"
             onClick={() => irPara(item.abrir ?? `/produto/${item.id}`)}
-            className="min-h-[56px] w-full rounded-xl bg-noite-900 px-4 py-3 text-lg font-semibold text-white"
+            className="botao botao-secundario"
           >
             Abrir
           </button>
@@ -94,12 +98,12 @@ function CartaoDaLoja({ item }: { item: ItemDaLoja }) {
       ) : (
         <>
           {item.preco_cents !== null && (
-            <p className="text-xl font-semibold text-noite-900">{emReais(item.preco_cents)}</p>
+            <p className="text-xl font-semibold text-texto">{emReais(item.preco_cents)}</p>
           )}
           <button
             type="button"
             onClick={() => irPara(`/produto/${item.id}`)}
-            className="min-h-[56px] w-full rounded-xl border-2 border-noite-900 px-4 py-3 text-lg font-semibold text-noite-900"
+            className="botao botao-secundario"
           >
             Ver
           </button>

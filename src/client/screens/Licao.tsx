@@ -3,6 +3,7 @@ import type { LicaoCompleta } from '../../shared/types';
 import { Player, type Faixa } from '../components/Player';
 import { TextoMd } from '../components/TextoMd';
 import { api, ErroApi } from '../lib/api';
+import { ControleLetra } from '../components/Visual';
 import { irPara } from '../lib/rota';
 
 /** Uma frase curta ao concluir. Sem promessa de resultado (§14). */
@@ -84,41 +85,40 @@ export function Licao({ id }: { id: string }) {
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-6 px-5 py-8">
-      <button
-        type="button"
-        onClick={() => irPara(licao ? `/programa/${licao.programa_id}` : '/')}
-        className="min-h-[48px] self-start text-lg text-noite-700 underline"
-      >
-        ← Voltar para a lista
-      </button>
+      <div className="flex items-center justify-between gap-3">
+        <button
+          type="button"
+          onClick={() => irPara(licao ? `/programa/${licao.programa_id}` : '/')}
+          className="link text-lg"
+        >
+          ‹ Voltar para a lista
+        </button>
+        <ControleLetra />
+      </div>
 
       {erro && !licao && (
         <div className="space-y-4">
-          <p className="text-xl leading-relaxed text-noite-900">{erro}</p>
-          <button
-            type="button"
-            onClick={() => irPara('/')}
-            className="min-h-[56px] w-full rounded-xl bg-noite-900 px-4 py-4 text-xl font-semibold text-white"
-          >
+          <p className="text-xl leading-relaxed text-texto">{erro}</p>
+          <button type="button" onClick={() => irPara('/')} className="botao botao-secundario">
             Voltar para o início
           </button>
         </div>
       )}
 
-      {!licao && !erro && <p className="text-lg text-noite-700">carregando…</p>}
+      {!licao && !erro && <p className="text-lg text-texto2">carregando…</p>}
 
       {licao && (
         <>
           <header className="space-y-2">
-            <p className="text-base font-semibold uppercase tracking-[0.14em] text-ouro-500">
+            <p className="text-base font-semibold uppercase tracking-[0.14em] text-ouro">
               {licao.unlock_rule === 'daily' ? 'Dia' : 'Parte'} {licao.dia} de {licao.total_days}
             </p>
-            <h1 className="text-3xl font-semibold leading-tight text-noite-900">{licao.titulo}</h1>
-            {licao.frase && <p className="text-lg leading-relaxed text-noite-700">{licao.frase}</p>}
+            <h1 className="text-3xl font-bold leading-tight text-titulo">{licao.titulo}</h1>
+            {licao.frase && <p className="text-lg leading-relaxed text-texto2">{licao.frase}</p>}
           </header>
 
           {licao.notice && (
-            <p className="rounded-2xl border-2 border-ouro-300 bg-ouro-300/15 px-5 py-4 text-base leading-relaxed text-noite-900">
+            <p className="caixa-destaque px-5 py-4 text-base leading-relaxed text-texto">
               {licao.notice}
             </p>
           )}
@@ -126,7 +126,7 @@ export function Licao({ id }: { id: string }) {
           {faixas.length > 0 ? (
             <Player faixas={faixas} />
           ) : (
-            <p className="text-base text-noite-700">
+            <p className="text-base text-texto2">
               {licao.unlock_rule === 'daily' ? 'Este dia' : 'Esta parte'} é de leitura, sem áudio.
             </p>
           )}
@@ -134,17 +134,17 @@ export function Licao({ id }: { id: string }) {
           {licao.body_md && <TextoMd md={licao.body_md} />}
 
           {feito ? (
-            <p className="rounded-2xl border-2 border-noite-900 bg-white px-5 py-5 text-xl font-semibold leading-relaxed text-noite-900">
+            <p className="caixa-destaque px-5 py-5 text-xl font-semibold leading-relaxed text-texto">
               Concluído ✓ {feito.mensagem}
             </p>
           ) : licao.estado === 'concluido' ? (
-            <p className="text-xl font-semibold text-noite-900">Concluído ✓</p>
+            <p className="text-xl font-semibold text-texto">Concluído ✓</p>
           ) : (
             <button
               type="button"
               onClick={() => void concluir()}
               disabled={concluindo}
-              className="min-h-[64px] w-full rounded-xl bg-noite-900 px-4 py-4 text-xl font-semibold text-white disabled:opacity-60"
+              className="botao botao-verde"
             >
               {concluindo ? 'Marcando…' : 'Concluí o dia de hoje'}
             </button>

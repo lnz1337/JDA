@@ -83,7 +83,7 @@ export function PassoHorario({ aoTerminar }: { aoTerminar: () => void }) {
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-6 px-5 py-10">
       <header className="space-y-3">
-        <h1 className="text-3xl font-semibold leading-tight text-noite-900">
+        <h1 className="text-3xl font-bold leading-tight text-titulo">
           Que horas é melhor para você rezar?
         </h1>
       </header>
@@ -95,7 +95,7 @@ export function PassoHorario({ aoTerminar }: { aoTerminar: () => void }) {
               type="button"
               disabled={salvando}
               onClick={() => void escolher(o.hora)}
-              className="min-h-[64px] w-full rounded-xl border-2 border-noite-900 px-4 py-4 text-xl font-semibold text-noite-900 disabled:opacity-60"
+              className="botao botao-secundario"
             >
               {o.rotulo}
             </button>
@@ -111,7 +111,7 @@ export function PassoHorario({ aoTerminar }: { aoTerminar: () => void }) {
                 type="button"
                 disabled={salvando}
                 onClick={() => void escolher(h)}
-                className="min-h-[56px] w-full rounded-xl border-2 border-noite-100 bg-white text-lg font-semibold text-noite-900 disabled:opacity-60"
+                className="min-h-[56px] w-full rounded-xl border-2 border-linha bg-cartao text-lg font-semibold text-texto disabled:opacity-60"
               >
                 {h}h
               </button>
@@ -122,32 +122,28 @@ export function PassoHorario({ aoTerminar }: { aoTerminar: () => void }) {
         <button
           type="button"
           onClick={() => setMostrarOutras(true)}
-          className="min-h-[48px] w-full py-2 text-lg text-noite-700 underline"
+          className="link w-full justify-center text-lg"
         >
           Outro horário
         </button>
       )}
 
       {aviso && (
-        <p className="rounded-2xl border-2 border-ouro-300 bg-ouro-300/15 px-5 py-4 text-lg leading-relaxed text-noite-900">
+        <p className="caixa-destaque px-5 py-4 text-lg leading-relaxed text-texto">
           {aviso}
           {/* Só em staging: sem Mac não há inspetor para o Safari do iPhone. */}
           {diagnostico && (
-            <span className="mt-3 block rounded-xl bg-noite-100 px-4 py-3 font-mono text-sm leading-snug text-noite-700">
+            <span className="mt-3 block rounded-xl bg-fundo2 px-4 py-3 font-mono text-sm leading-snug text-texto2">
               {diagnostico}
             </span>
           )}
-          <button
-            type="button"
-            onClick={aoTerminar}
-            className="mt-3 min-h-[48px] w-full rounded-xl bg-noite-900 px-4 py-3 text-lg font-semibold text-white"
-          >
+          <button type="button" onClick={aoTerminar} className="botao botao-dourado mt-3">
             Continuar
           </button>
         </p>
       )}
 
-      {salvando && <p className="text-lg text-noite-700">guardando…</p>}
+      {salvando && <p className="text-lg text-texto2">guardando…</p>}
     </main>
   );
 }

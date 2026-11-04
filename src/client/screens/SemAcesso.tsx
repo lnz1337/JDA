@@ -1,5 +1,3 @@
-import { APP_NAME } from '../../shared/constants';
-
 /**
  * Entrou, mas não há produto liberado. Pode ser compra ainda processando,
  * reembolso ou e-mail diferente do usado na compra — por isso a tela explica e
@@ -7,15 +5,15 @@ import { APP_NAME } from '../../shared/constants';
  */
 export function SemAcesso({ suporte, aoSair }: { suporte: string | null; aoSair: () => void }) {
   return (
-    <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-6 px-6 py-12">
+    <main className="mx-auto flex max-w-md flex-col gap-6 px-5 py-8">
       <header className="space-y-2">
-        <h1 className="text-2xl font-semibold text-noite-900">{APP_NAME}</h1>
-        <p className="text-sm text-noite-700">
+        <h1 className="text-3xl font-bold text-titulo">Ainda não há conteúdo aqui</h1>
+        <p className="text-lg leading-relaxed text-texto2">
           Você entrou, mas ainda não há nenhum conteúdo liberado nesta conta.
         </p>
       </header>
 
-      <section className="space-y-3 rounded-2xl border border-noite-100 bg-white p-5 text-sm text-noite-700">
+      <section className="cartao space-y-3 p-5 text-lg leading-relaxed text-texto">
         <p>Isso costuma acontecer por um destes motivos:</p>
         <ul className="list-disc space-y-1 pl-5">
           <li>a compra acabou de ser feita e ainda está sendo confirmada;</li>
@@ -25,7 +23,7 @@ export function SemAcesso({ suporte, aoSair }: { suporte: string | null; aoSair:
         {suporte && (
           <p className="pt-2">
             Se não for nenhum desses, escreva para{' '}
-            <a className="font-medium text-noite-900 underline" href={`mailto:${suporte}`}>
+            <a className="font-semibold text-ouro-forte underline" href={`mailto:${suporte}`}>
               {suporte}
             </a>{' '}
             que a gente resolve.
@@ -33,7 +31,7 @@ export function SemAcesso({ suporte, aoSair }: { suporte: string | null; aoSair:
         )}
       </section>
 
-      <button type="button" onClick={aoSair} className="text-sm text-noite-700 underline">
+      <button type="button" onClick={aoSair} className="botao botao-secundario">
         Sair
       </button>
     </main>

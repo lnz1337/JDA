@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { Oferta, Programa } from '../../shared/types';
-import { APP_NAME } from '../../shared/constants';
+import { Arte } from '../components/Visual';
 import { api, registrarEvento, type Me } from '../lib/api';
 import { permissaoDeNotificacao } from '../lib/dispositivo';
 import { irPara } from '../lib/rota';
@@ -28,79 +28,81 @@ export function Home({ me, aoSair }: { me: Me; aoSair: () => void }) {
   const outros = programas?.filter((p) => p.unlock_rule !== 'daily') ?? [];
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-7 px-5 py-10">
-      <header className="space-y-1">
-        <p className="text-base font-semibold uppercase tracking-[0.18em] text-ouro-500">
-          {primeiro ? `Olá, ${primeiro}` : 'Olá'}
-        </p>
-        <h1 className="text-3xl font-semibold text-noite-900">{APP_NAME}</h1>
-      </header>
+    <main className="mx-auto flex min-h-dvh max-w-md flex-col">
+      {/* A primeira tela da manhã: a única em que a arte passa na frente do resto. */}
+      <Arte prioridade />
+      <div className="relative -mt-10 flex flex-1 flex-col gap-7 px-5 pb-10">
+        <header>
+          <h1 className="text-4xl font-bold leading-tight text-titulo">
+            {primeiro ? `Olá, ${primeiro}` : 'Olá'}
+          </h1>
+        </header>
 
-      {erro && (
-        <p className="rounded-2xl bg-white px-5 py-4 text-lg text-noite-700">
-          Não consegui carregar agora. Confira a internet e puxe a tela para atualizar.
-        </p>
-      )}
-
-      {programas === null && !erro && <p className="text-lg text-noite-700">carregando…</p>}
-
-      <ConviteDoAparelho />
-
-      {jornada && <CartaoDoDia programa={jornada} />}
-
-      {/* Abaixo do cartão do dia, nunca acima: a oração vem antes da venda (§9). */}
-      {jornada && <CartaoDeOferta />}
-
-      {outros.length > 0 && (
-        <section className="space-y-3">
-          <h2 className="text-xl font-semibold text-noite-900">Também liberado para você</h2>
-          <ul className="space-y-3">
-            {outros.map((p) => (
-              <li key={p.id}>
-                <button
-                  type="button"
-                  onClick={() => irPara(`/programa/${p.id}`)}
-                  className="min-h-[56px] w-full rounded-2xl border-2 border-noite-100 bg-white px-5 py-4 text-left"
-                >
-                  <span className="block text-lg font-semibold text-noite-900">{p.titulo}</span>
-                  <span className="block text-base text-noite-700">
-                    {p.concluidos > 0
-                      ? `${p.concluidos} de ${p.total_days} concluídos`
-                      : `${p.total_days} ${p.total_days === 1 ? 'parte' : 'partes'}`}
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      {programas !== null && programas.length === 0 && !erro && (
-        <section className="space-y-3 rounded-2xl border-2 border-noite-100 bg-white px-5 py-4">
-          <p className="text-lg text-noite-700">
-            Seu acesso está ativo, mas ainda não há conteúdo liberado nesta conta.
+        {erro && (
+          <p className="cartao px-5 py-4 text-lg text-texto">
+            Não consegui carregar agora. Confira a internet e puxe a tela para atualizar.
           </p>
-          {me.suporte && (
-            <p className="text-lg text-noite-700">
-              Escreva para{' '}
-              <a className="font-medium text-noite-900 underline" href={`mailto:${me.suporte}`}>
-                {me.suporte}
-              </a>{' '}
-              que a gente resolve.
+        )}
+
+        {programas === null && !erro && <p className="text-lg text-texto2">carregando…</p>}
+
+        <ConviteDoAparelho />
+
+        {jornada && <CartaoDoDia programa={jornada} />}
+
+        {/* Abaixo do cartão do dia, nunca acima: a oração vem antes da venda (§9). */}
+        {jornada && <CartaoDeOferta />}
+
+        {outros.length > 0 && (
+          <section className="space-y-3">
+            <h2 className="text-xl font-semibold text-titulo">Também liberado para você</h2>
+            <ul className="space-y-3">
+              {outros.map((p) => (
+                <li key={p.id}>
+                  <button
+                    type="button"
+                    onClick={() => irPara(`/programa/${p.id}`)}
+                    className="min-h-[56px] w-full cartao px-5 py-4 text-left"
+                  >
+                    <span className="block text-lg font-semibold text-texto">{p.titulo}</span>
+                    <span className="block text-base text-texto2">
+                      {p.concluidos > 0
+                        ? `${p.concluidos} de ${p.total_days} concluídos`
+                        : `${p.total_days} ${p.total_days === 1 ? 'parte' : 'partes'}`}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {programas !== null && programas.length === 0 && !erro && (
+          <section className="space-y-3 cartao px-5 py-4">
+            <p className="text-lg text-texto2">
+              Seu acesso está ativo, mas ainda não há conteúdo liberado nesta conta.
             </p>
-          )}
-        </section>
-      )}
+            {me.suporte && (
+              <p className="text-lg text-texto2">
+                Escreva para{' '}
+                <a
+                  className="font-semibold text-ouro-forte underline"
+                  href={`mailto:${me.suporte}`}
+                >
+                  {me.suporte}
+                </a>{' '}
+                que a gente resolve.
+              </p>
+            )}
+          </section>
+        )}
 
-      <LinhaDoLembrete hora={me.usuario.prayer_hour ?? null} />
+        <LinhaDoLembrete hora={me.usuario.prayer_hour ?? null} />
 
-      <button
-        type="button"
-        onClick={aoSair}
-        className="mt-auto min-h-[48px] text-lg text-noite-700 underline"
-      >
-        Sair do app
-      </button>
+        <button type="button" onClick={aoSair} className="link mt-auto self-center text-lg">
+          Sair do app
+        </button>
+      </div>
     </main>
   );
 }
@@ -137,14 +139,14 @@ function ConviteDoAparelho() {
   const instalar = passo === 'instalar';
 
   return (
-    <section className="space-y-3 rounded-2xl border-2 border-ouro-300 bg-ouro-300/10 px-5 py-4">
-      <p className="text-lg font-semibold leading-snug text-noite-900">
+    <section className="space-y-3 caixa-destaque px-5 py-4">
+      <p className="text-lg font-semibold leading-snug text-texto">
         {instalar ? 'Coloque o app na tela inicial' : 'Ligar o lembrete'}
       </p>
       <button
         type="button"
         onClick={() => irPara(instalar ? '/instalar' : '/lembrete')}
-        className="min-h-[56px] w-full rounded-xl bg-noite-900 px-4 py-3 text-lg font-semibold text-white"
+        className="botao botao-secundario"
       >
         {instalar ? 'Ver como fazer' : 'Quero o lembrete'}
       </button>
@@ -154,7 +156,7 @@ function ConviteDoAparelho() {
           dispensar(instalar ? CHAVES.instalarDispensado : CHAVES.lembreteDispensado);
           setPasso(conviteAtual());
         }}
-        className="min-h-[48px] w-full py-1 text-base text-noite-700 underline"
+        className="link w-full justify-center text-base"
       >
         Agora não
       </button>
@@ -182,17 +184,21 @@ function CartaoDeOferta() {
   if (!oferta) return null;
 
   return (
-    <section className="space-y-3 rounded-2xl border-2 border-noite-100 bg-white px-5 py-5">
-      <h2 className="text-xl font-semibold leading-snug text-noite-900">{oferta.titulo}</h2>
-      <p className="text-lg leading-relaxed text-noite-700">{oferta.texto}</p>
-      {oferta.aviso && <p className="text-base leading-relaxed text-noite-700">{oferta.aviso}</p>}
+    <section className="space-y-3 cartao px-5 py-5">
+      <h2 className="text-xl font-semibold leading-snug text-titulo">{oferta.titulo}</h2>
+      <p className="text-lg leading-relaxed text-texto2">{oferta.texto}</p>
+      {oferta.aviso && <p className="text-base leading-relaxed text-texto2">{oferta.aviso}</p>}
       <button
         type="button"
         onClick={() => {
-          registrarEvento('offer_clicked', { produto: oferta.produto, dia: oferta.dia, canal: 'home' });
+          registrarEvento('offer_clicked', {
+            produto: oferta.produto,
+            dia: oferta.dia,
+            canal: 'home',
+          });
           irPara(`/produto/${oferta.produto}?origem=home`);
         }}
-        className="min-h-[56px] w-full rounded-xl bg-noite-900 px-4 py-3 text-lg font-semibold text-white"
+        className="botao botao-secundario"
       >
         Conhecer
       </button>
@@ -205,7 +211,7 @@ function CartaoDeOferta() {
             body: JSON.stringify({ produto: oferta.produto }),
           }).catch(() => undefined);
         }}
-        className="min-h-[48px] w-full py-1 text-base text-noite-700 underline"
+        className="link w-full justify-center text-base"
       >
         Agora não
       </button>
@@ -221,9 +227,13 @@ function LinhaDoLembrete({ hora }: { hora: number | null }) {
   if (hora === null || permissaoDeNotificacao() !== 'granted') return null;
 
   return (
-    <p className="text-base text-noite-700">
+    <p className="text-base text-texto2">
       Lembrete às {hora}h ·{' '}
-      <button type="button" onClick={() => irPara('/lembrete')} className="underline">
+      <button
+        type="button"
+        onClick={() => irPara('/lembrete')}
+        className="font-semibold text-ouro-forte underline"
+      >
         mudar
       </button>
     </p>
@@ -235,23 +245,23 @@ function CartaoDoDia({ programa }: { programa: Programa }) {
   const concluiuTudo = programa.concluidos >= programa.total_days;
 
   return (
-    <section className="space-y-4 rounded-3xl border-2 border-noite-100 bg-white px-5 py-6">
+    <section className="space-y-4 cartao px-5 py-6">
       {dia ? (
         <>
-          <p className="text-base font-semibold uppercase tracking-[0.14em] text-ouro-500">
-            Dia {dia.dia} de {programa.total_days}
+          <p className="rotulo">
+            Agora · Dia {dia.dia} de {programa.total_days}
           </p>
-          <h2 className="text-2xl font-semibold leading-snug text-noite-900">{dia.titulo}</h2>
-          {dia.frase && <p className="text-lg leading-relaxed text-noite-700">{dia.frase}</p>}
+          <h2 className="font-serif text-3xl font-bold leading-snug text-titulo">{dia.titulo}</h2>
+          {dia.frase && <p className="text-lg leading-relaxed text-texto2">{dia.frase}</p>}
 
           {dia.estado === 'concluido' && (
-            <p className="text-lg font-semibold text-noite-900">Concluído ✓</p>
+            <p className="text-lg font-bold text-verde">Concluído ✓</p>
           )}
 
           <button
             type="button"
             onClick={() => irPara(`/licao/${dia.id}`)}
-            className="min-h-[56px] w-full rounded-xl bg-noite-900 px-4 py-4 text-xl font-semibold text-white"
+            className="botao botao-dourado"
           >
             {dia.estado === 'concluido'
               ? 'Ouvir de novo'
@@ -261,19 +271,19 @@ function CartaoDoDia({ programa }: { programa: Programa }) {
           </button>
         </>
       ) : (
-        <p className="text-lg text-noite-700">A jornada vai começar.</p>
+        <p className="text-lg text-texto2">A jornada vai começar.</p>
       )}
 
       <button
         type="button"
         onClick={() => irPara(`/programa/${programa.id}`)}
-        className="min-h-[48px] w-full text-lg text-noite-700 underline"
+        className="link w-full justify-center text-lg"
       >
         Ver os {programa.total_days} dias
       </button>
 
       {concluiuTudo && (
-        <p className="text-lg font-medium text-noite-900">
+        <p className="text-lg font-medium text-texto">
           Você concluiu a jornada inteira. Que São Miguel continue à sua frente.
         </p>
       )}

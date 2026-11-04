@@ -39,23 +39,19 @@ export function Produto({ id }: { id: string }) {
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-5 px-5 py-8">
-      <button
-        type="button"
-        onClick={() => irPara('/loja')}
-        className="min-h-[48px] self-start text-lg text-noite-700 underline"
-      >
-        ← Voltar para a loja
+      <button type="button" onClick={() => irPara('/loja')} className="link self-start text-lg">
+        ‹ Voltar para os Tesouros
       </button>
 
-      {erro && <p className="text-lg text-noite-900">{erro}</p>}
-      {!produto && !erro && <p className="text-lg text-noite-700">carregando…</p>}
+      {erro && <p className="text-lg text-texto">{erro}</p>}
+      {!produto && !erro && <p className="text-lg text-texto2">carregando…</p>}
 
       {produto && (
         <>
           <header className="space-y-2">
-            <h1 className="text-3xl font-semibold leading-tight text-noite-900">{produto.nome}</h1>
+            <h1 className="text-3xl font-bold leading-tight text-titulo">{produto.nome}</h1>
             {produto.tem_acesso && (
-              <p className="text-lg font-semibold text-noite-900">Liberado na sua conta ✓</p>
+              <p className="text-lg font-bold text-verde">Liberado na sua conta ✓</p>
             )}
           </header>
 
@@ -63,7 +59,7 @@ export function Produto({ id }: { id: string }) {
           {produto.avisos.map((aviso) => (
             <p
               key={aviso}
-              className="rounded-2xl border-2 border-ouro-300 bg-ouro-300/15 px-5 py-4 text-base leading-relaxed text-noite-900"
+              className="caixa-destaque px-5 py-4 text-base leading-relaxed text-texto"
             >
               {aviso}
             </p>
@@ -72,17 +68,14 @@ export function Produto({ id }: { id: string }) {
           {produto.descricao_md && <TextoMd md={produto.descricao_md} />}
 
           <section className="space-y-4">
-            <h2 className="text-xl font-semibold text-noite-900">O que vem dentro</h2>
+            <h2 className="text-xl font-semibold text-titulo">O que vem dentro</h2>
             {produto.partes.map((parte) => (
-              <article
-                key={parte.id}
-                className="space-y-3 rounded-2xl border-2 border-noite-100 bg-white px-5 py-4"
-              >
-                <h3 className="text-lg font-semibold leading-snug text-noite-900">{parte.nome}</h3>
+              <article key={parte.id} className="space-y-3 cartao px-5 py-4">
+                <h3 className="text-lg font-semibold leading-snug text-texto">{parte.nome}</h3>
 
                 <ol className="space-y-1">
                   {parte.licoes.map((titulo) => (
-                    <li key={titulo} className="text-base leading-relaxed text-noite-700">
+                    <li key={titulo} className="text-base leading-relaxed text-texto2">
                       {titulo}
                     </li>
                   ))}
@@ -92,7 +85,7 @@ export function Produto({ id }: { id: string }) {
                   <button
                     type="button"
                     onClick={() => irPara(`/programa/${parte.programa_id}`)}
-                    className="min-h-[56px] w-full rounded-xl bg-noite-900 px-4 py-3 text-lg font-semibold text-white"
+                    className="botao botao-secundario"
                   >
                     Abrir
                   </button>
@@ -118,7 +111,7 @@ export function Produto({ id }: { id: string }) {
 function Compra({ produto, canal }: { produto: ProdutoDaLoja; canal: 'loja' | 'home' }) {
   if (!produto.checkout_url) {
     return (
-      <p className="rounded-2xl border-2 border-noite-100 px-5 py-4 text-lg leading-relaxed text-noite-700">
+      <p className="cartao px-5 py-4 text-lg leading-relaxed text-texto2">
         Este conteúdo ainda não está disponível para compra aqui.
       </p>
     );
@@ -127,7 +120,7 @@ function Compra({ produto, canal }: { produto: ProdutoDaLoja; canal: 'loja' | 'h
   return (
     <section className="space-y-4">
       {produto.preco_cents !== null && (
-        <p className="text-2xl font-semibold text-noite-900">{emReais(produto.preco_cents)}</p>
+        <p className="text-2xl font-semibold text-texto">{emReais(produto.preco_cents)}</p>
       )}
 
       {/*
@@ -136,7 +129,7 @@ function Compra({ produto, canal }: { produto: ProdutoDaLoja; canal: 'loja' | 'h
        * escreve para o suporte achando que não recebeu.
        */}
       {produto.email_da_conta && (
-        <p className="rounded-2xl border-2 border-ouro-300 bg-ouro-300/15 px-5 py-4 text-lg leading-relaxed text-noite-900">
+        <p className="caixa-destaque px-5 py-4 text-lg leading-relaxed text-texto">
           Na compra, use o mesmo e-mail do app:{' '}
           <strong className="break-all font-semibold">{produto.email_da_conta}</strong>
         </p>
@@ -153,7 +146,7 @@ function Compra({ produto, canal }: { produto: ProdutoDaLoja; canal: 'loja' | 'h
           registrarEvento('checkout_clicked', { produto: produto.id, canal });
           marcarCompra(produto.id);
         }}
-        className="block min-h-[64px] w-full rounded-xl bg-noite-900 px-4 py-4 text-center text-xl font-semibold text-white"
+        className="botao botao-dourado"
       >
         Quero este conteúdo
       </a>

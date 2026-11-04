@@ -12,7 +12,7 @@ function comNegrito(texto: string): Array<JSX.Element | string> {
   return texto.split(/(\*\*[^*]+\*\*)/g).map((parte, i) =>
     parte.startsWith('**') && parte.endsWith('**') ? (
       // biome-ignore lint/suspicious/noArrayIndexKey: pedaços de uma linha fixa
-      <strong key={i} className="font-semibold text-noite-900">
+      <strong key={i} className="font-semibold text-texto">
         {parte.slice(2, -2)}
       </strong>
     ) : (
@@ -41,7 +41,7 @@ export function TextoMd({ md }: { md: string }) {
             // biome-ignore lint/suspicious/noArrayIndexKey: blocos de um texto fixo
             <blockquote
               key={i}
-              className="border-l-4 border-ouro-300 pl-4 text-lg italic leading-relaxed text-noite-900"
+              className="border-l-4 border-ouro pl-4 text-lg italic leading-relaxed text-texto"
             >
               {comNegrito(linhas.map((l) => l.replace(/^>\s?/, '')).join(' '))}
             </blockquote>
@@ -62,7 +62,7 @@ export function TextoMd({ md }: { md: string }) {
             <Lista
               // biome-ignore lint/suspicious/noArrayIndexKey: blocos de um texto fixo
               key={i}
-              className={`space-y-2 pl-6 text-lg leading-relaxed text-noite-700 ${
+              className={`space-y-2 pl-6 text-lg leading-relaxed text-texto2 ${
                 ordenada ? 'list-decimal' : 'list-disc'
               }`}
             >
@@ -76,7 +76,7 @@ export function TextoMd({ md }: { md: string }) {
 
         return (
           // biome-ignore lint/suspicious/noArrayIndexKey: blocos de um texto fixo
-          <p key={i} className="text-lg leading-relaxed text-noite-700">
+          <p key={i} className="text-lg leading-relaxed text-texto2">
             {comNegrito(bloco)}
           </p>
         );

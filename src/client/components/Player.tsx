@@ -168,7 +168,7 @@ export function Player({ faixas }: { faixas: Faixa[] }) {
   const restante = Math.max(duracao - atual, 0);
 
   return (
-    <section className="space-y-5 rounded-3xl border-2 border-noite-100 bg-white px-5 py-6">
+    <section className="space-y-5 cartao px-5 py-6">
       {faixas.length > 1 && (
         <div className="flex flex-wrap gap-2">
           {faixas.map((f, i) => (
@@ -179,8 +179,8 @@ export function Player({ faixas }: { faixas: Faixa[] }) {
               aria-pressed={i === indice}
               className={`min-h-[48px] flex-1 rounded-xl border-2 px-4 py-3 text-base font-semibold ${
                 i === indice
-                  ? 'border-noite-900 bg-noite-900 text-white'
-                  : 'border-noite-100 bg-white text-noite-900'
+                  ? 'border-ouro bg-fundo2 text-ouro-forte'
+                  : 'border-linha bg-cartao text-texto'
               }`}
             >
               {f.titulo}
@@ -233,11 +233,7 @@ export function Player({ faixas }: { faixas: Faixa[] }) {
         }}
       />
 
-      <button
-        type="button"
-        onClick={alternar}
-        className="min-h-[64px] w-full rounded-xl bg-noite-900 px-4 py-4 text-xl font-semibold text-white"
-      >
+      <button type="button" onClick={alternar} className="botao botao-dourado">
         {tocando ? '❚❚  Pausar' : '▶  Tocar'}
       </button>
 
@@ -255,10 +251,10 @@ export function Player({ faixas }: { faixas: Faixa[] }) {
               if (audio) audio.currentTime = Number(e.target.value);
               setAtual(Number(e.target.value));
             }}
-            className="h-12 w-full accent-noite-900"
+            className="h-12 w-full accent-[#bd8f34]"
           />
         </label>
-        <p className="text-base font-medium text-noite-700">
+        <p className="text-base font-medium text-texto2">
           {duracao > 0 ? `Faltam ${mmss(restante)} de ${mmss(duracao)}` : 'Carregando o áudio…'}
         </p>
       </div>
@@ -267,14 +263,14 @@ export function Player({ faixas }: { faixas: Faixa[] }) {
         <button
           type="button"
           onClick={() => pular(-PULO_S)}
-          className="min-h-[56px] flex-1 rounded-xl border-2 border-noite-900 px-3 py-3 text-lg font-semibold text-noite-900"
+          className="botao botao-secundario flex-1"
         >
           ↺ Voltar {PULO_S}s
         </button>
         <button
           type="button"
           onClick={() => pular(PULO_S)}
-          className="min-h-[56px] flex-1 rounded-xl border-2 border-noite-900 px-3 py-3 text-lg font-semibold text-noite-900"
+          className="botao botao-secundario flex-1"
         >
           Avançar {PULO_S}s ↻
         </button>
