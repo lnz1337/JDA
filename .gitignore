@@ -15,3 +15,6 @@ __pycache__/
 
 # SQL gerado por scripts/seed-sql.ts
 seed/seed.sql
+
+# Prints de conferência das fases de estilo (docs/estilo-visual.md)
+prints/

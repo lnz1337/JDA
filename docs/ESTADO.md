@@ -1,4 +1,4 @@
-# Estado do projeto — 30/10/2026
+# Estado do projeto — 04/11/2026
 
 Retrato para uma sessão nova continuar daqui. A spec é o [CLAUDE.md](../CLAUDE.md);
 este arquivo registra o que **não** cabe lá: o que já rodou, o que está só em
@@ -384,6 +384,48 @@ modelo curto, então a correção ainda não foi vista com um upsell real.
 No staging o UP2 **não aparece**: o seed de lá não rodou depois de 27/10 e o `jornada-cura-padre-pio` está sem `checkout_url`, e o `getOffer` não oferece pacote sem checkout. Em produção os dois têm checkout.
 
 ---
+
+## Estilo visual (docs/estilo-visual.md)
+
+**Fase R1 feita em 04/11, só em staging**: tokens dos dois temas (claro de
+padrão, escuro), fontes servidas pelo app (Inter 400/600/700/800 e Cormorant
+Garamond 600/700, `@fontsource`, só o subconjunto latino), letra regulável
+(quatro tamanhos; A− / A+ por enquanto só na lição), botões dourado, verde e
+secundário, cabeçalho com o botão de tema, barra de abas com **Tesouros**
+(antiga Loja, só o texto muda) e a arte, aplicados às telas que existiam, sem
+mudar comportamento. A página do `/acesso` e do `/parar`, servida pelo
+Worker, também ganhou as cores novas (sem fonte baixada, tema pelo aparelho).
+**R2 a R6 esperam o ok do Leo.**
+
+O cabeçalho fica em **px**, não em rem: é moldura e não cresce com o A+ —
+crescendo, tomava um terço da tela na letra maior. O resto do app escala com
+`--fs` (o rem acompanha), inclusive botões e espaçamentos.
+
+**A arte**: *São Miguel Arcanjo*, de Guido Reni (c. 1635), Santa Maria della
+Concezione dei Cappuccini, Roma.
+
+```
+arquivo   https://commons.wikimedia.org/wiki/File:GuidoReni_MichaelDefeatsSatan.jpg
+original  https://upload.wikimedia.org/wikipedia/commons/7/7a/GuidoReni_MichaelDefeatsSatan.jpg
+tamanho   1657 × 2441, 513 KB (baixado em 04/11/2026)
+licença   Public domain — categorias PD-Art (PD-old-100-expired), PD-old-100-expired e
+          CC-PD-Mark na página do arquivo; Copyrighted: False
+```
+
+Era a reprodução de domínio público de maior resolução no Commons. A maior que
+havia, `Cappouccini, guido reni, san michele arcangelo 01.JPG` (2112 × 2816), é
+uma **foto da igreja em CC BY-SA 3.0** (autor sailko), não PD-Art: ficou de fora.
+O original está em `arte/guido-reni-sao-miguel.jpg`, e `node scripts/arte.ts` gera
+os recortes em `public/img/` (faixa 3:1 e cartão 4:3, WebP em 480 e 960, de 7 a
+39 KB): os dois **acima do demônio aos pés**, e a faixa com o rosto no terço de
+cima, porque a metade de baixo desbota para o fundo. O service worker guarda a
+arte no cache do shell (`webp` no `globPatterns`).
+
+**Prints de conferência** em `prints/r1/` (fora do git): Início, Entrar, Home,
+lista de dias, lição e Tesouros a 390px, claro, escuro e letra maior. Tirados do
+`vite dev` com o banco local e uma conta de teste local, pelo Edge headless, com
+a janela do tamanho da página — senão a barra de abas, que é fixa, aparece no
+meio do print.
 
 ## O que está aberto
 
