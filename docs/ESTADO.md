@@ -4,7 +4,11 @@ Retrato para uma sessão nova continuar daqui. A spec é o [CLAUDE.md](../CLAUDE
 este arquivo registra o que **não** cabe lá: o que já rodou, o que está só em
 staging, o que depende do Leo e as armadilhas que custaram caro.
 
-`npm run typecheck && npm test` limpo, **457 testes** em 31 arquivos (31/10).
+`npm run typecheck && npm test` limpo, **482 testes** em 33 arquivos (04/11).
+
+**Staging está à frente de produção** desde 04/11: tem a fase R1 do estilo visual
+e a **entrada sem código** (ver as duas seções abaixo). Produção está no
+`36519d6` (trava de volume pelo domínio, deploy de 04/11 às 14:39 UTC).
 
 ## Os dois ambientes
 
@@ -385,6 +389,94 @@ No staging o UP2 **não aparece**: o seed de lá não rodou depois de 27/10 e o 
 
 ---
 
+## Entrada sem código (04/11, `36e3d11`) — só em staging
+
+Pedido do Leo, com a justificativa em `docs/entrada-sem-codigo.md` e a regra no
+§8 do CLAUDE.md (reescrito no mesmo commit). **Em staging, esperando o teste do
+Leo no iPhone e no BlueStacks; produção só com o ok dele.**
+
+### O que mudou
+
+- **`POST /api/entrar`** recebe `{ celular }` ou `{ email }` e abre a sessão de
+  sempre (cookie de 365 dias), **sem mandar e-mail nenhum**. Celular: só dígitos,
+  tira o `55` quando sobram 12 ou 13, compara DDD + os 8 últimos
+  (`chaveDoCelular`), o que casa com e sem o 9. E-mail: minúsculo e sem espaço.
+  Conta excluída não entra.
+- Respostas de falha, com o suporte no corpo: `nao_encontrado` (404), `varios`
+  (409, mais de uma conta com o mesmo celular: pede o e-mail), `limite` (429),
+  `dados_invalidos`/`invalido` (400). **Atenção ao ler log**: 404 com
+  `{"error":"nao_encontrado"}` é a rota funcionando; a rota ausente responde
+  `{"error":"not_found"}`.
+- **Limite**: 10 tentativas por hora por IP e 10 por identificador, contadas
+  antes de procurar, em `login_tentativas` (migration `0009`), com o
+  identificador em sha256 (`id:<hash>`).
+- `events`: `login` com `metodo` (`celular`, `email`, `link`) e `login_falhou`
+  com `metodo` e `motivo`. Conferido em staging: nenhum guarda o número nem o
+  e-mail.
+- **Saíram** as rotas do código de login (`/api/auth/codigo`,
+  `/api/auth/entrar`) e o modelo `codigo-login.md`. O código fica **só** em
+  excluir a conta e trocar o e-mail (`POST /api/me/confirmar`, `/api/me/excluir`,
+  `/api/me/email`).
+- **Tela de entrada** nova: "📱 Com o meu celular" e "✉️ Com o meu e-mail", um
+  campo com o teclado certo, "Entrar" dourado, link para trocar de método e o
+  suporte embaixo quando não acha. `?e=` cai no e-mail preenchido. Link
+  `/acesso` usado, vencido ou inválido cai aqui com a frase própria ("Este link
+  já foi usado. Entre com o seu celular ou e-mail.").
+- **"Como podemos te chamar?"** (`PerguntarNome`, `PATCH /api/me`, até 60
+  caracteres) logo depois de entrar, para conta sem nome; "Pular" fica lembrado
+  no aparelho. Nome em maiúsculas ("ELIANA") aparece como "Eliana"
+  (`src/shared/nome.ts`), sem mudar o gravado.
+- E-mails de boas-vindas e de conteúdo liberado deixaram de falar em código.
+- **`lembrete-app`** passa a contar `login` em `events` como "já entrou",
+  porque "Sair do app" apaga a sessão.
+
+### Em staging (04/11)
+
+- Migration `0009` aplicada às 19:27 UTC; deploy às **20:18 UTC** (`61bdb370`,
+  depois da checagem das 17h que deu 404) e de novo às 22:06 UTC (`fcea5963`,
+  mesmo `main`, nenhum asset novo).
+- Conferido às 22:06 UTC, nos dois hosts (`teste.` e `workers.dev`):
+  `/api/entrar` com celular inexistente → 404 `nao_encontrado`; bundle servido
+  com a tela nova e a pergunta do nome; `login_falhou` e `login_tentativas`
+  gravados sem dado pessoal. E-mail com maiúscula e espaço
+  (`lenzincamara@hotmail.com`) entrou, e **`/api/me/excluir` sem código
+  respondeu 400 e com código inventado 401**, com a conta intacta (sessão
+  encerrada em seguida).
+- Primeiro `login` por celular no staging: 21:58 UTC, na conta do Leo
+  (celular DDD 44 com o 9, gravado com 11 dígitos; conta ainda sem nome).
+- Contas de teste: só a do Leo tem celular. `lenzincamara@` e `anacacancelli@`
+  entram só por e-mail. Para testar `varios`, é gravar o mesmo celular numa
+  segunda conta e tirar depois.
+
+### O que falta para produção
+
+1. **Teste do Leo** no iPhone e no BlueStacks (roteiro passado em 04/11).
+2. Com o ok: `npm run db:migrate:production` (**só a `0009` está pendente**,
+   conferido em 04/11) **antes** do deploy — sem a tabela, todo `/api/entrar`
+   quebra.
+3. `npm run deploy:production`. **Publica o `main` inteiro**: a fase R1 (visual
+   novo) vai junto, porque está no `main` desde 15:50 de 04/11.
+4. Conferir `/api/entrar` em produção com um número inexistente (404
+   `nao_encontrado`) e uma entrada de verdade da conta do Leo.
+5. Avisar o pipeline de conteúdo: o PDF da área de membros da Payt ensina o
+   passo do código, e precisa mudar.
+
+**Risco conhecido do deploy: app antigo no cache.** O service worker só troca
+de versão quando o app é fechado de vez (`skipWaiting` só por mensagem). Quem
+tem o app instalado **e está deslogado** pode abrir a tela velha, que chama
+`/api/auth/codigo` — e essa rota agora responde `not_found`, com a mensagem de
+erro genérica da tela antiga. Na abertura seguinte o shell novo já vale. Pega
+pouca gente: a sessão dura 365 dias, e o link `/acesso` é servido pelo Worker,
+não pelo cache. Não há mitigação no código.
+
+**Ordem com o `lembrete-app`**: o texto dele serve para as duas entradas ("Se o
+link não abrir, entre em jornadacomeuanjo.com/entrar com o e-mail da sua
+compra"). Mas o reserva é exatamente o caminho que perde gente com o código, e a
+2ª onda fica elegível em 05/11 às 13:02 UTC: publicada a entrada antes, quem
+recebe essa onda e não consegue pelo link entra sem código.
+
+---
+
 ## Estilo visual (docs/estilo-visual.md)
 
 **Fase R1 feita em 04/11, só em staging**: tokens dos dois temas (claro de
@@ -450,9 +542,11 @@ ordem combinada continua valendo:
   Safari do iPhone — manifest que varia quebra a WebAPK do Android, então o
   Android continua com o estático.
 
-Fica o que funcionar no aparelho de verdade. Se nenhum funcionar, fica o login por
-código, que já funciona. **Nada disso foi construído**, e não é para construir
-enquanto não houver um aparelho em que o problema aconteça.
+Fica o que funcionar no aparelho de verdade. Se nenhum funcionar, fica a entrada
+normal — desde 04/11, **sem código**: no pior caso o app pelo ícone pede o
+celular de novo, um campo só, o que tira quase todo o peso deste problema.
+**Nada disso foi construído**, e não é para construir enquanto não houver um
+aparelho em que o problema aconteça.
 
 ### 2. Os testes da fase 8: iPhone **feito**, Android pendente
 
@@ -570,7 +664,7 @@ O que essa decisão muda na prática, conferido em 26/10:
 | 1 — Scaffold | **concluída** |
 | 2 — Banco | **concluída** |
 | 3 — Postback Payt | **concluída e validada com a Payt de verdade** |
-| 4 — Auth | **concluída**, com e-mail entregando. Revisada 22/10 para o público 55+: link de acesso direto (com tela de confirmação, para pré-visualizador de link não gastar o token), sessão de 1 ano, código em ação sensível, tela de código mais fácil |
+| 4 — Auth | **concluída**, com e-mail entregando. Revisada 22/10 para o público 55+: link de acesso direto (com tela de confirmação, para pré-visualizador de link não gastar o token), sessão de 1 ano, código em ação sensível, tela de código mais fácil. **Revisada de novo em 04/11: entrada sem código**, pelo celular ou e-mail da compra (só em staging; ver "Entrada sem código") |
 | 5 — Jornada | **concluída em 23/10**: Home com o cartão do dia, lista de dias com estado, player com Range/Media Session/retomada, conclusão e os eventos do funil |
 | 6 — Loja | **concluída e testada com compra real em 26/10** (staging): barra de abas, lista, página do produto, volta da compra, aviso por push e e-mail, funil completo. Falta só os dados comerciais do Leo para valer em produção |
 | 8 — Push | **concluída em 23/10** (fora de ordem, a pedido): instalação na tela inicial, lembrete diário e escolha do horário. **Testada no iPhone em 26/10**, com três correções: etapa da falha registrada, ordem do toque no Safari e o BOM do segredo VAPID. Android ainda não |
@@ -964,9 +1058,13 @@ evita veredito de "sem SPF" em verificador ingênuo.
 6. **Identidade visual.** Ícones em `public/icons/` são placeholder gerados por
    script (fundo azul com cruz dourada).
 
+7. **O PDF da área de membros da Payt ensina o passo do código.** Quando a
+   entrada sem código estiver em produção, avisar o pipeline para trocar
+   (`docs/entrada-sem-codigo.md`, "Textos que mudam").
+
 ### Limitação de ferramenta
 
-7. **A credencial padrão desta máquina não escreve DNS.** O wrangler está logado
+8. **A credencial padrão desta máquina não escreve DNS.** O wrangler está logado
    por OAuth (`C:\Users\lenzi\AppData\Roaming\xdg.config\.wrangler`), com
    workers, d1, pages, `email_routing` e `email_sending` em escrita, mas `zone`
    só em leitura — nenhum escopo de `dns_records`. Para DNS é preciso um API
@@ -1157,7 +1255,7 @@ Em ordem de dependência. O que está pronto não aparece aqui.
 
 | # | Falta | Depende de | Por quê trava |
 |---|---|---|---|
-| 1 | **Campanha**, em ondas, começando por Gmail | Leo (ok do envio de teste) | A base está importada e ainda não sabe do app |
+| 1 | **Entrada sem código em produção** (migration `0009` antes do deploy; a R1 vai junto) | Leo (teste no iPhone e no BlueStacks) | O código era o que mais barrava a entrada: das 1.427 pessoas do anúncio, perto de 100 entraram. A campanha `anuncio-app` já foi para a base inteira (04/11) |
 | 2 | **Testar as fases 5 e 8 no Android** | Leo | No Android só o BlueStacks foi visto, e é a maioria do público |
 | 3 | **Identidade visual** (ícones ainda são placeholder) | Leo | A raiz já é pública: o ícone aparece |
 
