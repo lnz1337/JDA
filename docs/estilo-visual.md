@@ -39,7 +39,7 @@ e não "site":
 
 | Lá | Aqui | Por quê |
 |---|---|---|
-| Entra só com o nome | Continua o login por código (§8) | O JDA é acesso comprado |
+| Entra só com o nome | Entra com o **celular ou o e-mail da compra, sem código**, e o nome fica para a saudação (`docs/entrada-sem-codigo.md`) | O JDA é acesso comprado: o app precisa saber quem comprou, e o nome sozinho não diz |
 | 7 abas com rótulo de ~11px | Só as abas que existem, rótulo de 16px ou mais (§4) | 55+; aba que não leva a nada ensina que o app quebrou |
 | Bolinha vermelha na aba dos Tesouros | Não | É aviso de notificação usado para vender. Sem push de oferta (§9) vale também para isso |
 | "8.781 irmãs rezaram hoje" | Só com número real, e só acima de um mínimo (fase do Mural) | Número inventado é mentira; "2 pessoas rezaram" desanima |
@@ -285,9 +285,9 @@ polling pós-compra (§7) não mudam.
 - **Início**: arte no topo, "Jornada com Meu Anjo" em serifa grande, ornamento,
   uma frase sem promessa ("19 dias de oração com São Miguel Arcanjo, um por
   dia, com áudio."), botão dourado "Entrar no meu app" e o suporte.
-- **Entrar e código**: o mesmo fluxo do §8, com o estilo novo. O campo do código
-  em Inter 800, grande e espaçado; o aviso do Spam continua visível desde o
-  início.
+- **Entrar**: a entrada sem código do `docs/entrada-sem-codigo.md` (celular ou
+  e-mail, e o nome), com o estilo novo. Ela vai para produção antes desta fase;
+  aqui só ganha a cara nova.
 - **Sem acesso**: o mesmo texto, com o estilo novo.
 - **Onboarding**: duas telas novas **antes** de instalar.
   1. **"Um dia de cada vez"**: "São 19 dias. Cada dia libera uma oração em áudio

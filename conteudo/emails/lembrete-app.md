@@ -19,7 +19,7 @@ Há alguns dias liberamos o seu acesso ao aplicativo da Jornada com Meu Anjo, e 
 
 Para começar, [toque aqui e o app abre já no seu primeiro dia]({{link_acesso}}). O link é novo, só seu, e vale por 7 dias. Leva menos de dez minutos por dia.
 
-Se o link não abrir, entre em jornadacomeuanjo.com/entrar com o e-mail da sua compra: o app manda um código de 6 números.
+Se o link não abrir, entre em jornadacomeuanjo.com/entrar com o e-mail da sua compra.
 
 Se tiver qualquer dificuldade, é só responder este e-mail.
 
