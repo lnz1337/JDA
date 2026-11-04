@@ -325,9 +325,7 @@ rodar de novo.
 
 ### Campanha `lembrete-app` (04/11)
 
-Pronta e publicada em produção (`a8bb1f3`), **ainda sem disparo**: esperando o ok
-do Leo depois do e-mail de teste (`--teste-para`, que saiu em 04/11 sem gravar
-nada em `campaign_sends`). Texto em `conteudo/emails/lembrete-app.md`.
+Publicada em produção (`a8bb1f3`). Teste só para o Leo em 04/11; com o ok dele, **1º envio em 04/11, 14:40 UTC: os 31 elegíveis da 1ª onda do anúncio, todos Gmail, 31 enviados, 0 falhas**, cada um com link de acesso novo. Texto em `conteudo/emails/lembrete-app.md` — **o pipeline mudou uma frase depois do teste** (tirou "o app manda um código de 6 números", preparando a entrada sem código), e o envio saiu com a versão nova. Próximos: cada onda do anúncio fica elegível 7 dias depois dela (tabela abaixo); Microsoft só depois do balanço da 6ª. Balanço do lembrete em 05/11.
 
 Quem recebe: `anuncio-app` enviado há 7 dias ou mais, nunca entrou (nenhum link
 usado, nenhum código usado, nenhuma sessão) e não pediu para parar. **Elegíveis
@@ -347,9 +345,7 @@ fica elegível 7 dias depois do envio dela):
 **A trava de onda conta por campanha, e acumulado**: `ondaAnterior` é o total de
 enviados com sucesso daquela campanha, e o teto é o dobro dele. Campanha nova
 começa em 0, e **com 0 não há teto de onda nenhum** — só a cota do dia (700 menos
-o que já saiu). Proposta levada ao Leo: contar pelo **volume diário do domínio**
-(maior número de `email_enviado` num dia, nos últimos 14 dias, de qualquer
-tipo), com teto no dobro dele. Hoje o maior dia é 421 (03/11).
+o que já saiu). **Trocada em 04/11, com o ok do Leo** (`36519d6`): a trava passou a ser do **volume diário do domínio** — o dobro do maior dia de `email_enviado` (qualquer tipo) nos 14 dias antes de hoje, piso de 50, e o que já saiu hoje conta contra ele. Em 04/11: maior dia 421, teto 842; o que limitou foi a cota (416).
 
 ### Primeiras vendas pelo postback de produção (27 a 28/10)
 
