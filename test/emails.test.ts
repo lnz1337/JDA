@@ -208,3 +208,27 @@ describe('anúncio da campanha, modelo curto', () => {
     expect(montarAnuncio(variaveis, 'curto').texto).not.toMatch(TAG);
   });
 });
+
+describe('lembrete do app', () => {
+  const variaveis = {
+    primeiro_nome: 'Maria',
+    link_acesso: 'https://exemplo.test/acesso?t=novo',
+    lista_produtos: '- Jornada com Meu Anjo',
+    link_parar: 'https://exemplo.test/parar?u=1&t=2',
+    email_suporte: 'suporte@jornadacomeuanjo.com',
+  };
+
+  it('lê o lembrete-app.md, com o assunto dele', () => {
+    expect(montarAnuncio(variaveis, 'lembrete').assunto).toBe(
+      'Maria, seu acesso continua esperando por você',
+    );
+  });
+
+  it('link novo dentro da frase, sem botão, e o rodapé uma vez só', () => {
+    const { html, texto } = montarAnuncio(variaveis, 'lembrete');
+    expect(html).toContain('href="https://exemplo.test/acesso?t=novo"');
+    expect(html).not.toContain('padding:18px 32px');
+    expect(texto.split(variaveis.link_parar)).toHaveLength(2);
+    expect(texto).not.toMatch(TAG);
+  });
+});

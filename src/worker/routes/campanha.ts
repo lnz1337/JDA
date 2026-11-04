@@ -45,8 +45,9 @@ export const campanha = new Hono<AppBindings>().post('/enviar', async (c) => {
 
   // Modelo errado não pode cair calado no completo: a onda sairia com o texto
   // que ninguém escolheu.
-  const modelo = corpo?.modelo ?? 'padrao';
-  if (!ehModeloAnuncio(modelo)) {
+  // Sem modelo, vale o padrão da campanha; com modelo, ele tem que existir.
+  const modelo = corpo?.modelo;
+  if (modelo !== undefined && !ehModeloAnuncio(modelo)) {
     return c.json({ error: `modelo desconhecido: ${modelo}. Vale: ${Object.keys(MODELOS_ANUNCIO).join(', ')}` }, 400);
   }
 

@@ -11,7 +11,7 @@
  */
 import { montarAnuncio, type ModeloAnuncio } from '../emails/anuncio';
 import { hmacHex } from '../lib/cripto';
-import { agoraIso } from '../lib/datas';
+import { agoraIso, somarDias } from '../lib/datas';
 import { segredo } from '../lib/segredos';
 import type { AppBindings } from '../lib/types';
 import { criarLinkDeAcesso } from './auth';
@@ -140,13 +140,69 @@ function ordemPorProvedor(provedores: string[]): { sql: string; valores: string[
  * envio que deu certo conta: boas-vindas que falhou deixa a pessoa sem link, e
  * aí o anúncio é justamente o que ela precisa.
  */
+/**
+ * As campanhas que existem, com os textos que cada uma aceita (o primeiro é o
+ * padrão) e quem ela alcança além da regra comum.
+ *
+ * Campanha desconhecida é recusada: nome digitado errado viraria uma campanha
+ * nova, com `campaign_sends` vazio, e mandaria para a base inteira de novo.
+ */
+export const CAMPANHAS = {
+  'anuncio-app': { modelos: ['padrao', 'curto'] },
+  'lembrete-app': { modelos: ['lembrete'] },
+} as const satisfies Record<string, { modelos: readonly ModeloAnuncio[] }>;
+
+export type NomeCampanha = keyof typeof CAMPANHAS;
+
+export function ehCampanha(valor: string): valor is NomeCampanha {
+  return Object.hasOwn(CAMPANHAS, valor);
+}
+
+/** Dias entre o anúncio e o lembrete: o link do anúncio já venceu (§8, 7 dias). */
+export const DIAS_ATE_O_LEMBRETE = 7;
+
+/**
+ * O que cada campanha acrescenta à seleção comum.
+ *
+ * - `anuncio-app`: fora quem já recebeu as boas-vindas (abaixo).
+ * - `lembrete-app`: só quem recebeu o anúncio há pelo menos 7 dias e **nunca
+ *   entrou** — nenhum link de acesso usado, nenhum código de login usado,
+ *   nenhuma sessão. A sessão sozinha não basta: "Sair do app" apaga a linha, e
+ *   quem entrou e saiu não pode receber "você ainda não entrou".
+ */
+function filtroDaCampanha(campanha: NomeCampanha, agora: string): { sql: string; valores: string[] } {
+  if (campanha === 'lembrete-app') {
+    return {
+      sql: `AND EXISTS (
+                SELECT 1 FROM campaign_sends a
+                 WHERE a.campaign = 'anuncio-app' AND a.user_id = u.id
+                   AND a.status = 'sent' AND a.sent_at <= ?)
+          AND NOT EXISTS (SELECT 1 FROM sessions s WHERE s.user_id = u.id)
+          AND NOT EXISTS (SELECT 1 FROM access_links l WHERE l.user_id = u.id AND l.used_at IS NOT NULL)
+          AND NOT EXISTS (
+                SELECT 1 FROM login_codes c
+                 WHERE c.user_id = u.id AND c.purpose = 'login' AND c.used_at IS NOT NULL)`,
+      valores: [somarDias(agora, -DIAS_ATE_O_LEMBRETE) ?? agora],
+    };
+  }
+  return {
+    sql: `AND NOT EXISTS (
+                SELECT 1 FROM events x
+                 WHERE x.user_id = u.id AND x.name = 'email_enviado'
+                   AND json_extract(x.props_json, '$.tipo') = 'boas_vindas')`,
+    valores: [],
+  };
+}
+
 export async function destinatarios(
   db: D1Database,
-  campanha: string,
+  campanha: NomeCampanha,
   limite: number,
   provedores: string[] = [],
+  agora = agoraIso(),
 ): Promise<Destinatario[]> {
   const ordem = ordemPorProvedor(provedores);
+  const filtro = filtroDaCampanha(campanha, agora);
 
   const { results } = await db
     .prepare(
@@ -163,14 +219,11 @@ export async function destinatarios(
           AND u.marketing_opt_out_at IS NULL
           AND EXISTS (SELECT 1 FROM entitlements e WHERE e.user_id = u.id AND e.status = 'active')
           AND NOT EXISTS (SELECT 1 FROM campaign_sends c WHERE c.campaign = ? AND c.user_id = u.id)
-          AND NOT EXISTS (
-                SELECT 1 FROM events x
-                 WHERE x.user_id = u.id AND x.name = 'email_enviado'
-                   AND json_extract(x.props_json, '$.tipo') = 'boas_vindas')
+          ${filtro.sql}
         ORDER BY ${ordem.sql ? `${ordem.sql}, ` : ''}compra DESC, u.created_at DESC
         LIMIT ?`,
     )
-    .bind(campanha, ...ordem.valores, limite)
+    .bind(campanha, ...filtro.valores, ...ordem.valores, limite)
     .all<Destinatario>();
 
   return results;
@@ -224,7 +277,7 @@ export interface OpcoesEnvio {
   testePara?: string | null;
   /** Provedores na frente da fila, na ordem dada (ver PROVEDORES). */
   provedores?: string[];
-  /** Qual texto do anúncio vai (emails/anuncio.ts). Sem isto, o completo. */
+  /** Qual texto vai (emails/anuncio.ts). Sem isto, o primeiro da campanha. */
   modelo?: ModeloAnuncio;
 }
 
@@ -232,8 +285,16 @@ export async function enviarCampanha(
   env: Ambiente,
   opcoes: OpcoesEnvio,
 ): Promise<RelatorioCampanha> {
-  const { campanha, limite, dryRun } = opcoes;
-  const modelo = opcoes.modelo ?? 'padrao';
+  const { limite, dryRun } = opcoes;
+  const campanha = opcoes.campanha;
+  if (!ehCampanha(campanha)) {
+    throw new Error(`campanha desconhecida: ${campanha}. Vale: ${Object.keys(CAMPANHAS).join(', ')}`);
+  }
+  const aceitos: readonly ModeloAnuncio[] = CAMPANHAS[campanha].modelos;
+  const modelo = opcoes.modelo ?? aceitos[0]!;
+  if (!aceitos.includes(modelo)) {
+    throw new Error(`a campanha ${campanha} não usa o modelo ${modelo}. Vale: ${aceitos.join(', ')}`);
+  }
   const anterior = await ondaAnterior(env.DB, campanha);
   const erros: string[] = [];
 

@@ -9,6 +9,7 @@
 import { APP_NAME } from '../../shared/constants';
 import modeloPadrao from '../../../conteudo/emails/anuncio-app.md?raw';
 import modeloCurto from '../../../conteudo/emails/anuncio-app-curto.md?raw';
+import modeloLembrete from '../../../conteudo/emails/lembrete-app.md?raw';
 import { renderizarEmail } from './render';
 
 /**
@@ -19,6 +20,8 @@ import { renderizarEmail } from './render';
 export const MODELOS_ANUNCIO = {
   padrao: { texto: modeloPadrao, arquivo: 'conteudo/emails/anuncio-app.md' },
   curto: { texto: modeloCurto, arquivo: 'conteudo/emails/anuncio-app-curto.md' },
+  /** Campanha `lembrete-app`: quem recebeu o anúncio e nunca entrou. */
+  lembrete: { texto: modeloLembrete, arquivo: 'conteudo/emails/lembrete-app.md' },
 } as const;
 
 export type ModeloAnuncio = keyof typeof MODELOS_ANUNCIO;

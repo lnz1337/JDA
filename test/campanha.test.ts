@@ -537,3 +537,128 @@ describe('quem já recebeu as boas-vindas', () => {
     expect(ids).toEqual([id]);
   });
 });
+
+describe('campanha lembrete-app', () => {
+  const LEMBRETE = 'lembrete-app';
+  const AGORA = new Date().toISOString();
+  const diasAtras = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString();
+
+  async function recebeuAnuncio(userId: string, quando: string, status = 'sent'): Promise<void> {
+    await env.DB.prepare(
+      `INSERT INTO campaign_sends (campaign, user_id, status, sent_at, model) VALUES ('anuncio-app', ?, ?, ?, 'curto')`,
+    )
+      .bind(userId, status, quando)
+      .run();
+  }
+
+  const selecionados = async () =>
+    (await destinatarios(env.DB, LEMBRETE, 50, [], AGORA)).map((d) => d.user_id);
+
+  it('recebeu o anúncio há 7 dias ou mais e nunca entrou: recebe', async () => {
+    const id = await criarComprador(1);
+    await recebeuAnuncio(id, diasAtras(8));
+    expect(await selecionados()).toEqual([id]);
+  });
+
+  it('anúncio há menos de 7 dias: ainda não', async () => {
+    const id = await criarComprador(1);
+    await recebeuAnuncio(id, diasAtras(6));
+    expect(await selecionados()).toEqual([]);
+  });
+
+  it('não recebeu o anúncio, ou o envio falhou: fora', async () => {
+    await criarComprador(1);
+    const falhou = await criarComprador(2);
+    await recebeuAnuncio(falhou, diasAtras(8), 'failed');
+    expect(await selecionados()).toEqual([]);
+  });
+
+  it('quem entrou por link, por código ou tem sessão fica fora', async () => {
+    const link = await criarComprador(1);
+    const codigo = await criarComprador(2);
+    const sessao = await criarComprador(3);
+    const nunca = await criarComprador(4);
+    for (const id of [link, codigo, sessao, nunca]) await recebeuAnuncio(id, diasAtras(10));
+
+    await env.DB.prepare(
+      'INSERT INTO access_links (id, user_id, token_hash, expires_at, used_at, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+    )
+      .bind('al-1', link, 'hash-1', AGORA, diasAtras(9), diasAtras(10))
+      .run();
+    await env.DB.prepare(
+      "INSERT INTO login_codes (id, user_id, code_hash, purpose, expires_at, used_at, created_at) VALUES (?, ?, 'h', 'login', ?, ?, ?)",
+    )
+      .bind('lc-1', codigo, AGORA, diasAtras(9), diasAtras(9))
+      .run();
+    await env.DB.prepare('INSERT INTO sessions (id, user_id, expires_at, created_at) VALUES (?, ?, ?, ?)')
+      .bind('s-lembrete', sessao, AGORA, diasAtras(9))
+      .run();
+
+    expect(await selecionados()).toEqual([nunca]);
+  });
+
+  it('código pedido e não usado não conta como entrada', async () => {
+    const id = await criarComprador(1);
+    await recebeuAnuncio(id, diasAtras(8));
+    await env.DB.prepare(
+      "INSERT INTO login_codes (id, user_id, code_hash, purpose, expires_at, created_at) VALUES ('lc-2', ?, 'h', 'login', ?, ?)",
+    )
+      .bind(id, AGORA, diasAtras(7))
+      .run();
+    expect(await selecionados()).toEqual([id]);
+  });
+
+  it('quem pediu para parar fica fora', async () => {
+    const id = await criarComprador(1);
+    await recebeuAnuncio(id, diasAtras(8));
+    await env.DB.prepare('UPDATE users SET marketing_opt_out_at = ? WHERE id = ?').bind(AGORA, id).run();
+    expect(await selecionados()).toEqual([]);
+  });
+
+  it('quem já recebeu o lembrete não recebe de novo', async () => {
+    const id = await criarComprador(1);
+    await recebeuAnuncio(id, diasAtras(8));
+    await env.DB.prepare(
+      "INSERT INTO campaign_sends (campaign, user_id, status, sent_at, model) VALUES ('lembrete-app', ?, 'sent', ?, 'lembrete')",
+    )
+      .bind(id, AGORA)
+      .run();
+    expect(await selecionados()).toEqual([]);
+  });
+
+  it('o disparo usa o texto do lembrete e grava o modelo', async () => {
+    const id = await criarComprador(1);
+    await recebeuAnuncio(id, diasAtras(8));
+    const res = await chamar('/api/campanha/enviar', {
+      method: 'POST',
+      headers: comChave(),
+      body: JSON.stringify({ campanha: LEMBRETE, limite: 1 }),
+    });
+    expect(await res.json()).toMatchObject({ modelo: 'lembrete' });
+    const r = await env.DB.prepare("SELECT model FROM campaign_sends WHERE campaign = 'lembrete-app' AND user_id = ?")
+      .bind(id)
+      .first<{ model: string }>();
+    expect(r?.model).toBe('lembrete');
+  });
+
+  it('modelo do anúncio na campanha de lembrete é recusado', async () => {
+    const res = await chamar('/api/campanha/enviar', {
+      method: 'POST',
+      headers: comChave(),
+      body: JSON.stringify({ campanha: LEMBRETE, limite: 1, modelo: 'curto' }),
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it('campanha com nome desconhecido é recusada, sem mandar para a base', async () => {
+    await criarComprador(1);
+    const res = await chamar('/api/campanha/enviar', {
+      method: 'POST',
+      headers: comChave(),
+      body: JSON.stringify({ campanha: 'anuncio-ap', limite: 1 }),
+    });
+    expect(res.status).toBe(400);
+    const n = await env.DB.prepare('SELECT COUNT(*) AS n FROM campaign_sends').first<{ n: number }>();
+    expect(n?.n).toBe(0);
+  });
+});
