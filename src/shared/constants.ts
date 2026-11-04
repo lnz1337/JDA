@@ -8,8 +8,8 @@ export const APP_DESCRIPTION =
 export const APP_DOMINIO = 'jornadacomeuanjo.com';
 export const EMAIL_SUPORTE = 'suporte@jornadacomeuanjo.com';
 
-export const THEME_COLOR = '#1e1b4b';
-export const BACKGROUND_COLOR = '#faf7f2';
+export const THEME_COLOR = '#f1eadb';
+export const BACKGROUND_COLOR = '#f7f2e8';
 
 export const DEFAULT_TIMEZONE = 'America/Sao_Paulo';
 export const DEFAULT_PRAYER_HOUR = 7;

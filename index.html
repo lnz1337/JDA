@@ -3,7 +3,26 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#1e1b4b" />
+    <meta name="theme-color" content="#f1eadb" />
+    <script>
+      /*
+       * Tema e letra antes da primeira pintura, para o escuro não piscar branco.
+       * Mesmas chaves e valores de src/client/lib/aparencia.ts.
+       */
+      (function () {
+        try {
+          var t = localStorage.getItem('aparencia:tema');
+          var l = Number(localStorage.getItem('aparencia:letra'));
+          if (t === 'escuro') {
+            document.documentElement.setAttribute('data-tema', 'escuro');
+            document.querySelector('meta[name="theme-color"]').setAttribute('content', '#140c05');
+          }
+          if ([0.9, 1, 1.15, 1.3].indexOf(l) >= 0) {
+            document.documentElement.style.setProperty('--fs', String(l));
+          }
+        } catch (e) {}
+      })();
+    </script>
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />

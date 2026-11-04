@@ -1,29 +1,202 @@
 @import 'tailwindcss';
 
+/*
+ * Fontes servidas pelo próprio app (docs/estilo-visual.md, "Letra"): o shell
+ * abre sem internet (§12), sem requisição para terceiro, e só o subconjunto
+ * latino. `font-display: swap` vem do @fontsource: o celular antigo mostra o
+ * texto na fonte do sistema enquanto a nossa chega.
+ */
+@import '@fontsource/inter/latin-400.css';
+@import '@fontsource/inter/latin-600.css';
+@import '@fontsource/inter/latin-700.css';
+@import '@fontsource/inter/latin-800.css';
+@import '@fontsource/cormorant-garamond/latin-600.css';
+@import '@fontsource/cormorant-garamond/latin-700.css';
+
+/*
+ * Tokens semânticos, trocados pelo `data-tema` do <html> (docs/estilo-visual.md,
+ * "Cores"). A mesma classe serve aos dois temas, sem `dark:` em todo lugar. O
+ * tema e o tamanho da letra são aplicados antes da primeira pintura, no
+ * `index.html`, para o escuro não piscar branco.
+ */
+:root {
+  --c-fundo: #f7f2e8;
+  --c-fundo2: #f1eadb;
+  --c-cartao: #fffdf8;
+  --c-linha: #e3d7bf;
+  --c-titulo: #1a1004;
+  --c-texto: #2a1a0b;
+  --c-texto2: #5f5040;
+  --c-ouro: #8a6524;
+  --c-ouro-forte: #6b4e14;
+  --c-verde-fundo: #eef5e4;
+  --c-verde: #2a7350;
+
+  /* Tamanho da letra: 0,9 / 1 / 1,15 / 1,3 (lib/aparencia.ts). */
+  --fs: 1;
+  color-scheme: light;
+}
+
+[data-tema='escuro'] {
+  --c-fundo: #0c0704;
+  --c-fundo2: #140c05;
+  --c-cartao: #170e06;
+  --c-linha: #2e2013;
+  --c-titulo: #f6e4b6;
+  --c-texto: #e6dbc6;
+  --c-texto2: #c9b48e;
+  --c-ouro: #c9a24a;
+  --c-ouro-forte: #f0cd7a;
+  --c-verde-fundo: #16200a;
+  --c-verde: #7fc59a;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-fundo: var(--c-fundo);
+  --color-fundo2: var(--c-fundo2);
+  --color-cartao: var(--c-cartao);
+  --color-linha: var(--c-linha);
+  --color-titulo: var(--c-titulo);
+  --color-texto: var(--c-texto);
+  --color-texto2: var(--c-texto2);
+  --color-ouro: var(--c-ouro);
+  --color-ouro-forte: var(--c-ouro-forte);
+  --color-verde-fundo: var(--c-verde-fundo);
+  --color-verde: var(--c-verde);
+
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-serif: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+}
+
+/*
+ * A escala de texto sobe para o público 55+: o corpo das telas usa `text-lg`,
+ * que aqui é 20px (docs/estilo-visual.md: "Corpo de 20px"), e nada fica abaixo
+ * de 15px. Tudo em rem, e o rem acompanha o `--fs`: aumentar a letra aumenta
+ * também botões e espaçamentos, na mesma proporção.
+ */
 @theme {
-  --color-noite-50: #eef0fb;
-  --color-noite-100: #dcdff5;
-  --color-noite-300: #a8abdc;
-  --color-noite-700: #2f2c73;
-  --color-noite-900: #1e1b4b;
-  --color-noite-950: #141233;
-
-  --color-ouro-300: #ecd68f;
-  --color-ouro-400: #e2bf5a;
-  --color-ouro-500: #d4af37;
-
-  --color-papel: #faf7f2;
+  --text-sm: 0.9375rem;
+  --text-sm--line-height: 1.4;
+  --text-base: 1.125rem;
+  --text-base--line-height: 1.55;
+  --text-lg: 1.25rem;
+  --text-lg--line-height: 1.6;
+  --text-xl: 1.375rem;
+  --text-xl--line-height: 1.45;
+  --text-2xl: 1.75rem;
+  --text-2xl--line-height: 1.25;
+  --text-3xl: 2.125rem;
+  --text-3xl--line-height: 1.15;
+  --text-4xl: 2.625rem;
+  --text-4xl--line-height: 1.1;
 }
 
 @layer base {
   html {
     -webkit-text-size-adjust: 100%;
+    font-size: calc(16px * var(--fs));
   }
 
   body {
-    @apply bg-papel text-noite-950 antialiased;
+    @apply bg-fundo font-sans text-texto antialiased;
     /* iOS em standalone: respeita notch e barra inferior. */
     padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
       env(safe-area-inset-left);
+  }
+
+  /*
+   * Título em serifa só a partir de 24px: menor que isso a Cormorant fica fina.
+   * O h1 é sempre grande; o h2 grande leva `font-serif` na própria classe.
+   */
+  h1 {
+    @apply font-serif text-titulo;
+  }
+
+  h2 {
+    @apply text-titulo;
+  }
+}
+
+@layer components {
+  /* Cartão: fundo próprio, borda fina, raio 16px. */
+  .cartao {
+    @apply rounded-2xl border border-linha bg-cartao;
+  }
+
+  /* Rótulo em caixa alta ("AGORA · DIA 3"): o menor texto do app. */
+  .rotulo {
+    @apply font-sans text-sm font-extrabold uppercase text-ouro;
+    letter-spacing: 2px;
+  }
+
+  /*
+   * Botões: `botao` + a variante (`botao botao-dourado`). Um dourado por tela, e é o de rezar, começar ou comprar. Em relevo:
+   * degradê com sombra sólida embaixo, e no toque desce 3px.
+   */
+  .botao {
+    @apply inline-flex w-full items-center justify-center gap-2 rounded-xl px-5 py-3 text-center text-lg leading-tight;
+    -webkit-tap-highlight-color: transparent;
+    transition:
+      transform 80ms ease-out,
+      box-shadow 80ms ease-out;
+  }
+
+  .botao:disabled {
+    @apply cursor-not-allowed opacity-60;
+  }
+
+  .botao-dourado {
+    @apply min-h-[60px] font-extrabold;
+    color: #1a1004;
+    background: linear-gradient(180deg, #d8ac52 0%, #bd8f34 100%);
+    box-shadow: 0 5px 0 #7d5c1c;
+  }
+
+  .botao-dourado:not(:disabled):active {
+    transform: translateY(3px);
+    box-shadow: 0 2px 0 #7d5c1c;
+  }
+
+  /* Verde: só o "Concluí o dia N". Concluir não é rezar de novo. */
+  .botao-verde {
+    @apply min-h-[60px] font-extrabold text-white;
+    background: linear-gradient(180deg, #3a9668 0%, #2a7350 100%);
+    box-shadow: 0 5px 0 #1d5238;
+  }
+
+  .botao-verde:not(:disabled):active {
+    transform: translateY(3px);
+    box-shadow: 0 2px 0 #1d5238;
+  }
+
+  .botao-secundario {
+    @apply min-h-[52px] border border-linha bg-cartao font-bold text-ouro-forte;
+  }
+
+  /* Link de texto com alvo de toque decente. */
+  .link {
+    @apply inline-flex min-h-[52px] items-center font-semibold text-ouro-forte underline underline-offset-4;
+  }
+
+  /* Caixa com filete dourado à esquerda ("POR QUE HOJE", avisos). */
+  .caixa-destaque {
+    @apply rounded-2xl border border-l-[3px] border-linha border-l-ouro bg-cartao px-5 py-4;
+  }
+
+  /* Campo de formulário. */
+  .campo {
+    @apply min-h-[60px] w-full rounded-xl border-2 border-linha bg-cartao px-4 text-xl text-texto;
+  }
+
+  .campo:focus {
+    @apply border-ouro outline-none;
+  }
+}
+
+/* Sem animação para quem pediu menos movimento no aparelho. */
+@media (prefers-reduced-motion: reduce) {
+  .botao {
+    transition: none;
   }
 }
