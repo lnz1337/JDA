@@ -7,6 +7,7 @@ import { Entrar } from './screens/Entrar';
 import { Home } from './screens/Home';
 import { Inicio } from './screens/Inicio';
 import { AvisoDaCompra } from './components/AvisoDaCompra';
+import { Cabecalho } from './components/Visual';
 import { abaDaRota, BarraDeAbas } from './components/BarraDeAbas';
 import { useVoltaDaCompra } from './lib/compra';
 import { Licao } from './screens/Licao';
@@ -99,31 +100,46 @@ export function App() {
   if (estado.fase === 'carregando') {
     return (
       <main className="flex min-h-dvh items-center justify-center">
-        <p className="text-lg text-noite-300">carregando…</p>
+        <p className="text-lg text-texto2">carregando…</p>
       </main>
     );
   }
 
   if (estado.fase === 'deslogado') {
     // Deslogado só tem duas telas: a apresentação pública e o login.
-    if (rota.nome === 'entrar') return <Entrar aoEntrar={carregar} />;
+    if (rota.nome === 'entrar') {
+      return (
+        <>
+          <Cabecalho />
+          <Entrar aoEntrar={carregar} />
+        </>
+      );
+    }
     return <Inicio aoEntrar={() => irPara('/entrar')} />;
   }
 
   if (!estado.me.temAcesso) {
-    return <SemAcesso suporte={estado.me.suporte} aoSair={sair} />;
+    return (
+      <>
+        <Cabecalho />
+        <SemAcesso suporte={estado.me.suporte} aoSair={sair} />
+      </>
+    );
   }
 
   // O onboarding só aparece na Home: quem chegou pelo push vai direto para a
   // oração, e quem está no meio da jornada não é interrompido para instalar.
   if (onboarding && rota.nome === 'inicio') {
     return (
-      <Onboarding
-        aoTerminar={() => {
-          marcarOnboardingFeito();
-          setOnboarding(false);
-        }}
-      />
+      <>
+        <Cabecalho />
+        <Onboarding
+          aoTerminar={() => {
+            marcarOnboardingFeito();
+            setOnboarding(false);
+          }}
+        />
+      </>
     );
   }
 
@@ -141,6 +157,7 @@ export function App() {
   if (!aba) {
     return (
       <>
+        <Cabecalho />
         {tela}
         <AvisoDaCompra volta={volta} />
       </>
@@ -154,6 +171,7 @@ export function App() {
        * cobriria o fim do conteúdo. Com `box-sizing: border-box` o `min-h-dvh`
        * já conta o padding, então nada disso cria rolagem numa tela curta.
        */}
+      <Cabecalho />
       <div className="[&>main]:pb-28">{tela}</div>
       <BarraDeAbas ativa={aba} />
       <AvisoDaCompra volta={volta} />
@@ -179,7 +197,7 @@ export function App() {
       if (semAssinatura === null) {
         return (
           <main className="flex min-h-dvh items-center justify-center">
-            <p className="text-lg text-noite-300">carregando…</p>
+            <p className="text-lg text-texto2">carregando…</p>
           </main>
         );
       }

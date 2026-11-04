@@ -9,11 +9,14 @@ import { irPara } from '../lib/rota';
  * vazia, ou que não abre nada, ensina que o app está quebrado, e o público é
  * 55+: quem toca e não acontece nada não toca de novo.
  *
- * Com uma aba só não haveria barra; é a Loja que a faz existir.
+ * Com uma aba só não haveria barra; são os Tesouros (a antiga Loja) que a fazem
+ * existir.
  */
 const ABAS = [
   { chave: 'jornada', rotulo: 'Jornada', icone: '🙏', caminho: '/' },
-  { chave: 'loja', rotulo: 'Loja', icone: '🛍️', caminho: '/loja' },
+  // "Tesouros" é só o nome que aparece (docs/estilo-visual.md): a rota, a chave e
+  // os eventos continuam "loja", para os links e a comparação Home × Loja não quebrarem.
+  { chave: 'loja', rotulo: 'Tesouros', icone: '📿', caminho: '/loja' },
 ] as const;
 
 type Aba = (typeof ABAS)[number]['chave'];
@@ -41,7 +44,7 @@ export function BarraDeAbas({ ativa }: { ativa: Aba }) {
   return (
     <nav
       aria-label="Seções do app"
-      className="fixed inset-x-0 bottom-0 z-10 border-t-2 border-noite-100 bg-white"
+      className="fixed inset-x-0 bottom-0 z-10 border-t border-linha bg-cartao pb-[env(safe-area-inset-bottom)]"
     >
       <ul className="mx-auto flex max-w-md">
         {ABAS.map((aba) => {
@@ -53,15 +56,21 @@ export function BarraDeAbas({ ativa }: { ativa: Aba }) {
                 aria-current={atual ? 'page' : undefined}
                 onClick={() => irPara(aba.caminho)}
                 className={`flex min-h-[64px] w-full flex-col items-center justify-center gap-0.5 px-2 py-2 ${
-                  atual ? 'font-semibold text-noite-900' : 'text-noite-700'
+                  atual ? 'font-bold text-ouro-forte' : 'text-texto2'
                 }`}
               >
-                <span aria-hidden="true" className="text-xl leading-none">
+                <span
+                  aria-hidden="true"
+                  className={`text-2xl leading-none ${atual ? '' : 'opacity-70 grayscale'}`}
+                >
                   {aba.icone}
                 </span>
                 {/* Texto sempre: ícone sozinho não diz nada para quem não
                     cresceu com aplicativo. */}
                 <span className="text-base leading-none">{aba.rotulo}</span>
+                {atual && (
+                  <span aria-hidden="true" className="mt-0.5 h-1 w-8 rounded-full bg-ouro" />
+                )}
               </button>
             </li>
           );

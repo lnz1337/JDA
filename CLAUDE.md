@@ -159,12 +159,19 @@ Acesso pós-compra (link do e-mail/WhatsApp)
   └─ Onboarding: login por código → instalar na tela inicial → ativar push → escolher horário
       └─ Home (oração do dia + card de oferta contextual)
           ├─ Jornada  → Player do dia (áudio + reflexão + "concluí")
-          ├─ Loja     → Produto (prévia + botão de compra; itens bloqueados com cadeado)
+          ├─ Tesouros → Produto (prévia + botão de compra; itens bloqueados com cadeado)
           ├─ Mural    → Intenção (rezar por ela / contador "X pessoas rezaram")
           └─ Perfil   → Assinatura (status, próxima cobrança, link de gestão), horário de oração, sair, excluir conta
 ```
 
-Bottom nav com 4 abas: Jornada, Loja, Mural, Perfil. Home é a tela inicial da aba Jornada.
+Bottom nav com 4 abas: Jornada, Tesouros, Mural, Perfil. Home é a tela inicial da aba Jornada.
+
+**A aba Loja se chama Tesouros** (📿, decisão do Leo em 04/11): "Loja" diz "aqui se
+vende", "Tesouros" diz "aqui está o que é seu". **Muda só o texto que aparece** — a
+rota `/loja`, o `utm_medium=loja`, os eventos (`store_viewed`…) e o `canal` do
+`purchase_from_app` continuam com o nome de sempre, para os links que já saíram e a
+comparação Home × Loja não quebrarem. O estilo visual (temas, letra, componentes,
+arte) está em `docs/estilo-visual.md`.
 
 A tela de **Início** é pública e existe por dois motivos: domínio que não serve
 nada atrapalha a entrega do e-mail, e quem recebe o link precisa reconhecer onde
