@@ -40,6 +40,8 @@
   },
   "dependencies": {
     "@block65/webcrypto-web-push": "2.0.0",
+    "@fontsource/cormorant-garamond": "5.3.0",
+    "@fontsource/inter": "5.3.0",
     "hono": "^4.13.13",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
@@ -56,6 +58,7 @@
     "@vitejs/plugin-react": "^6.1.2",
     "cross-env": "^10.1.0",
     "read-excel-file": "9.3.12",
+    "sharp": "0.35.5",
     "tailwindcss": "^4.3.3",
     "typescript": "^7.0.2",
     "vite": "^8.3.4",
