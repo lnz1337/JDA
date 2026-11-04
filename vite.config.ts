@@ -87,7 +87,8 @@ export default defineConfig({
         injectRegister: 'auto',
         injectManifest: {
           // Shell do app no precache. Áudio nunca entra aqui (CLAUDE.md §12).
-          globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'],
+          // A arte (webp) entra no shell: é a primeira coisa da Home, inclusive sem internet.
+          globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2,webp}'],
           globIgnores: ['**/audio/**'],
         },
         manifest: {
