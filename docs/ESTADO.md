@@ -323,6 +323,34 @@ de até 40 (`scripts/lib/lotes.ts`), somando a taxa de falha da onda inteira. Se
 a rede cair no meio, ele para e avisa para contar o `campaign_sends` antes de
 rodar de novo.
 
+### Campanha `lembrete-app` (04/11)
+
+Pronta e publicada em produção (`a8bb1f3`), **ainda sem disparo**: esperando o ok
+do Leo depois do e-mail de teste (`--teste-para`, que saiu em 04/11 sem gravar
+nada em `campaign_sends`). Texto em `conteudo/emails/lembrete-app.md`.
+
+Quem recebe: `anuncio-app` enviado há 7 dias ou mais, nunca entrou (nenhum link
+usado, nenhum código usado, nenhuma sessão) e não pediu para parar. **Elegíveis
+por onda do anúncio** em 04/11, 13:57 UTC (quem ainda não entrou; cada onda
+fica elegível 7 dias depois do envio dela):
+
+| Anúncio | Provedor | Nunca entraram | Elegível a partir de (UTC) |
+|---|---|---|---|
+| 28/10 (1ª) | Gmail | 31 | 04/11 14:01 |
+| 29/10 (2ª) | Gmail | 84 | 05/11 13:02 |
+| 30/10 (3ª) | Gmail | 170 | 06/11 15:25 |
+| 31/10 (4ª) | Gmail | 366 | 07/11 15:31 |
+| 03/11 (5ª) | Gmail | 379 | 10/11 14:15 |
+| 04/11 (6ª) | Microsoft | 127 | 11/11 13:40 |
+| 04/11 (6ª) | outros | 141 | 11/11 13:40 |
+
+**A trava de onda conta por campanha, e acumulado**: `ondaAnterior` é o total de
+enviados com sucesso daquela campanha, e o teto é o dobro dele. Campanha nova
+começa em 0, e **com 0 não há teto de onda nenhum** — só a cota do dia (700 menos
+o que já saiu). Proposta levada ao Leo: contar pelo **volume diário do domínio**
+(maior número de `email_enviado` num dia, nos últimos 14 dias, de qualquer
+tipo), com teto no dobro dele. Hoje o maior dia é 421 (03/11).
+
 ### Primeiras vendas pelo postback de produção (27 a 28/10)
 
 Do ar (27/10, 14:58) até 28/10, 13:13: **9 vendas pagas reais**. As 8 compras
