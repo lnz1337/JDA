@@ -31,7 +31,7 @@ e não "site":
 6. **A oração em passos**: uma tela por parte, barra de progresso em segmentos,
    "Por que hoje" numa caixa com filete dourado, "Continuar" e "‹ Voltar um
    passo", botão de letra maior.
-7. **Loja que começa pelo que já é seu**: cartão verde "✓ Já é seu" antes de
+7. **Uma "loja" que começa pelo que já é seu**: cartão verde "✓ Já é seu" antes de
    qualquer coisa à venda.
 8. **Tema claro e escuro**, com o claro de padrão.
 
@@ -41,7 +41,7 @@ e não "site":
 |---|---|---|
 | Entra só com o nome | Continua o login por código (§8) | O JDA é acesso comprado |
 | 7 abas com rótulo de ~11px | Só as abas que existem, rótulo de 16px ou mais (§4) | 55+; aba que não leva a nada ensina que o app quebrou |
-| Bolinha vermelha na aba da loja | Não | É aviso de notificação usado para vender. Sem push de oferta (§9) vale também para isso |
+| Bolinha vermelha na aba dos Tesouros | Não | É aviso de notificação usado para vender. Sem push de oferta (§9) vale também para isso |
 | "8.781 irmãs rezaram hoje" | Só com número real, e só acima de um mínimo (fase do Mural) | Número inventado é mentira; "2 pessoas rezaram" desanima |
 | Mural com sobrenome, foto e doença de terceiros | §10: primeiro nome, aviso antes de escrever, sem foto | O dado é de quem não escolheu aparecer |
 | "Bem-vinda", "irmãs" | Forma neutra ("Que bom ter você aqui") | A base não é só de mulheres |
@@ -227,7 +227,7 @@ item que abre um áudio que não toca é pior que item nenhum.
 ### Jornada (o mapa)
 
 Nova aba **Jornada**, separada da Home (que vira a aba **Hoje**). Abas: Hoje ·
-Jornada · Loja; Mural e Perfil entram nas fases deles. O §4 muda no mesmo commit.
+Jornada · Tesouros; Mural e Perfil entram nas fases deles. O §4 muda no mesmo commit.
 
 1. Arte em faixa, "A sua jornada" e "você está no dia 3 de 19" (o mesmo "dia de
    hoje" do lembrete).
@@ -257,9 +257,17 @@ laço: celular antigo. Os programas que liberam tudo de uma vez (Presentes, UP1,
 UP2) continuam em lista, com o estilo novo. Nada do Círculo aparece no mapa
 nesta rodada: a vez dele é a fase 7, e só depois do dia 19 (§9).
 
-### Loja
+### Tesouros (a antiga Loja)
 
-1. "Loja", com uma frase curta embaixo.
+**Decisão do Leo (04/11): a aba Loja passa a se chamar Tesouros**, com o ícone 📿.
+"Loja" diz "aqui se vende"; "Tesouros" diz "aqui está o que é seu", e a tela de
+fato começa pelo que a pessoa já tem. **Muda só o texto que aparece**: a rota
+`/loja`, o `utm_medium=loja`, os eventos (`store_viewed`…) e o `canal` do
+`purchase_from_app` continuam com o nome de sempre, senão os links que já saíram
+e a comparação Home × Loja quebram. Procurar e trocar todo texto visível que diz
+"Loja" ("Voltar para a loja", "na Loja"), e atualizar o §4.
+
+1. "Tesouros", com a frase "o que já é seu e o que ainda pode ser" embaixo.
 2. **"✓ Já é seu"**: cartões verdes com o que a pessoa já tem (a Jornada, os
    Presentes, um pacote comprado). Tocar abre o programa.
 3. **O resto**: capa à esquerda (`cover_key`; sem capa, um quadrado escuro com
@@ -301,11 +309,11 @@ claro, no escuro e na letra maior, para o Leo conferir no iPhone e no BlueStacks
 
 | Fase | O quê | Muda comportamento? |
 |---|---|---|
-| R1 | Tokens, temas, fontes, letra regulável, componentes, cabeçalho, barra de abas e a arte, aplicados às telas que existem | Não, só aparência (e o tema/letra, que são novos) |
+| R1 | Tokens, temas, fontes, letra regulável, componentes, cabeçalho, barra de abas (com Loja → Tesouros) e a arte, aplicados às telas que existem | Não, só aparência (e o tema/letra, que são novos) |
 | R2 | Lição em passos, com `passos` no `GET /api/licoes/:id` | Sim: a lição vira três telas |
 | R3 | Home "Hoje" | Sim: lista do dia, saudação |
 | R4 | Mapa da jornada, `programs.stages_json`, aba Jornada | Sim: aba nova, §4 |
-| R5 | Loja com "Já é seu" | Pouco |
+| R5 | Tesouros com "Já é seu" | Pouco |
 | R6 | Início, Entrar, Sem acesso e as duas telas novas do onboarding | Sim: onboarding |
 
 A fase 7 (Círculo, prazo por volta de 15/11, quando os primeiros chegam ao dia
