@@ -233,8 +233,15 @@ export function useTocador(
         setAtual(audio.currentTime);
         gravarPosicao(faixa.src, audio.currentTime);
 
+        /*
+         * Só contando com o áudio tocando: retomar uma faixa parada depois dos
+         * 90% pula para a posição guardada, e esse pulo dispara `timeupdate`
+         * sem a pessoa ouvir nada — era um `audio_completed` repetido a cada
+         * vez que ela abria a lição.
+         */
         if (
           !avisouFim.current &&
+          !audio.paused &&
           audio.duration > 0 &&
           audio.currentTime / audio.duration >= OUVIDA
         ) {

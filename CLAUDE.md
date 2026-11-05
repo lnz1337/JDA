@@ -410,7 +410,8 @@ Toda rota de conteúdo (`/api/lessons/:id`, `/media/*`) chama `hasAccess`. Mídi
   `try/catch` e a tela funciona sem ela.
 - **`lesson_started` sai do evento `play` do áudio, não do clique no botão**:
   tocar pela tela de bloqueio ou pelo fone também é começar a oração.
-  `audio_completed` sai acima de 90% da faixa, e `lesson_completed` só quando o
+  `audio_completed` sai acima de 90% da faixa **com o áudio tocando** (retomar a
+  posição guardada depois dos 90% não conta de novo), e `lesson_completed` só quando o
   progresso é **novo** — tocar "concluí" duas vezes não pode virar duas linhas no
   funil D1 → D19.
 - A frase curta do dia vem do `summary`; faltando ele, do `**Intenção:**` do corpo.
