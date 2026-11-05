@@ -41,7 +41,9 @@ export function podeRecarregarAgora(estado: EstadoDaTela): boolean {
  * voltar para a frente. O navegador só procura sozinho ao navegar, e o app
  * instalado quase nunca navega: volta da memória.
  */
-export const PROCURAR_VERSAO_MS = 30 * 60 * 1000;
+// A procura é um pedido pequeno do `sw.js`; 5 min basta para não repetir a
+// cada troca de app e deixa o teste no celular sem meia hora de espera.
+export const PROCURAR_VERSAO_MS = 5 * 60 * 1000;
 
 export function deveProcurarVersao(ultimaMs: number | null, agoraMs: number): boolean {
   return ultimaMs === null || agoraMs - ultimaMs >= PROCURAR_VERSAO_MS;

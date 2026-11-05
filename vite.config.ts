@@ -72,6 +72,21 @@ export default defineConfig({
    */
   define: {
     __DIAGNOSTICO__: JSON.stringify(process.env.CLOUDFLARE_ENV !== 'production'),
+    /*
+     * Carimbo do build, só no staging, no cabeçalho (src/client/ambiente.d.ts).
+     * É o que permite ver, no iPhone, que a versão nova assumiu (05/11).
+     */
+    __VERSAO__: JSON.stringify(
+      process.env.CLOUDFLARE_ENV === 'staging'
+        ? new Date().toLocaleString('pt-BR', {
+            timeZone: 'America/Sao_Paulo',
+            day: '2-digit',
+            month: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+          })
+        : '',
+    ),
   },
   plugins: [
     react(),

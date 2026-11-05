@@ -96,6 +96,10 @@ export function Cabecalho() {
         <p className="font-sans text-[15px] font-extrabold uppercase leading-tight tracking-[2px] text-ouro">
           com São Miguel Arcanjo
         </p>
+        {/* Só no staging (vite.config.ts): mostra qual versão está na tela. */}
+        {__VERSAO__ && (
+          <p className="font-sans text-[13px] leading-tight text-texto2">versão {__VERSAO__}</p>
+        )}
       </div>
     </header>
   );
