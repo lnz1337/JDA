@@ -6,23 +6,20 @@ staging, o que depende do Leo e as armadilhas que custaram caro.
 
 `npm run typecheck && npm test` limpo, **498 testes** em 34 arquivos (05/11).
 
-**Produção** está no `66f35fa` (deploy de 05/11, 14:03 UTC, versão `88e7d149`):
-a fase R1 do estilo visual, a **entrada sem código** e o texto novo do
-`lembrete-app`. **Staging está à frente** (`79fc54c`, versão `ec8bf32c`, com a
-migration `0010`), com três coisas **testadas pelo Leo no iPhone em 05/11
-("tudo funcionou") e esperando o ok dele para produção**:
+**Staging e produção estão no mesmo código** (`3e8cdbe`) desde 05/11: produção
+publicada com o ok do Leo (versão `06f9a7a0`), depois do teste dele no iPhone
+("tudo funcionou"), com a migration `0010` aplicada **antes** do deploy. Foram
+juntos:
 
 1. a versão nova do app assume e recarrega a tela (`309a4b1`; ver "Versão nova
    assume na hora");
 2. destinatário suprimido fora da trava e das campanhas (`a7d0994`, migration
    `0010`; ver "Destinatário suprimido");
-3. carimbo da versão no cabeçalho, só no staging, e procura a cada 5 min
-   (`79fc54c`).
+3. procura de versão a cada 5 min e o carimbo da versão no cabeçalho, que só
+   aparece no staging (`79fc54c`).
 
-**Ordem para produção**: `npm run db:migrate:production` (a `0010` é a única
-pendente) **antes** de `npm run deploy:production`. **Antes da 3ª onda do
-lembrete** (elegível em 06/11, 15:25 UTC): sem a `0010` e o `a7d0994` em
-produção, um suprimido volta a parar a onda.
+A única diferença entre os dois é o carimbo: o bundle de produção não leva
+nenhum (`index-CufflJCb.js`, igual nos builds de ensaio).
 
 ## Os dois ambientes
 
@@ -536,11 +533,12 @@ de versão quando o app é fechado de vez (`skipWaiting` só por mensagem). Quem
 tem o app instalado **e está deslogado** pode abrir a tela velha, que chama
 `/api/auth/codigo` — e essa rota agora responde `not_found`, com a mensagem de
 erro genérica da tela antiga. Pega pouca gente: a sessão dura 365 dias, e o link
-`/acesso` é servido pelo Worker, não pelo cache. **A correção está em staging
-desde 05/11** (`309a4b1`, ver "Versão nova assume na hora"), ainda não em
-produção.
+`/acesso` é servido pelo Worker, não pelo cache. **A correção está em produção
+desde 05/11** (`309a4b1`, ver "Versão nova assume na hora"). Ela alcança quem
+abre o app de novo; a página antiga que volta da memória sem navegar continua
+com o código antigo até o app ser fechado de verdade.
 
-### Versão nova assume na hora (05/11, `309a4b1`) — só em staging
+### Versão nova assume na hora (05/11, `309a4b1`) — em produção desde 05/11
 
 Pedido do Leo, por causa do risco acima. O `registerSW.js` gerado só registra o
 service worker: não procura versão nova nem recarrega nada, e o SW novo só
@@ -601,7 +599,15 @@ de staging muda o bundle e, com ele, o SW: é o que deixa ver a troca no iPhone.
 Em produção é vazio, e dois builds de produção saem idênticos
 (`index-CufflJCb.js`, conferido) — deploy só de Worker não faz ninguém recarregar.
 
-### Destinatário suprimido (05/11, `a7d0994`) — só em staging
+### Destinatário suprimido (05/11, `a7d0994`) — em produção desde 05/11
+
+**Em produção (05/11)**: a `0010` rodou no `jda-pwa-prod` antes do deploy e
+manteve as 1.542 linhas de `campaign_sends` — 1.539 `sent`, 1 `failed` (o
+endereço com acento do anúncio de 29/10, falha comum) e **2 `suppressed`** (os
+da 2ª onda do lembrete) — e marcou as 2 contas. Depois do deploy, o dry-run do
+`lembrete-app` (limite 200) respondeu com o campo `suprimidos` e **0
+selecionados**, como devia: a 2ª onda acabou e a 3ª só fica elegível em 06/11,
+15:25 UTC.
 
 Pedido do Leo depois de a 2ª onda parar. O Cloudflare recusa antes de enviar o
 endereço que está na lista de supressão (*"has been suppressed due to repeated
