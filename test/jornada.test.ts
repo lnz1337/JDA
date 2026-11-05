@@ -186,6 +186,37 @@ describe('lista de dias', () => {
     expect(corpo.programa.concluidos).toBe(1);
   });
 
+  /*
+   * 05/11: com o dia de hoje concluído e nenhum atrasado, o "dia atual" caía no
+   * último da lista — o 19, ainda bloqueado — e a Home oferecia o dia 19, que
+   * abria "Este dia ainda não abriu".
+   */
+  it('hoje concluído e nada atrasado: o dia atual é o de hoje, não o 19 bloqueado', async () => {
+    await prepararUsuario({ inicio: inicioNoDia(2) });
+    for (const id of ['jornada-19-d01', 'jornada-19-d02']) {
+      await chamar(`/api/licoes/${id}/concluir`, { method: 'POST', headers: { cookie: COOKIE } });
+    }
+
+    const { programas } = (await (
+      await chamar('/api/programas', { headers: { cookie: COOKIE } })
+    ).json()) as { programas: Array<{ atual: { dia: number; estado: string } | null }> };
+
+    expect(programas[0]?.atual).toMatchObject({ dia: 2, estado: 'concluido' });
+  });
+
+  it('com um dia atrasado, o atual é o atrasado', async () => {
+    await prepararUsuario({ inicio: inicioNoDia(3) });
+    for (const id of ['jornada-19-d01', 'jornada-19-d03']) {
+      await chamar(`/api/licoes/${id}/concluir`, { method: 'POST', headers: { cookie: COOKIE } });
+    }
+
+    const { programas } = (await (
+      await chamar('/api/programas', { headers: { cookie: COOKIE } })
+    ).json()) as { programas: Array<{ atual: { dia: number; estado: string } | null }> };
+
+    expect(programas[0]?.atual).toMatchObject({ dia: 2, estado: 'liberado' });
+  });
+
   it('produto avulso libera tudo de uma vez', async () => {
     await prepararUsuario();
     await env.DB.prepare(

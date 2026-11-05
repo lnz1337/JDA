@@ -198,12 +198,21 @@ async function programasVisiveis(db: D1Database, userId: string): Promise<LinhaP
   return visiveis;
 }
 
-/** O "dia atual": hoje, se existir; senão o primeiro não concluído. */
+/**
+ * O "dia atual": hoje, se ainda não foi feito; senão o primeiro atrasado; senão
+ * o último dia já aberto (o de hoje, concluído).
+ *
+ * O último recurso era o último da lista, e com o dia de hoje concluído e nada
+ * atrasado isso dava o dia 19, bloqueado: a Home oferecia um dia que não abre
+ * (achado em 05/11). Dia bloqueado nunca é o atual.
+ */
 function licaoAtual(lista: LicaoNaLista[]): LicaoNaLista | null {
+  const abertas = lista.filter((l) => l.estado !== 'bloqueado');
   return (
     lista.find((l) => l.estado === 'hoje') ??
     lista.find((l) => l.estado === 'liberado') ??
-    lista[lista.length - 1] ??
+    abertas[abertas.length - 1] ??
+    lista[0] ??
     null
   );
 }
