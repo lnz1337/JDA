@@ -1,0 +1,481 @@
+{
+  "_gerado_por": "conteudo/gerar_seed_circulo.py — não edite à mão",
+  "products": [
+    {
+      "id": "circulo-devocional",
+      "name": "Devocional diário do Círculo",
+      "kind": "program",
+      "description_md": "Um devocional para cada dia do mês: uma leitura da Bíblia, uma reflexão curta, uma oração e uma prática para o dia. Todos os participantes do Círculo rezam o mesmo devocional no mesmo dia.",
+      "notice": null,
+      "listed": 0
+    },
+    {
+      "id": "novena-nossa-senhora-das-gracas",
+      "name": "Novena de Nossa Senhora das Graças",
+      "kind": "program",
+      "description_md": "Nove dias de oração, de 18 a 26 de novembro, preparando a festa de Nossa Senhora das Graças, a da Medalha Milagrosa, em 27 de novembro.",
+      "notice": null,
+      "listed": 0
+    }
+  ],
+  "programs": [
+    {
+      "id": "circulo-devocional",
+      "product_id": "circulo-devocional",
+      "title": "Devocional do Círculo",
+      "unlock_rule": "mes",
+      "total_days": 31,
+      "available_from": null
+    },
+    {
+      "id": "novena-nsgracas-2026-11",
+      "product_id": "novena-nossa-senhora-das-gracas",
+      "title": "Novena de Nossa Senhora das Graças",
+      "unlock_rule": "calendario",
+      "total_days": 9,
+      "available_from": "2026-11-18"
+    }
+  ],
+  "lessons": [
+    {
+      "id": "circulo-devocional-d01",
+      "program_id": "circulo-devocional",
+      "day": 1,
+      "title": "Começar o mês com São Miguel",
+      "summary": "Um novo mês começa. Entregue estes dias a São Miguel.",
+      "body_md": "**Leitura do dia:** Êxodo 23,20\n\nNo livro do Êxodo, quando o povo de Deus atravessava o deserto, o Senhor prometeu mandar um anjo à frente dele, para guardá-lo no caminho e levá-lo até o lugar preparado.\n\nRepare: Deus não tirou o deserto do caminho. O calor continuou, a areia continuou, o cansaço continuou. O que Deus fez foi mandar alguém na frente. A fé não promete uma estrada sem pedras; ela garante que ninguém caminha sozinho.\n\nPense neste mês que começa: as contas que vão chegar, os compromissos marcados, as pessoas que você vai encontrar, as preocupações que já estão aí. Depois, escolha uma intenção, uma só, para entregar a Deus nestes dias.\n\n**Oração**\n\nSão Miguel Arcanjo, entrego a ti este mês que começa. Vai à minha frente nos caminhos que eu ainda não conheço. Defende a minha casa e a minha família. E ajuda-me a viver cada dia na presença de Deus. Amém.\n\n**Prática de hoje:** Escreva num papel uma intenção para este mês e guarde-a no lugar onde você reza.\n\n**Intenção:** Entregar este mês a São Miguel.\n",
+      "push_text": "Um novo mês começa. Vamos entregá-lo a São Miguel?",
+      "audio_key": null,
+      "audio_script_ready": true
+    },
+    {
+      "id": "circulo-devocional-d02",
+      "program_id": "circulo-devocional",
+      "day": 2,
+      "title": "O anjo ao seu lado",
+      "summary": "Desde o primeiro dia da sua vida, um anjo caminha com você.",
+      "body_md": "**Leitura do dia:** Salmo 91 (90),11-12\n\nO salmo diz que Deus dá ordens aos seus anjos a nosso respeito, para que nos guardem em todos os caminhos e o nosso pé não tropece nas pedras. A Igreja ensina que, do começo ao fim da vida, cada pessoa é acompanhada pela proteção de um anjo (Catecismo, n. 336).\n\nEle estava lá quando você nasceu, nos dias de festa e nos dias de luto. Está aí agora, enquanto você lê. Muita gente aprendeu a rezar para o anjo da guarda ainda criança, ajoelhada ao lado da cama, e com o tempo a oração foi ficando esquecida. Mas o anjo não esquece: não envelhece, não se cansa e não desiste de você.\n\nLembre de um momento em que você foi protegido sem saber como. Um perigo que passou perto, uma ajuda que chegou na hora certa. Agradeça por ele.\n\n**Oração**\n\nSanto Anjo do Senhor, meu zeloso guardador, se a ti me confiou a piedade divina, sempre me rege, me guarda, me governa e me ilumina. Amém.\n\nMeu anjo da guarda, obrigado por nunca ter saído do meu lado. Guarda também as pessoas que eu amo e leva até Deus a intenção que está no meu coração. Amém.\n\n**Prática de hoje:** Reze o Santo Anjo três vezes hoje: ao acordar, ao sair de casa e antes de dormir.\n\n**Intenção:** Agradecer pelo meu anjo da guarda.\n",
+      "push_text": "Seu anjo da guarda está ao seu lado agora mesmo.",
+      "audio_key": null,
+      "audio_script_ready": true
+    },
+    {
+      "id": "circulo-devocional-d03",
+      "program_id": "circulo-devocional",
+      "day": 3,
+      "title": "Uma casa protegida",
+      "summary": "Hoje você coloca a sua casa debaixo da proteção de Deus.",
+      "body_md": "**Leitura do dia:** Salmo 127 (126),1\n\nO salmo diz que, se não for o Senhor quem constrói a casa, é inútil o trabalho de quem a levanta; e, se não for o Senhor quem guarda a cidade, é inútil a vigília de quem fica acordado.\n\nA gente se esforça muito pela casa: paga as contas, conserta o que quebra, limpa, arruma, cuida. E tudo isso é bom. Mas a parte mais importante não está nas nossas mãos. Rezar pelo lar não é um ritual para afastar coisas ruins: é pedir que Deus more em cada cômodo. Na cozinha, onde se prepara o pão. No quarto, onde se descansa. Na sala, onde a família conversa, e às vezes discute.\n\nPercorra a sua casa em pensamento, um cômodo de cada vez. Depois, pense nas pessoas que moram com você ou que passam pela sua porta.\n\n**Oração**\n\nSenhor, eu te entrego a minha casa. Mora em cada canto dela. Que aqui exista paz, perdão e alegria. Afasta daqui as brigas, a doença e o desânimo. São Miguel Arcanjo, guarda esta porta, de dia e de noite. Amém.\n\n**Prática de hoje:** Faça o sinal da cruz na porta de entrada hoje, ao sair e ao voltar.\n\n**Intenção:** Entregar a minha casa a Deus.\n",
+      "push_text": "Hoje é dia de rezar pela sua casa.",
+      "audio_key": null,
+      "audio_script_ready": true
+    },
+    {
+      "id": "circulo-devocional-d04",
+      "program_id": "circulo-devocional",
+      "day": 4,
+      "title": "A família debaixo do mesmo céu",
+      "summary": "Hoje você reza por cada pessoa da sua família, perto ou longe.",
+      "body_md": "**Leitura do dia:** Josué 24,15\n\nJá no fim da vida, Josué reuniu o povo e pediu que cada um escolhesse a quem iria servir. E deu a resposta dele diante de todos: eu e a minha casa serviremos ao Senhor.\n\nNenhuma família é perfeita. Tem quem mora longe, tem quem não fala com quem, tem quem se afastou da fé, tem quem já partiu. Ainda assim, todos estão debaixo do mesmo céu, e Deus conhece cada nome melhor do que nós.\n\nHoje, diga diante de Deus o nome de cada pessoa da sua família, devagar, um por um. Não precisa explicar nada nem pedir nada de específico. Só entregar.\n\n**Oração**\n\nSenhor, eu te apresento a minha família. Os que estão perto e os que estão longe, os que estão em paz e os que estão brigados, os que rezam e os que esqueceram de rezar. Guarda cada um debaixo do teu céu. São Miguel, protege a minha família. Amém.\n\n**Prática de hoje:** Mande hoje uma mensagem curta para alguém da família com quem você fala pouco.\n\n**Intenção:** Pela minha família, os de perto e os de longe.\n",
+      "push_text": "Hoje a oração é pela sua família.",
+      "audio_key": null,
+      "audio_script_ready": false
+    },
+    {
+      "id": "circulo-devocional-d05",
+      "program_id": "circulo-devocional",
+      "day": 5,
+      "title": "O trabalho de cada dia",
+      "summary": "O trabalho das suas mãos, de hoje e de toda a vida, também é oração.",
+      "body_md": "**Leitura do dia:** Salmo 90 (89),17\n\nO salmo termina com um pedido simples: que a bondade do Senhor esteja sobre nós e que Ele confirme a obra das nossas mãos.\n\nTrabalho não é só emprego. É a comida que você prepara, a roupa que lava, o neto de quem cuida, a conta que confere, a planta que rega. É também o trabalho de uma vida inteira, que talvez ninguém tenha agradecido. Deus vê tudo isso. Nada do que foi feito com amor se perde diante dele.\n\nHoje, ofereça o que você vai fazer, por menor que pareça. E reze por quem está procurando trabalho, por quem trabalha cansado e por quem já não consegue trabalhar.\n\n**Oração**\n\nSenhor, abençoa o trabalho das minhas mãos, o de hoje e o de toda a minha vida. Dá força a quem trabalha, coragem a quem procura trabalho e descanso a quem já trabalhou demais. São Miguel, guarda o pão de cada dia da minha casa. Amém.\n\n**Prática de hoje:** Antes da primeira tarefa do dia, faça o sinal da cruz e ofereça a Deus o que vai fazer.\n\n**Intenção:** Pelo meu trabalho e pelo de quem eu amo.\n",
+      "push_text": "Ofereça a Deus o trabalho de hoje.",
+      "audio_key": null,
+      "audio_script_ready": false
+    },
+    {
+      "id": "circulo-devocional-d06",
+      "program_id": "circulo-devocional",
+      "day": 6,
+      "title": "Os caminhos de ida e volta",
+      "summary": "Peça a Deus que guarde as suas saídas e as suas voltas.",
+      "body_md": "**Leitura do dia:** Salmo 121 (120),8\n\nO salmo cento e vinte e um é a oração de quem está a caminho. Ele termina dizendo que o Senhor guarda a nossa saída e a nossa entrada, agora e para sempre.\n\nTodo dia a gente sai e volta: para o mercado, para o médico, para a missa, para a casa dos filhos. E todo dia alguém que a gente ama também está na estrada, no ônibus, no carro, na moto, a pé. A preocupação vem sozinha. A oração é uma escolha.\n\nLembre das pessoas que vão sair de casa hoje. Imagine São Miguel indo à frente de cada uma, e o anjo da guarda caminhando ao lado.\n\n**Oração**\n\nSenhor, guarda a minha saída e a minha volta. Guarda também os que eu amo, em cada caminho por onde passarem hoje. Livra-nos dos acidentes, das más companhias e dos perigos que não vemos. São Miguel, vai à nossa frente. Amém.\n\n**Prática de hoje:** Ao sair de casa hoje, reze em silêncio: \"São Miguel, vai à minha frente.\"\n\n**Intenção:** Por todos que estão na estrada hoje.\n",
+      "push_text": "Antes de sair, peça: São Miguel, vai à minha frente.",
+      "audio_key": null,
+      "audio_script_ready": false
+    },
+    {
+      "id": "circulo-devocional-d07",
+      "program_id": "circulo-devocional",
+      "day": 7,
+      "title": "Descansar em Deus",
+      "summary": "Fim da primeira semana: hoje é dia de descansar em Deus.",
+      "body_md": "**Leitura do dia:** Mateus 11,28\n\nJesus fez um convite que vale para todo mundo: venham a mim, todos vocês que estão cansados e carregam um peso, e eu darei descanso.\n\nEle não disse \"venham quando estiverem bem\", nem \"venham depois de resolver tudo\". Disse: venham cansados. Tem cansaço do corpo, que uma boa noite resolve. E tem cansaço da alma: de quem carrega preocupação há anos, de quem cuida de todo mundo e não tem quem cuide de si.\n\nHoje, não precisa fazer nada de grande. Sente num lugar tranquilo, respire devagar e deixe o peso no chão por alguns minutos. Deus não pede mais do que isso.\n\n**Oração**\n\nSenhor Jesus, eu venho a ti com o meu cansaço. Tu conheces o peso que eu carrego e há quanto tempo eu o carrego. Dá descanso ao meu corpo e paz à minha alma. Ensina-me a parar em ti. Amém.\n\n**Prática de hoje:** Separe hoje dez minutos sem televisão e sem celular, só para ficar em silêncio com Deus.\n\n**Intenção:** Por todos que estão cansados.\n",
+      "push_text": "Hoje Jesus diz: venha descansar.",
+      "audio_key": null,
+      "audio_script_ready": false
+    },
+    {
+      "id": "circulo-devocional-d08",
+      "program_id": "circulo-devocional",
+      "day": 8,
+      "title": "Quem é como Deus?",
+      "summary": "O nome de São Miguel é uma pergunta, e a resposta é a sua fé.",
+      "body_md": "**Leitura do dia:** Apocalipse 12,7-8\n\nO Apocalipse conta que houve um combate no céu: Miguel e os seus anjos lutaram contra o dragão, e o dragão não venceu. O nome Miguel, em hebraico, quer dizer \"Quem é como Deus?\".\n\nÉ uma pergunta que já traz a resposta: ninguém. Nenhum problema, nenhuma dívida, nenhum medo é do tamanho de Deus. São Miguel não vence por ser forte; vence porque não tira os olhos de Deus.\n\nPense na coisa que mais te preocupa hoje e diga o nome dela em voz baixa. Depois, pergunte como São Miguel: quem é como Deus?\n\n**Oração**\n\nSão Miguel Arcanjo, tu que defendeste a honra de Deus, ensina-me a pôr cada problema no tamanho certo. Quando o medo parecer maior que tudo, lembra-me que ninguém é como Deus. Defende-nos no combate. Amém.\n\n**Prática de hoje:** Sempre que sentir medo ou desânimo hoje, repita: \"Quem é como Deus?\"\n\n**Intenção:** Pela minha fé, para que ela fique firme.\n",
+      "push_text": "Quem é como Deus? Ninguém.",
+      "audio_key": null,
+      "audio_script_ready": false
+    },
+    {
+      "id": "circulo-devocional-d09",
+      "program_id": "circulo-devocional",
+      "day": 9,
+      "title": "Quando a fé fica pequena",
+      "summary": "Ter dúvida não é o fim da fé. É hora de pedir ajuda a Deus.",
+      "body_md": "**Leitura do dia:** Marcos 9,24\n\nNo Evangelho de Marcos, um pai leva a Jesus o filho que sofria desde criança. Jesus diz que tudo é possível para quem crê. E o pai responde com uma das orações mais sinceras da Bíblia: eu creio, mas ajuda a minha falta de fé.\n\nEle não fingiu uma fé que não tinha. Disse a verdade: acreditava e duvidava ao mesmo tempo. E Jesus não o mandou embora. A fé de muita gente passa por dias assim: depois de uma perda, de uma oração que parece não ter resposta, de anos de luta.\n\nSe a sua fé está pequena hoje, não esconda isso de Deus. Fale com Ele do jeito que está. Uma fé pequena, entregue com sinceridade, Ele sabe fazer crescer.\n\n**Oração**\n\nSenhor, eu creio, mas aumenta a minha fé. Tu conheces as minhas dúvidas e os meus cansaços. Não me deixes desistir de rezar. Segura a minha mão nos dias em que eu não consigo segurar a tua. Amém.\n\n**Prática de hoje:** Reze hoje, várias vezes, a oração do pai do Evangelho: \"Eu creio, Senhor, mas aumenta a minha fé.\"\n\n**Intenção:** Por quem está com a fé cansada.\n",
+      "push_text": "Eu creio, Senhor, mas aumenta a minha fé.",
+      "audio_key": null,
+      "audio_script_ready": false
+    },
+    {
+      "id": "circulo-devocional-d10",
+      "program_id": "circulo-devocional",
+      "day": 10,
+      "title": "O medo não tem a última palavra",
+      "summary": "Deus repete: não tenha medo, eu estou com você.",
+      "body_md": "**Leitura do dia:** Isaías 41,10\n\nPelo profeta Isaías, Deus diz ao seu povo: não tenha medo, porque eu estou com você; não se assuste, porque eu sou o seu Deus. Eu te fortaleço, eu te ajudo, eu te sustento.\n\nO medo chega sem pedir licença: do resultado de um exame, da violência, da solidão, do futuro dos filhos. Deus não diz que essas coisas não existem. Ele diz outra coisa: eu estou com você no meio delas. O medo pode falar alto, mas não tem a última palavra.\n\nDiga a Deus, com sinceridade, do que você tem medo hoje. Depois, leia de novo, devagar: eu estou com você.\n\n**Oração**\n\nSenhor, tu conheces os meus medos, os que eu digo e os que eu escondo. Fica comigo quando eu tiver medo. Fortalece o meu coração e sustenta a minha mão. São Miguel Arcanjo, defende-me de todo pavor. Amém.\n\n**Prática de hoje:** Escreva num papel \"Não tenha medo, eu estou com você\" e deixe onde você vai ver ao longo do dia.\n\n**Intenção:** Por quem está com medo hoje.\n",
+      "push_text": "Não tenha medo. Deus está com você.",
+      "audio_key": null,
+      "audio_script_ready": false
+    },
+    {
+      "id": "circulo-devocional-d11",
+      "program_id": "circulo-devocional",
+      "day": 11,
+      "title": "Rezar sem ver resposta",
+      "summary": "Quando a resposta demora, a oração continua valendo.",
+      "body_md": "**Leitura do dia:** Lucas 18,1-8\n\nJesus contou a história de uma viúva que ia todos os dias pedir justiça a um juiz que não temia a Deus. De tanto ela insistir, o juiz atendeu. E Jesus disse que contou isso para ensinar que é preciso rezar sempre, sem desanimar.\n\nTem pedido que a gente faz há anos: pelo filho que se afastou, pela casa, pela saúde de alguém. E às vezes parece que o céu está fechado. Mas Deus não é como aquele juiz: Ele escuta desde a primeira vez, e o tempo dele não é o nosso.\n\nRezar sem ver resposta também é fé. Talvez a mais bonita de todas.\n\n**Oração**\n\nSenhor, tu sabes há quanto tempo eu te peço por isso. Eu não entendo a tua demora, mas confio no teu amor. Não me deixes desanimar. Faz a tua vontade, no teu tempo, e dá-me paz enquanto eu espero. Amém.\n\n**Prática de hoje:** Volte hoje àquele pedido antigo que você parou de fazer e entregue-o de novo a Deus.\n\n**Intenção:** Pelos pedidos que eu ainda espero.\n",
+      "push_text": "Continue rezando. Deus escuta.",
+      "audio_key": null,
+      "audio_script_ready": false
+    },
+    {
+      "id": "circulo-devocional-d12",
+      "program_id": "circulo-devocional",
+      "day": 12,
+      "title": "A paciência de Padre Pio",
+      "summary": "Padre Pio ensinava: reze, espere e não se preocupe.",
+      "body_md": "**Leitura do dia:** Romanos 12,12\n\nSão Paulo pede aos cristãos de Roma que sejam alegres na esperança, pacientes no sofrimento e perseverantes na oração.\n\nPadre Pio viveu isso por décadas. Carregou dores no corpo, foi incompreendido, passou anos proibido de celebrar a missa em público e, ainda assim, continuou rezando e ouvindo confissões por horas a cada dia. Uma frase dele ficou conhecida no mundo inteiro: reze, espere e não se preocupe.\n\nPaciência não é cruzar os braços. É continuar fazendo a sua parte e deixar a parte de Deus com Deus. Hoje, escolha uma situação que está te deixando impaciente e entregue-a com as palavras de Padre Pio.\n\n**Oração**\n\nSenhor, dá-me a paciência que eu não tenho. Quando eu quiser resolver tudo de uma vez, ensina-me a esperar. Padre Pio, reza por mim, para que eu saiba rezar, esperar e não me preocupar. Amém.\n\n**Prática de hoje:** Quando a impaciência chegar hoje, respire fundo e repita: \"Reze, espere e não se preocupe.\"\n\n**Intenção:** Por paciência nos meus dias.\n",
+      "push_text": "Reze, espere e não se preocupe.",
+      "audio_key": null,
+      "audio_script_ready": false
+    },
+    {
+      "id": "circulo-devocional-d13",
+      "program_id": "circulo-devocional",
+      "day": 13,
+      "title": "Firmeza nas tentações",
+      "summary": "Deus não deixa você ser provado além das suas forças.",
+      "body_md": "**Leitura do dia:** 1 Coríntios 10,13\n\nSão Paulo escreve que Deus é fiel e não permite que sejamos tentados além das nossas forças. Junto com a tentação, Ele dá também o meio de sair dela.\n\nTentação não é só coisa grande. Tem a tentação de falar mal de alguém, de guardar rancor, de desistir de rezar, de achar que Deus esqueceu da gente, de responder com grosseria. Sentir a tentação não é pecado. O que importa é o que a gente faz com ela.\n\nHoje, pense na tentação que mais volta na sua vida. Não para se culpar, mas para pedir a Deus a saída que Ele promete.\n\n**Oração**\n\nSão Miguel Arcanjo, defendei-nos no combate. Sede o nosso refúgio contra as maldades e ciladas do demônio. Ordene-lhe Deus, instantemente o pedimos. E vós, príncipe da milícia celeste, pela virtude divina, precipitai no inferno a Satanás e aos outros espíritos malignos, que andam pelo mundo para perder as almas. Amém.\n\n**Prática de hoje:** Reze hoje a oração de São Miguel, do Papa Leão XIII, no momento mais difícil do dia.\n\n**Intenção:** Pela força de dizer não ao que me afasta de Deus.\n",
+      "push_text": "Deus não deixa você lutar sozinho.",
+      "audio_key": null,
+      "audio_script_ready": false
+    },
+    {
+      "id": "circulo-devocional-d14",
+      "program_id": "circulo-devocional",
+      "day": 14,
+      "title": "Vigiar o coração",
+      "summary": "O que sai da sua boca nasce antes no coração.",
+      "body_md": "**Leitura do dia:** Provérbios 4,23\n\nO livro dos Provérbios aconselha: acima de tudo, guarde o seu coração, porque dele brota a vida.\n\nO coração vai se enchendo do que a gente deixa entrar: das notícias o dia inteiro, das conversas, das mágoas que a gente remói, das comparações com a vida dos outros. E o que enche o coração acaba saindo pela boca e pelos gestos.\n\nVigiar o coração é escolher o que entra. Um pouco menos de notícia ruim, um pouco mais de silêncio. Menos conversa que machuca, mais oração. São Miguel guarda as portas do céu; peça a ele que guarde também a porta do seu coração.\n\n**Oração**\n\nSenhor, cria em mim um coração puro. Tira dele a mágoa, a inveja e a preocupação que não me deixam em paz. São Miguel, guarda a porta do meu coração, para que só entre nele o que vem de Deus. Amém.\n\n**Prática de hoje:** À noite, antes de dormir, pergunte-se: o que encheu o meu coração hoje?\n\n**Intenção:** Por um coração limpo e em paz.\n",
+      "push_text": "Guarde o seu coração hoje.",
+      "audio_key": null,
+      "audio_script_ready": false
+    },
+    {
+      "id": "circulo-devocional-d15",
+      "program_id": "circulo-devocional",
+      "day": 15,
+      "title": "O peso que não é seu",
+      "summary": "Tem peso que você carrega e que não era para ser seu.",
+      "body_md": "**Leitura do dia:** 1 Pedro 5,7\n\nSão Pedro escreve: entreguem a Deus todas as suas preocupações, porque Ele cuida de vocês.\n\nTem gente que carrega o problema de todo mundo: a dívida do filho, a doença da irmã, a briga dos netos, a tristeza da vizinha. Carrega por amor, e isso é bonito. Mas tem um limite. Quando a gente tenta carregar o que só Deus pode carregar, o peso esmaga.\n\nEntregar não é deixar de se importar. É reconhecer que você não é Deus, e que Ele cuida de quem você ama melhor do que você conseguiria.\n\n**Oração**\n\nSenhor, eu te entrego este peso que eu não consigo mais carregar. Cuida tu do que está fora do meu alcance. Dá-me a paz de quem confia e a coragem de fazer só a parte que é minha. Amém.\n\n**Prática de hoje:** Escreva num papel a preocupação que mais pesa hoje, dobre e coloque diante de um crucifixo ou de uma imagem de Nossa Senhora.\n\n**Intenção:** Entregar a Deus a minha maior preocupação.\n",
+      "push_text": "Deixe com Deus o que pesa demais hoje.",
+      "audio_key": null,
+      "audio_script_ready": false
+    },
+    {
+      "id": "circulo-devocional-d16",
+      "program_id": "circulo-devocional",
+      "day": 16,
+      "title": "Perdoar quem feriu",
+      "summary": "Perdoar não é esquecer. É deixar de carregar.",
+      "body_md": "**Leitura do dia:** Mateus 18,21-22\n\nPedro perguntou a Jesus quantas vezes devia perdoar: até sete vezes? E Jesus respondeu: não sete, mas setenta vezes sete. Quer dizer: sempre.\n\nPerdoar não é dizer que o que aconteceu não doeu, nem fingir que está tudo bem, nem voltar a conviver com quem faz mal. É decidir não deixar aquela ferida mandar no resto da sua vida. Muitas vezes o perdão não vem de uma vez: vem aos poucos, rezado e decidido de novo a cada vez que a lembrança volta.\n\nSe ainda não consegue perdoar, comece pedindo a Deus a vontade de perdoar. Já é um passo.\n\n**Oração**\n\nSenhor, tu conheces a ferida que eu carrego e quem a causou. Eu ainda não consigo perdoar como tu perdoas, mas quero aprender. Cura a minha memória e abençoa essa pessoa. Liberta-me do rancor. Amém.\n\n**Prática de hoje:** Reze hoje uma Ave-Maria pela pessoa que mais te feriu.\n\n**Intenção:** Pela pessoa que eu ainda não consegui perdoar.\n",
+      "push_text": "Hoje, um passo em direção ao perdão.",
+      "audio_key": null,
+      "audio_script_ready": false
+    },
+    {
+      "id": "circulo-devocional-d17",
+      "program_id": "circulo-devocional",
+      "day": 17,
+      "title": "Pedir perdão",
+      "summary": "Tão importante quanto perdoar é ter coragem de pedir perdão.",
+      "body_md": "**Leitura do dia:** Lucas 15,18-20\n\nNa parábola do filho pródigo, o filho que tinha ido embora decide voltar e dizer ao pai: pequei contra o céu e contra ti. Ainda estava longe quando o pai o viu, correu ao seu encontro e o abraçou.\n\nPedir perdão custa. Tem orgulho no meio, tem vergonha, tem medo de não ser recebido. Mas o Evangelho mostra que Deus corre ao encontro de quem volta. E muitas vezes as pessoas também.\n\nPense em alguém a quem você deve um pedido de desculpas: um familiar, um amigo, um vizinho. E pense também em Deus: talvez seja hora de uma boa confissão.\n\n**Oração**\n\nPai, eu errei, contra ti e contra pessoas que eu amo. Dá-me humildade para reconhecer, coragem para pedir perdão e paz para recomeçar. Obrigado por correr ao meu encontro sempre que eu volto. Amém.\n\n**Prática de hoje:** Se você deve um pedido de desculpas a alguém, dê hoje o primeiro passo: uma ligação, uma mensagem, uma palavra.\n\n**Intenção:** Por coragem de pedir perdão.\n",
+      "push_text": "Existe um perdão que você pode pedir hoje?",
+      "audio_key": null,
+      "audio_script_ready": false
+    },
+    {
+      "id": "circulo-devocional-d18",
+      "program_id": "circulo-devocional",
+      "day": 18,
+      "title": "As feridas antigas",
+      "summary": "Deus conhece as feridas que o tempo não fechou.",
+      "body_md": "**Leitura do dia:** Salmo 147 (146),3\n\nO salmo diz que Deus cuida dos que têm o coração partido e enfaixa as suas feridas.\n\nTem ferida que ninguém vê: uma infância difícil, uma palavra dura que nunca saiu da cabeça, um casamento que machucou, uma perda que nunca foi chorada direito. O tempo passa, a vida segue, mas a dor fica guardada num canto.\n\nDeus não tem pressa e não se assusta com a nossa dor. Ele não pede que você finja que está tudo bem; pede só que você o deixe chegar perto. Se a dor for grande demais, conversar com um padre ou com alguém de confiança também é um caminho que Deus usa.\n\n**Oração**\n\nSenhor, tu conheces as feridas que eu guardo há tanto tempo. Algumas eu nunca contei a ninguém. Eu as coloco nas tuas mãos. Cuida delas com a tua ternura e dá paz ao meu coração. Amém.\n\n**Prática de hoje:** Entregue hoje a Deus, em oração, uma lembrança que ainda dói.\n\n**Intenção:** Pelas feridas antigas do meu coração.\n",
+      "push_text": "Deus cuida das feridas que ninguém vê.",
+      "audio_key": null,
+      "audio_script_ready": false
+    },
+    {
+      "id": "circulo-devocional-d19",
+      "program_id": "circulo-devocional",
+      "day": 19,
+      "title": "Rezar pelos doentes",
+      "summary": "Hoje a sua oração vai para quem está doente.",
+      "body_md": "**Leitura do dia:** Mateus 25,36\n\nJesus disse que, no fim, vai lembrar de quem o visitou quando Ele estava doente. E explicou: cada vez que vocês fizeram isso a um dos meus irmãos mais pequenos, foi a mim que fizeram.\n\nTodo mundo conhece alguém que está doente: no hospital, em casa, numa cama há anos, esperando um resultado. Às vezes é a gente mesmo. E a doença também afasta: a pessoa vai sumindo das conversas, das visitas, das lembranças.\n\nRezar pelos doentes é não deixar ninguém ser esquecido. E a oração fica ainda mais bonita quando vira gesto: uma ligação, uma visita, um prato de comida.\n\n**Oração**\n\nSenhor, eu te apresento os doentes que eu conheço. Dá a eles força, alívio e companhia. Ilumina os médicos, os enfermeiros e quem cuida deles em casa. Que ninguém se sinta esquecido na dor. São Rafael e São Miguel, intercedei por eles. Amém.\n\n**Prática de hoje:** Ligue hoje para alguém que está doente, faça uma visita ou reze um terço por essa pessoa.\n\n**Intenção:** Pelos doentes da minha família e dos meus amigos.\n",
+      "push_text": "Hoje, reze por quem está doente.",
+      "audio_key": null,
+      "audio_script_ready": false
+    },
+    {
+      "id": "circulo-devocional-d20",
+      "program_id": "circulo-devocional",
+      "day": 20,
+      "title": "A paz que o mundo não dá",
+      "summary": "Jesus deixa a paz dele, que não depende de tudo dar certo.",
+      "body_md": "**Leitura do dia:** João 14,27\n\nAntes da Paixão, Jesus disse aos discípulos: eu deixo a paz para vocês, eu lhes dou a minha paz. Não a dou como o mundo dá. Não fiquem perturbados nem tenham medo.\n\nA paz do mundo depende de tudo estar resolvido: as contas pagas, a família unida, a saúde em ordem. Quando uma dessas coisas falha, a paz vai embora. A paz de Jesus é diferente. Ela pode morar num coração que ainda está no meio da tempestade, porque não depende das coisas: depende dele.\n\nFeche os olhos por um instante e receba essa paz, do jeito que você está.\n\n**Oração**\n\nSenhor Jesus, eu recebo a tua paz. Acalma o que está agitado em mim. Põe paz na minha casa, nas minhas conversas e nos meus pensamentos. Faz de mim alguém que leva paz por onde passa. Amém.\n\n**Prática de hoje:** Ao cumprimentar alguém hoje, deseje em pensamento: \"A paz de Cristo esteja com você.\"\n\n**Intenção:** Pela paz no meu coração e na minha casa.\n",
+      "push_text": "Receba hoje a paz de Jesus.",
+      "audio_key": null,
+      "audio_script_ready": false
+    },
+    {
+      "id": "circulo-devocional-d21",
+      "program_id": "circulo-devocional",
+      "day": 21,
+      "title": "Recomeçar",
+      "summary": "A misericórdia de Deus se renova a cada manhã.",
+      "body_md": "**Leitura do dia:** Lamentações 3,22-23\n\nO livro das Lamentações foi escrito depois de uma grande destruição. E justo ali, no meio das ruínas, aparece esta frase: o amor do Senhor não se acaba, a sua misericórdia não tem fim; ela se renova a cada manhã.\n\nTodo mundo tem algo para recomeçar. A oração que foi ficando esquecida. A amizade que esfriou. O cuidado com a saúde que ficou para depois. A fé que perdeu o brilho. Para Deus, nunca é tarde demais.\n\nRecomeçar não precisa ser grande. Basta um passo, hoje. Amanhã de manhã, a misericórdia de Deus vai estar nova outra vez.\n\n**Oração**\n\nSenhor, obrigado porque o teu amor se renova a cada manhã. Eu quero recomeçar. Tira de mim o desânimo de quem acha que é tarde demais. Dá-me força para dar hoje o primeiro passo. Amém.\n\n**Prática de hoje:** Escolha uma coisa que você deixou de lado e recomece hoje: uma oração, uma visita, um cuidado com você.\n\n**Intenção:** Por um recomeço na minha vida.\n",
+      "push_text": "Hoje é dia de recomeçar.",
+      "audio_key": null,
+      "audio_script_ready": false
+    },
+    {
+      "id": "circulo-devocional-d22",
+      "program_id": "circulo-devocional",
+      "day": 22,
+      "title": "Contar as bênçãos",
+      "summary": "Hoje, em vez de pedir, você vai agradecer.",
+      "body_md": "**Leitura do dia:** Salmo 103 (102),2\n\nO salmista fala com a própria alma: bendiga ao Senhor, minha alma, e não esqueça nenhum dos seus benefícios.\n\nA gente esquece fácil. Lembra do que falta, do que deu errado, do que ainda não veio. E deixa passar as bênçãos de todo dia: o café quente, a voz de um filho no telefone, a cama para dormir, o remédio que chegou, o ar que você respira agora.\n\nAgradecer muda o jeito de olhar a vida. Não apaga os problemas, mas mostra que eles não são tudo.\n\n**Oração**\n\nSenhor, obrigado. Pela vida, pela família, pelos amigos, pela fé. Pelas bênçãos grandes e pelas pequenas, que eu nem sempre percebo. Obrigado pelo que tu me deste e pelo que me livraste sem eu saber. Amém.\n\n**Prática de hoje:** Escreva hoje cinco coisas pelas quais você quer agradecer. Pequenas valem.\n\n**Intenção:** Agradecer tudo o que Deus já me deu.\n",
+      "push_text": "Hoje, conte as suas bênçãos.",
+      "audio_key": null,
+      "audio_script_ready": false
+    },
+    {
+      "id": "circulo-devocional-d23",
+      "program_id": "circulo-devocional",
+      "day": 23,
+      "title": "Rezar pelos outros",
+      "summary": "A sua oração pode chegar onde você não alcança.",
+      "body_md": "**Leitura do dia:** 1 Timóteo 2,1\n\nSão Paulo pede que se façam súplicas, orações e ações de graças por todas as pessoas.\n\nQuantas vezes alguém te disse \"reza por mim\"? E quantas vezes você respondeu \"rezo, sim\" e depois esqueceu? Acontece com todo mundo. Mas rezar pelos outros é uma das formas mais bonitas de amor, porque ninguém vê e não se espera nada em troca.\n\nA sua oração chega onde você não alcança: ao hospital onde você não pode entrar, à cidade onde mora um filho, ao coração de quem se afastou. Hoje, reze pelos nomes que vierem à sua mente.\n\n**Oração**\n\nSenhor, eu te apresento as pessoas que me pediram oração e as que precisam sem pedir. Tu sabes do que cada uma precisa. Abençoa, consola e protege cada uma. Que a minha oração chegue onde eu não chego. Amém.\n\n**Prática de hoje:** Escreva hoje o nome de cinco pessoas e reze um Pai-Nosso por elas.\n\n**Intenção:** Por quem me pediu oração.\n",
+      "push_text": "Alguém precisa da sua oração hoje.",
+      "audio_key": null,
+      "audio_script_ready": false
+    },
+    {
+      "id": "circulo-devocional-d24",
+      "program_id": "circulo-devocional",
+      "day": 24,
+      "title": "Um gesto escondido",
+      "summary": "O bem feito em segredo, Deus vê.",
+      "body_md": "**Leitura do dia:** Mateus 6,3-4\n\nJesus ensinou: quando você ajudar alguém, que a sua mão esquerda não saiba o que faz a direita. Assim o bem fica em segredo, e o Pai, que vê o que está escondido, vai recompensar.\n\nHoje a gente vive mostrando tudo. Mas tem um tipo de bem que perde a graça quando é exibido: um elogio sincero, um bolo para a vizinha, uma ajuda a quem não pode retribuir, uma oração por quem te tratou mal.\n\nNinguém precisa saber. Deus sabe, e isso basta.\n\n**Oração**\n\nSenhor, ensina-me a fazer o bem sem esperar aplauso. Abre os meus olhos para quem precisa perto de mim e as minhas mãos para ajudar. Que o meu amor seja simples e escondido, como o teu. Amém.\n\n**Prática de hoje:** Faça hoje um bem a alguém sem contar para ninguém.\n\n**Intenção:** Por um coração generoso.\n",
+      "push_text": "Faça hoje um bem que ninguém vai ver.",
+      "audio_key": null,
+      "audio_script_ready": false
+    },
+    {
+      "id": "circulo-devocional-d25",
+      "program_id": "circulo-devocional",
+      "day": 25,
+      "title": "Os idosos e os sozinhos",
+      "summary": "Deus carrega você em todas as idades, também na velhice.",
+      "body_md": "**Leitura do dia:** Isaías 46,4\n\nPelo profeta Isaías, Deus diz: até a velhice eu serei o mesmo; até os cabelos brancos eu carregarei vocês. Eu fiz, eu levarei, eu carregarei e salvarei.\n\nA velhice traz sabedoria, netos, tempo para rezar. Mas também pode trazer limitações e uma solidão que pouca gente vê: os amigos que partiram, a casa que ficou grande demais, os filhos que moram longe, o telefone que não toca.\n\nDeus não abandona ninguém, em idade nenhuma. E muitas vezes Ele usa as nossas mãos para que alguém não se sinta sozinho.\n\n**Oração**\n\nSenhor, abençoa os idosos e todos que vivem sozinhos. Dá a eles companhia, saúde e paz. E se a solidão bater à minha porta, lembra-me de que tu nunca vais embora. Carrega-me até o fim, como prometeste. Amém.\n\n**Prática de hoje:** Ligue hoje para alguém que mora sozinho e converse sem pressa.\n\n**Intenção:** Pelos idosos e por quem vive sozinho.\n",
+      "push_text": "Hoje, lembre de quem está sozinho.",
+      "audio_key": null,
+      "audio_script_ready": false
+    },
+    {
+      "id": "circulo-devocional-d26",
+      "program_id": "circulo-devocional",
+      "day": 26,
+      "title": "A mesa partilhada",
+      "summary": "A mesa da sua casa também é lugar de oração.",
+      "body_md": "**Leitura do dia:** Atos 2,46\n\nOs primeiros cristãos se reuniam nas casas, partiam o pão e comiam juntos, com alegria e simplicidade de coração.\n\nA mesa sempre foi lugar de encontro. Foi à mesa que Jesus partiu o pão com os discípulos. É à mesa que a família conta o dia, que a visita é recebida, que as festas acontecem. Rezar antes de comer é lembrar que tudo é presente de Deus.\n\nHoje, agradeça pelo alimento e lembre de quem não tem o que pôr na mesa. Se puder, partilhe algo com alguém.\n\n**Oração**\n\nAbençoa, Senhor, a comida desta mesa e as mãos que a prepararam. Dá pão a quem tem fome e fome de ti a quem tem pão. Que nunca falte na minha casa o alimento e a alegria de partilhar. Amém.\n\n**Prática de hoje:** Reze hoje antes de uma refeição, em voz alta, mesmo sem ninguém por perto.\n\n**Intenção:** Pelas famílias que não têm o que comer.\n",
+      "push_text": "Hoje, reze antes de comer.",
+      "audio_key": null,
+      "audio_script_ready": false
+    },
+    {
+      "id": "circulo-devocional-d27",
+      "program_id": "circulo-devocional",
+      "day": 27,
+      "title": "Nossa Senhora, Mãe que cuida",
+      "summary": "Hoje você entrega as necessidades da sua casa nas mãos de Maria.",
+      "body_md": "**Leitura do dia:** João 2,3-5\n\nNas bodas de Caná, o vinho acabou no meio da festa. Ninguém tinha pedido nada, mas Maria percebeu e disse a Jesus: eles não têm mais vinho. Depois, disse aos que serviam: façam tudo o que Ele mandar.\n\nMaria é assim: percebe o que falta antes de a gente pedir. Ela não resolve no lugar de Jesus; ela leva até Jesus. E ensina o caminho: fazer o que Ele disser.\n\nHoje, conte a Nossa Senhora o que está faltando na sua casa. Pode ser paz, união, saúde, trabalho, fé. Ela sabe a quem levar o seu pedido.\n\n**Oração**\n\nNossa Senhora, Mãe que cuida, tu que percebeste o vinho faltando em Caná, olha para o que falta na minha casa. Leva o meu pedido a Jesus e ensina-me a fazer tudo o que Ele me disser. Amém.\n\n**Prática de hoje:** Reze hoje uma dezena do terço, entregando a Nossa Senhora uma necessidade da sua família.\n\n**Intenção:** Entregar a Maria as necessidades da minha casa.\n",
+      "push_text": "Nossa Senhora cuida de você.",
+      "audio_key": null,
+      "audio_script_ready": false
+    },
+    {
+      "id": "circulo-devocional-d28",
+      "program_id": "circulo-devocional",
+      "day": 28,
+      "title": "Agradecer o que ainda não veio",
+      "summary": "Quem confia em Deus agradece antes de ver.",
+      "body_md": "**Leitura do dia:** Filipenses 4,6-7\n\nSão Paulo aconselha: não se preocupem com nada; em tudo, apresentem a Deus os seus pedidos em oração, com ação de graças. E a paz de Deus, que ultrapassa todo entendimento, vai guardar o coração de vocês.\n\nRepare na ordem: pedir e agradecer, juntos. Agradecer antes de ver o resultado não é fingir que já aconteceu. É dizer a Deus: eu confio que tu estás cuidando disso, do teu jeito e no teu tempo.\n\nE o que São Paulo promete não é que tudo vai sair como a gente quer. É a paz. Uma paz que guarda o coração enquanto a resposta não chega.\n\n**Oração**\n\nSenhor, obrigado pelo que tu estás preparando e eu ainda não vejo. Eu te entrego este pedido e confio no teu cuidado. Faz a tua vontade e guarda o meu coração na tua paz. Amém.\n\n**Prática de hoje:** Em vez de pedir de novo aquilo que você mais espera, agradeça hoje, entregando o pedido nas mãos de Deus.\n\n**Intenção:** Confiar no que Deus está preparando.\n",
+      "push_text": "Hoje, agradeça o que ainda não chegou.",
+      "audio_key": null,
+      "audio_script_ready": false
+    },
+    {
+      "id": "circulo-devocional-d29",
+      "program_id": "circulo-devocional",
+      "day": 29,
+      "title": "O que eu não controlo",
+      "summary": "Algumas coisas não estão nas suas mãos, e está tudo bem.",
+      "body_md": "**Leitura do dia:** Provérbios 16,9\n\nO livro dos Provérbios diz que o coração humano planeja o seu caminho, mas é o Senhor quem dirige os seus passos.\n\nA gente gostaria de controlar tudo: a saúde, as escolhas dos filhos, o humor de quem mora com a gente, o futuro. Mas a vida mostra que muita coisa não está nas nossas mãos. Brigar contra isso cansa. Aceitar não é desistir: é descobrir o que é nosso e o que é de Deus.\n\nFaça a sua parte com amor. A outra parte, deixe com quem dirige os passos.\n\n**Oração**\n\nSenhor, dá-me serenidade para aceitar o que eu não posso mudar, coragem para mudar o que eu posso e sabedoria para perceber a diferença. Dirige os meus passos e os de quem eu amo. Amém.\n\n**Prática de hoje:** Reze hoje a oração deste dia devagar, pensando numa situação que você não pode mudar.\n\n**Intenção:** Por serenidade diante do que eu não controlo.\n",
+      "push_text": "Entregue a Deus o que não está nas suas mãos.",
+      "audio_key": null,
+      "audio_script_ready": false
+    },
+    {
+      "id": "circulo-devocional-d30",
+      "program_id": "circulo-devocional",
+      "day": 30,
+      "title": "Fechar o mês",
+      "summary": "O mês está acabando. Hora de olhar para trás e agradecer.",
+      "body_md": "**Leitura do dia:** 1 Tessalonicenses 5,16-18\n\nSão Paulo escreve: estejam sempre alegres, rezem sem cessar, em tudo deem graças.\n\nAntes de um mês terminar, vale parar e olhar para trás. O que foi bom? O que foi difícil? Onde Deus apareceu sem que você percebesse? Tem dias que a gente só entende depois.\n\nNo primeiro dia do mês, você escreveu uma intenção num papel. Volte a ela hoje. Talvez a resposta tenha vindo, talvez ainda não. Em qualquer caso, agradeça a companhia de Deus em cada dia.\n\n**Oração**\n\nSenhor, obrigado por este mês. Pelos dias bons e pelos difíceis. Pelo que eu entendi e pelo que ainda não entendo. Perdoa o que eu fiz de errado e abençoa o mês que vem. São Miguel, continua à minha frente. Amém.\n\n**Prática de hoje:** Procure o papel com a intenção que você escreveu no começo do mês, releia e entregue-a de novo a Deus.\n\n**Intenção:** Agradecer este mês que termina.\n",
+      "push_text": "Antes de o mês acabar, agradeça.",
+      "audio_key": null,
+      "audio_script_ready": false
+    },
+    {
+      "id": "circulo-devocional-d31",
+      "program_id": "circulo-devocional",
+      "day": 31,
+      "title": "Tudo nas mãos de Deus",
+      "summary": "O último dia do mês é para entregar tudo nas mãos de Deus.",
+      "body_md": "**Leitura do dia:** Salmo 31 (30),15-16\n\nNo salmo trinta e um, quem reza está cercado de problemas. E, mesmo assim, diz: eu confio em ti, Senhor; tu és o meu Deus; os meus dias estão nas tuas mãos.\n\nNão é só o mês que está nas mãos de Deus. É a vida inteira: o que passou, com as alegrias e os arrependimentos; o que está acontecendo agora; e o que ainda vai vir, que ninguém conhece.\n\nAmanhã começa um mês novo, e o Círculo recomeça também, com São Miguel à frente. Hoje, só uma coisa: descansar nas mãos de Deus.\n\n**Oração**\n\nSenhor, os meus dias estão nas tuas mãos. O que passou, eu te entrego com gratidão. O que vem, eu te entrego com confiança. Guarda a minha vida e a de quem eu amo. São Miguel Arcanjo, rogai por nós. Amém.\n\n**Prática de hoje:** Antes de dormir, reze: \"Senhor, os meus dias estão nas tuas mãos.\"\n\n**Intenção:** Entregar a Deus a minha vida inteira.\n",
+      "push_text": "Os seus dias estão nas mãos de Deus.",
+      "audio_key": null,
+      "audio_script_ready": false
+    },
+    {
+      "id": "novena-nsgracas-2026-11-d01",
+      "program_id": "novena-nsgracas-2026-11",
+      "day": 1,
+      "title": "A Mãe que vem ao encontro",
+      "summary": "Começa a novena: Maria vem ao seu encontro, como foi ao encontro de Isabel.",
+      "body_md": "**Leitura do dia:** Lucas 1,39-45\n\nDepois de receber o anúncio do anjo, Maria não ficou parada. Partiu apressada, pelas montanhas, para ajudar a prima Isabel, que esperava um filho já na velhice. Quando ouviu a saudação de Maria, Isabel se encheu de alegria.\n\nDezoito séculos depois, em 1830, numa capela da Rue du Bac, em Paris, Maria foi de novo ao encontro de alguém: uma jovem noviça das Filhas da Caridade, Catarina Labouré. Dessas aparições nasceu a devoção a Nossa Senhora das Graças, que muita gente conhece como Nossa Senhora da Medalha Milagrosa.\n\nMaria continua vindo ao encontro de quem precisa. Nestes nove dias, você vai rezar com ela, um passo de cada vez, até a festa de 27 de novembro.\n\n**Oração da novena**\n\nÓ Virgem Maria, Nossa Senhora das Graças, Mãe de Jesus e nossa Mãe. Em 1830, mostraste a Santa Catarina Labouré as tuas mãos cheias de luz, sinal das graças que derramas sobre quem te pede. Olha para mim e para a minha família. Recebe a intenção que eu trago no coração e apresenta-a ao teu Filho. Ensina-me a confiar em Deus como tu confiaste e a dizer sempre: faça-se em mim segundo a tua palavra. Amém.\n\nReze três Ave-Marias e, depois de cada uma, a jaculatória:\n\n*Ó Maria concebida sem pecado, rogai por nós que recorremos a vós.*\n\n**Prática de hoje:** Escolha a intenção desta novena e escreva-a num papel. Você vai rezar por ela nos nove dias.\n\n**Intenção:** A intenção que vou levar nestes nove dias.\n",
+      "push_text": "Começa hoje a Novena de Nossa Senhora das Graças.",
+      "audio_key": null,
+      "audio_script_ready": false
+    },
+    {
+      "id": "novena-nsgracas-2026-11-d02",
+      "program_id": "novena-nsgracas-2026-11",
+      "day": 2,
+      "title": "Cheia de graça",
+      "summary": "O anjo chamou Maria de cheia de graça. Hoje, olhe para a pureza dela.",
+      "body_md": "**Leitura do dia:** Lucas 1,26-38\n\nQuando o anjo Gabriel entrou na casa de Maria, em Nazaré, não a chamou pelo nome. Chamou-a de \"cheia de graça\". Deus tinha preparado Maria desde o primeiro instante da vida dela, sem a marca do pecado. É o que a Igreja chama de Imaculada Conceição.\n\nNa medalha que Maria mostrou a Santa Catarina, em volta da imagem dela, está escrita a jaculatória que você reza nesta novena: Ó Maria concebida sem pecado, rogai por nós que recorremos a vós. Essa frase foi gravada na medalha mais de vinte anos antes de a Igreja proclamar o dogma da Imaculada Conceição, em 1854.\n\nMaria não se afasta das nossas misérias. Ela é toda limpa justamente para ajudar a gente a se aproximar de Deus sem vergonha.\n\n**Oração da novena**\n\nÓ Virgem Maria, Nossa Senhora das Graças, Mãe de Jesus e nossa Mãe. Em 1830, mostraste a Santa Catarina Labouré as tuas mãos cheias de luz, sinal das graças que derramas sobre quem te pede. Olha para mim e para a minha família. Recebe a intenção que eu trago no coração e apresenta-a ao teu Filho. Ensina-me a confiar em Deus como tu confiaste e a dizer sempre: faça-se em mim segundo a tua palavra. Amém.\n\nReze três Ave-Marias e, depois de cada uma, a jaculatória:\n\n*Ó Maria concebida sem pecado, rogai por nós que recorremos a vós.*\n\n**Prática de hoje:** Reze hoje a jaculatória da novena sempre que lembrar, ao longo do dia.\n\n**Intenção:** Por um coração limpo como o de Maria.\n",
+      "push_text": "Ó Maria concebida sem pecado, rogai por nós.",
+      "audio_key": null,
+      "audio_script_ready": false
+    },
+    {
+      "id": "novena-nsgracas-2026-11-d03",
+      "program_id": "novena-nsgracas-2026-11",
+      "day": 3,
+      "title": "As mãos cheias de luz",
+      "summary": "Maria apareceu com raios de luz saindo das mãos: as graças que ela leva aos filhos.",
+      "body_md": "**Leitura do dia:** Tiago 1,17\n\nSão Tiago escreve que todo dom bom e todo presente perfeito vêm do alto, do Pai das luzes.\n\nNa aparição de 27 de novembro de 1830, Santa Catarina viu Nossa Senhora com as mãos estendidas, e delas saíam raios de luz que caíam sobre o mundo. Segundo o relato da santa, Maria explicou que aqueles raios eram o sinal das graças que ela derrama sobre as pessoas que as pedem.\n\nToda graça vem de Deus. Maria é como a mãe que leva o presente do Pai até os filhos. Antes de pedir uma graça nova, olhe para trás e reconheça quantas já chegaram até você.\n\n**Oração da novena**\n\nÓ Virgem Maria, Nossa Senhora das Graças, Mãe de Jesus e nossa Mãe. Em 1830, mostraste a Santa Catarina Labouré as tuas mãos cheias de luz, sinal das graças que derramas sobre quem te pede. Olha para mim e para a minha família. Recebe a intenção que eu trago no coração e apresenta-a ao teu Filho. Ensina-me a confiar em Deus como tu confiaste e a dizer sempre: faça-se em mim segundo a tua palavra. Amém.\n\nReze três Ave-Marias e, depois de cada uma, a jaculatória:\n\n*Ó Maria concebida sem pecado, rogai por nós que recorremos a vós.*\n\n**Prática de hoje:** Lembre hoje três graças que você já recebeu na vida e agradeça a Nossa Senhora por elas.\n\n**Intenção:** Agradecer as graças que já recebi.\n",
+      "push_text": "As mãos de Maria estão cheias de graças.",
+      "audio_key": null,
+      "audio_script_ready": false
+    },
+    {
+      "id": "novena-nsgracas-2026-11-d04",
+      "program_id": "novena-nsgracas-2026-11",
+      "day": 4,
+      "title": "As graças que ninguém pede",
+      "summary": "Alguns raios não brilhavam: eram as graças que ninguém pediu.",
+      "body_md": "**Leitura do dia:** Mateus 7,7-11\n\nJesus ensinou: peçam, procurem, batam à porta. E lembrou que, se nós, mesmo imperfeitos, sabemos dar coisas boas aos nossos filhos, muito mais o Pai do céu sabe dar o que é bom a quem lhe pede.\n\nSanta Catarina contou um detalhe da aparição: nos anéis das mãos de Maria, algumas pedras não soltavam luz. Nossa Senhora explicou que eram as graças que as pessoas esqueciam de pedir.\n\nTem pedido que a gente não faz por vergonha, por achar pequeno demais ou grande demais, ou porque já desistiu. Hoje, não deixe nada sem pedir. Deus é Pai, e Maria é Mãe. Fale com eles sem medo, e deixe com eles a resposta.\n\n**Oração da novena**\n\nÓ Virgem Maria, Nossa Senhora das Graças, Mãe de Jesus e nossa Mãe. Em 1830, mostraste a Santa Catarina Labouré as tuas mãos cheias de luz, sinal das graças que derramas sobre quem te pede. Olha para mim e para a minha família. Recebe a intenção que eu trago no coração e apresenta-a ao teu Filho. Ensina-me a confiar em Deus como tu confiaste e a dizer sempre: faça-se em mim segundo a tua palavra. Amém.\n\nReze três Ave-Marias e, depois de cada uma, a jaculatória:\n\n*Ó Maria concebida sem pecado, rogai por nós que recorremos a vós.*\n\n**Prática de hoje:** Peça hoje a Nossa Senhora uma graça que você nunca teve coragem de pedir.\n\n**Intenção:** Pelas graças que eu ainda não pedi.\n",
+      "push_text": "Peça hoje a graça que você ainda não pediu.",
+      "audio_key": null,
+      "audio_script_ready": false
+    },
+    {
+      "id": "novena-nsgracas-2026-11-d05",
+      "program_id": "novena-nsgracas-2026-11",
+      "day": 5,
+      "title": "Ao pé da cruz",
+      "summary": "No verso da medalha, a cruz e a letra M: Maria nunca saiu de perto de Jesus.",
+      "body_md": "**Leitura do dia:** João 19,25-27\n\nQuando quase todos fugiram, Maria ficou de pé, junto à cruz de Jesus. E ali, antes de morrer, Jesus a entregou ao discípulo amado como mãe, e o discípulo a ela como filho. Desde aquela hora, ela é Mãe de todos nós.\n\nNo verso da medalha que Maria mostrou a Santa Catarina, aparece uma cruz sobre a letra M, de Maria. É o sinal de que ela está unida a Jesus no sofrimento e de que não abandona os filhos na hora da dor.\n\nTodo mundo tem a sua cruz: uma doença, uma perda, um filho longe de Deus, um problema que não se resolve. Maria não tira a cruz das nossas costas, mas fica ao nosso lado enquanto a carregamos.\n\n**Oração da novena**\n\nÓ Virgem Maria, Nossa Senhora das Graças, Mãe de Jesus e nossa Mãe. Em 1830, mostraste a Santa Catarina Labouré as tuas mãos cheias de luz, sinal das graças que derramas sobre quem te pede. Olha para mim e para a minha família. Recebe a intenção que eu trago no coração e apresenta-a ao teu Filho. Ensina-me a confiar em Deus como tu confiaste e a dizer sempre: faça-se em mim segundo a tua palavra. Amém.\n\nReze três Ave-Marias e, depois de cada uma, a jaculatória:\n\n*Ó Maria concebida sem pecado, rogai por nós que recorremos a vós.*\n\n**Prática de hoje:** Reze hoje diante de um crucifixo, pedindo a Maria que fique ao seu lado na sua cruz.\n\n**Intenção:** Por quem está carregando uma cruz pesada.\n",
+      "push_text": "Maria fica ao pé da sua cruz.",
+      "audio_key": null,
+      "audio_script_ready": false
+    },
+    {
+      "id": "novena-nsgracas-2026-11-d06",
+      "program_id": "novena-nsgracas-2026-11",
+      "day": 6,
+      "title": "Os dois corações",
+      "summary": "Na medalha, o Coração de Jesus e o Coração de Maria aparecem lado a lado.",
+      "body_md": "**Leitura do dia:** Lucas 2,34-35\n\nQuando Maria e José apresentaram o menino Jesus no Templo, o velho Simeão disse a Maria que uma espada atravessaria a alma dela.\n\nNo verso da medalha, debaixo da cruz e do M, aparecem dois corações: o de Jesus, cercado de espinhos, e o de Maria, atravessado por uma espada. Os dois lado a lado, como estiveram a vida inteira.\n\nO coração de Maria sofreu por amor e nunca deixou de amar. Hoje, entregue a esses dois corações as pessoas da sua família, principalmente as que estão afastadas ou em conflito.\n\n**Oração da novena**\n\nÓ Virgem Maria, Nossa Senhora das Graças, Mãe de Jesus e nossa Mãe. Em 1830, mostraste a Santa Catarina Labouré as tuas mãos cheias de luz, sinal das graças que derramas sobre quem te pede. Olha para mim e para a minha família. Recebe a intenção que eu trago no coração e apresenta-a ao teu Filho. Ensina-me a confiar em Deus como tu confiaste e a dizer sempre: faça-se em mim segundo a tua palavra. Amém.\n\nReze três Ave-Marias e, depois de cada uma, a jaculatória:\n\n*Ó Maria concebida sem pecado, rogai por nós que recorremos a vós.*\n\n**Prática de hoje:** Faça hoje um gesto de carinho com alguém da sua família, por amor ao Coração de Jesus e de Maria.\n\n**Intenção:** Pela união da minha família.\n",
+      "push_text": "Entregue a sua família aos Corações de Jesus e Maria.",
+      "audio_key": null,
+      "audio_script_ready": false
+    },
+    {
+      "id": "novena-nsgracas-2026-11-d07",
+      "program_id": "novena-nsgracas-2026-11",
+      "day": 7,
+      "title": "Coroada de estrelas",
+      "summary": "As doze estrelas da medalha lembram que Maria é Mãe da Igreja inteira.",
+      "body_md": "**Leitura do dia:** Apocalipse 12,1\n\nO Apocalipse descreve um grande sinal no céu: uma mulher vestida de sol, com a lua debaixo dos pés e uma coroa de doze estrelas na cabeça. A Igreja vê nessa mulher a figura de Maria. É o mesmo capítulo em que, logo depois, São Miguel e os seus anjos combatem o dragão.\n\nAs doze estrelas também aparecem na medalha, em volta do M e dos dois corações. Lembram os doze apóstolos e, com eles, a Igreja inteira, da qual Maria é Mãe.\n\nA sua fé não é só sua. Ela chegou até você pela Igreja: pelos seus pais, por um padre, por uma catequista. Hoje, reze por essa família grande que é a Igreja.\n\n**Oração da novena**\n\nÓ Virgem Maria, Nossa Senhora das Graças, Mãe de Jesus e nossa Mãe. Em 1830, mostraste a Santa Catarina Labouré as tuas mãos cheias de luz, sinal das graças que derramas sobre quem te pede. Olha para mim e para a minha família. Recebe a intenção que eu trago no coração e apresenta-a ao teu Filho. Ensina-me a confiar em Deus como tu confiaste e a dizer sempre: faça-se em mim segundo a tua palavra. Amém.\n\nReze três Ave-Marias e, depois de cada uma, a jaculatória:\n\n*Ó Maria concebida sem pecado, rogai por nós que recorremos a vós.*\n\n**Prática de hoje:** Reze hoje um Pai-Nosso pela sua paróquia e pelo seu padre.\n\n**Intenção:** Pela Igreja, pelos padres e pela minha paróquia.\n",
+      "push_text": "Hoje, reze pela Igreja e pela sua paróquia.",
+      "audio_key": null,
+      "audio_script_ready": false
+    },
+    {
+      "id": "novena-nsgracas-2026-11-d08",
+      "program_id": "novena-nsgracas-2026-11",
+      "day": 8,
+      "title": "A alegria de Maria",
+      "summary": "No Magnificat, Maria canta o que Deus fez nela. Hoje é dia de cantar com ela.",
+      "body_md": "**Leitura do dia:** Lucas 1,46-50\n\nNa casa de Isabel, Maria rezou a sua oração mais conhecida: a minha alma engrandece o Senhor, e o meu espírito se alegra em Deus, meu Salvador, porque o Poderoso fez em mim grandes coisas.\n\nMaria era uma moça simples, de uma aldeia pequena. Não tinha poder nem riqueza. E, mesmo assim, cantou que Deus tinha feito nela maravilhas. Ela sabia olhar para a própria vida e ver a mão de Deus.\n\nFaltando um dia para o fim da novena, olhe para a sua vida como Maria olhou para a dela. Que maravilhas Deus fez em você? Agradeça por elas.\n\n**Oração da novena**\n\nÓ Virgem Maria, Nossa Senhora das Graças, Mãe de Jesus e nossa Mãe. Em 1830, mostraste a Santa Catarina Labouré as tuas mãos cheias de luz, sinal das graças que derramas sobre quem te pede. Olha para mim e para a minha família. Recebe a intenção que eu trago no coração e apresenta-a ao teu Filho. Ensina-me a confiar em Deus como tu confiaste e a dizer sempre: faça-se em mim segundo a tua palavra. Amém.\n\nReze três Ave-Marias e, depois de cada uma, a jaculatória:\n\n*Ó Maria concebida sem pecado, rogai por nós que recorremos a vós.*\n\n**Prática de hoje:** Leia hoje, devagar, o Magnificat inteiro na sua Bíblia (Lucas 1,46-55).\n\n**Intenção:** Agradecer as maravilhas que Deus fez na minha vida.\n",
+      "push_text": "Hoje, agradeça com Maria as maravilhas de Deus.",
+      "audio_key": null,
+      "audio_script_ready": false
+    },
+    {
+      "id": "novena-nsgracas-2026-11-d09",
+      "program_id": "novena-nsgracas-2026-11",
+      "day": 9,
+      "title": "Levar Maria com você",
+      "summary": "Último dia da novena. Amanhã é a festa de Nossa Senhora das Graças.",
+      "body_md": "**Leitura do dia:** Atos 1,14\n\nDepois que Jesus subiu ao céu, os apóstolos voltaram para Jerusalém e ficaram juntos, rezando, com algumas mulheres e com Maria, a mãe de Jesus. Ela estava no meio deles, rezando com a Igreja que nascia, e continua assim: no meio de quem reza.\n\nSegundo Santa Catarina, Nossa Senhora pediu que a medalha fosse cunhada e disse que quem a usasse com confiança receberia muitas graças. A medalha não é amuleto: é um sinal de que a gente pertence a Maria, como o retrato da mãe que se leva no bolso.\n\nA novena termina hoje, mas a amizade com Maria não termina. Amanhã, 27 de novembro, é a festa de Nossa Senhora das Graças. Leve com você o que rezou nestes nove dias.\n\n**Oração da novena**\n\nÓ Virgem Maria, Nossa Senhora das Graças, Mãe de Jesus e nossa Mãe. Em 1830, mostraste a Santa Catarina Labouré as tuas mãos cheias de luz, sinal das graças que derramas sobre quem te pede. Olha para mim e para a minha família. Recebe a intenção que eu trago no coração e apresenta-a ao teu Filho. Ensina-me a confiar em Deus como tu confiaste e a dizer sempre: faça-se em mim segundo a tua palavra. Amém.\n\nReze três Ave-Marias e, depois de cada uma, a jaculatória:\n\n*Ó Maria concebida sem pecado, rogai por nós que recorremos a vós.*\n\n**Prática de hoje:** Se você tem uma medalha de Nossa Senhora das Graças, passe a usá-la a partir de hoje; se não tem, reze a jaculatória ao acordar e ao deitar.\n\n**Intenção:** Entregar a minha vida e a minha família a Nossa Senhora.\n",
+      "push_text": "Último dia da novena. Amanhã é a festa de Nossa Senhora das Graças.",
+      "audio_key": null,
+      "audio_script_ready": false
+    }
+  ]
+}
