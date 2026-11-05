@@ -4,13 +4,25 @@ Retrato para uma sessão nova continuar daqui. A spec é o [CLAUDE.md](../CLAUDE
 este arquivo registra o que **não** cabe lá: o que já rodou, o que está só em
 staging, o que depende do Leo e as armadilhas que custaram caro.
 
-`npm run typecheck && npm test` limpo, **490 testes** em 34 arquivos (05/11).
+`npm run typecheck && npm test` limpo, **498 testes** em 34 arquivos (05/11).
 
 **Produção** está no `66f35fa` (deploy de 05/11, 14:03 UTC, versão `88e7d149`):
 a fase R1 do estilo visual, a **entrada sem código** e o texto novo do
-`lembrete-app`. **Staging está um passo à frente**, com o `309a4b1` (a versão
-nova do app assume e recarrega a tela; ver "Versão nova assume na hora"),
-**esperando o ok do Leo para produção**.
+`lembrete-app`. **Staging está à frente** (`79fc54c`, versão `ec8bf32c`, com a
+migration `0010`), com três coisas **esperando o teste do Leo no iPhone e o ok
+dele para produção**:
+
+1. a versão nova do app assume e recarrega a tela (`309a4b1`; ver "Versão nova
+   assume na hora");
+2. destinatário suprimido fora da trava e das campanhas (`a7d0994`, migration
+   `0010`; ver "Destinatário suprimido");
+3. carimbo da versão no cabeçalho, só no staging, e procura a cada 5 min
+   (`79fc54c`).
+
+**Ordem para produção**: `npm run db:migrate:production` (a `0010` é a única
+pendente) **antes** de `npm run deploy:production`. **Antes da 3ª onda do
+lembrete** (elegível em 06/11, 15:25 UTC): sem a `0010` e o `a7d0994` em
+produção, um suprimido volta a parar a onda.
 
 ## Os dois ambientes
 
@@ -381,9 +393,16 @@ celular `nao_encontrado` (um é o teste da sessão).
 been suppressed due to repeated bounces or because it reported your emails as
 spam"*. É um Gmail que recebeu o anúncio de 29/10 sem erro e não pediu para
 parar: o mais provável é **denúncia de spam do anúncio**. A linha `failed` fica
-em `campaign_sends`, então ele não é tentado de novo. **Restam 73 elegíveis da
-2ª, esperando o Leo decidir** se a onda continua (rodar o mesmo comando manda só
-para quem não tem linha). A 3ª (170) fica elegível em 06/11, 15:25 UTC.
+em `campaign_sends`, então ele não é tentado de novo.
+
+**Os 73 restantes saíram no mesmo dia, 14:33–14:34 UTC, a pedido do Leo.** A
+trava conta só a chamada atual (o Worker zera `enviados` e `falhas` a cada
+chamada, e o script soma só os lotes da execução dele), e o suprimido já tinha
+linha e saiu da seleção. Dry-run com 73; envio em 2 lotes: **72 enviados e 1
+falha, de novo um suprimido** (1 em 40, abaixo de 5%). **2ª onda fechada: 81
+enviados, 2 suprimidos, 0 falhas de entrega**, todos Gmail. Hoje saíram 106
+e-mails. Balanço da 2ª em 06/11. A 3ª (170) fica elegível em 06/11, 15:25 UTC,
+**depois** do ajuste dos suprimidos em produção.
 
 **A trava de onda conta por campanha, e acumulado**: `ondaAnterior` é o total de
 enviados com sucesso daquela campanha, e o teto é o dobro dele. Campanha nova
@@ -504,6 +523,14 @@ BlueStacks (staging) e publicada em produção em 05/11, com o ok dele.**
   `login` com `metodo` mostra), e avisar o pipeline de conteúdo que o PDF da
   área de membros da Payt ensina o passo do código e precisa mudar.
 
+**Telefone gravado em produção** (05/11, só contagem): 1.485 contas, **1 sem
+telefone** (pelo histórico da importação, a do Leo), **nenhuma com telefone
+fora do formato** (todas com 10 ou 11 dígitos: 31 com 10, 1.453 com 11) e
+nenhuma sem e-mail. Então o `login_falhou` por celular `nao_encontrado` de
+05/11 não é falta de telefone na base: é alguém digitando um número diferente
+do da compra. **5 números estão em 10 contas** (2 por número): essas pessoas
+recebem `varios` e entram pelo e-mail.
+
 **Risco conhecido do deploy: app antigo no cache.** O service worker só troca
 de versão quando o app é fechado de vez (`skipWaiting` só por mensagem). Quem
 tem o app instalado **e está deslogado** pode abrir a tela velha, que chama
@@ -525,8 +552,9 @@ ativava com um `SKIP_WAITING` que ninguém mandava. Agora:
   alcança a página da versão antiga, que não tem código para se recarregar.
 - **A página nova recarrega no `controllerchange`** (o primeiro, na instalação,
   é ignorado) e, ao voltar para a frente, pergunta por versão nova
-  (`registration.update()`, no máximo a cada 30 min): o app instalado volta da
-  memória sem navegar, e sem navegação o navegador não procura.
+  (`registration.update()`, no máximo a cada 5 min, desde `79fc54c`; antes 30):
+  o app instalado volta da memória sem navegar, e sem navegação o navegador não
+  procura.
 - **A oração não é interrompida**: com áudio tocando nunca recarrega, nem com a
   tela apagada; na lição parada, só quando ela sai da vista ou a pessoa sai da
   lição. O SW não recarrega aba na lição. Regra em `src/shared/atualizacao.ts`,
@@ -543,10 +571,59 @@ ativava com um `SKIP_WAITING` que ninguém mandava. Agora:
    desfeito): o SW e a página pedem a recarga juntos, uma cancela a outra
    (`ERR_ABORTED`), sobra uma carga e a página fica estável — sem loop.
 
+4. Com o `79fc54c` (05/11): a mesma aba, aberta na versão anterior, trocou
+   sozinha para a nova e passou a mostrar "versão 05/11, 11:51" no cabeçalho.
+
 **Não conferido**: a lição com áudio tocando durante a troca (só pelo teste da
 regra), e o **iPhone e o Android de verdade**. O `WindowClient.navigate` falhando
 num navegador é engolido: a página antiga só pega a versão nova na abertura
-seguinte, como antes. Staging terminou em `49048bd7`, sem a linha de teste.
+seguinte, como antes. **Roteiro do iPhone passado ao Leo em 05/11**, com um
+deploy de staging por teste (versão antiga → nova ao reabrir; app aberto fora da
+lição; sem loop; lição com áudio tocando).
+
+**A página da versão antiga não procura versão nova.** Ela não tem o código da
+procura ao voltar para a frente: o app que volta da memória com o código antigo
+só descobre o SW novo quando navega de verdade (aberto de novo depois de
+fechado de vez, ou depois de o sistema descartar o app). Daí em diante o SW novo
+a recarrega. Quem já está no código novo passa a procurar sozinho.
+
+**Carimbo da versão (só staging)**: `__VERSAO__` no `define` do `vite.config.ts`,
+data e hora do build em Brasília, embaixo de "com São Miguel Arcanjo". Cada build
+de staging muda o bundle e, com ele, o SW: é o que deixa ver a troca no iPhone.
+Em produção é vazio, e dois builds de produção saem idênticos
+(`index-CufflJCb.js`, conferido) — deploy só de Worker não faz ninguém recarregar.
+
+### Destinatário suprimido (05/11, `a7d0994`) — só em staging
+
+Pedido do Leo depois de a 2ª onda parar. O Cloudflare recusa antes de enviar o
+endereço que está na lista de supressão (*"has been suppressed due to repeated
+bounces or because it reported your emails as spam"*), e isso não é falha de
+entrega.
+
+- `ehSupressao` (`services/mail.ts`) reconhece pelo texto do erro (o binding não
+  dá código). O envio marca `users.email_suprimido_at` (o primeiro, não
+  sobrescreve) e grava `suprimido: true` no `email_falhou`.
+- **Campanha**: `suprimidos` à parte, **fora da taxa de falha** (nem no
+  numerador nem no denominador); `campaign_sends.status = 'suppressed'`; o
+  endereço marcado sai da seleção e do dry-run de toda campanha. Qualquer outra
+  falha continua contando.
+- **Transacional** (boas-vindas, conteúdo liberado, código de ação sensível) não
+  olha a marca e continua tentando.
+- **Trocar o e-mail limpa a marca**: ela é do endereço, não da pessoa.
+- **Script**: cada lote mostra `suprimidos`, e o resumo também. O suprimido conta
+  como feito, para o lote seguinte pedir só o que falta e um lote só de
+  suprimidos não virar "fila vazia".
+- **Migration `0010`**: a coluna nova e o `campaign_sends` refeito (SQLite não
+  altera `CHECK`), passando os `failed` com "has been suppressed" para
+  `suppressed` e marcando essas contas — **em produção, os 2 da 2ª onda do
+  lembrete**. Aplicada no staging (tabela vazia lá) e **ensaiada num D1 local
+  descartável com linhas no formato de produção**: falha comum continua
+  `failed`, o suprimido vira `suppressed` com o modelo, a conta ganha a marca na
+  data do envio.
+
+**Balanço das ondas**: daqui em diante o suprimido aparece em `campaign_sends`
+como `suppressed`. Antes da `0010` em produção, separar pelo erro:
+`status = 'failed' AND error LIKE '%has been suppressed%'`.
 
 **Ordem com o `lembrete-app`**: resolvida. O texto dele serve para as duas
 entradas ("Se o link não abrir, entre em jornadacomeuanjo.com/entrar com o
@@ -1234,6 +1311,16 @@ navegador servia o bundle anterior. Ao conferir mudança de client em aparelho q
 já abriu o app, **feche e reabra** (ou limpe o SW no navegador). Vale para o
 celular do Leo também. (Com o `309a4b1` em produção, a versão nova passa a
 assumir e recarregar a tela sozinha; ver "Versão nova assume na hora".)
+
+**Teste com 10+ pedidos em sequência estourava os 5 s do Vitest** com os 34
+arquivos em paralelo, e cada rodada derrubava um diferente (o limite da entrada,
+a trava da campanha). O projeto `workers` tem `testTimeout: 15_000` desde
+05/11. Teste que cai só às vezes, por tempo, é isso — não mexer no código dele.
+
+**O wrangler `d1 execute --file` não devolve as linhas**, só o resumo
+("Total queries executed"). Para ler resultado, `--command`. E o D1 recusa
+`UNION ALL` com muitas partes ("too many terms in compound SELECT"): dividir em
+consultas separadas.
 
 **Esperar a navegação dentro do `activate` trava a aba.** A primeira versão do
 `309a4b1` fazia `await aba.navigate(url)` dentro do `event.waitUntil` da
