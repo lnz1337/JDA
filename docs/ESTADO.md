@@ -4,11 +4,13 @@ Retrato para uma sessão nova continuar daqui. A spec é o [CLAUDE.md](../CLAUDE
 este arquivo registra o que **não** cabe lá: o que já rodou, o que está só em
 staging, o que depende do Leo e as armadilhas que custaram caro.
 
-`npm run typecheck && npm test` limpo, **482 testes** em 33 arquivos (04/11).
+`npm run typecheck && npm test` limpo, **490 testes** em 34 arquivos (05/11).
 
-**Staging e produção estão no mesmo código** desde 05/11, 13:17 UTC: a fase R1
-do estilo visual e a **entrada sem código** foram juntas para produção, com o ok
-do Leo depois do teste no iPhone e no BlueStacks (ver as duas seções abaixo).
+**Produção** está no `66f35fa` (deploy de 05/11, 14:03 UTC, versão `88e7d149`):
+a fase R1 do estilo visual, a **entrada sem código** e o texto novo do
+`lembrete-app`. **Staging está um passo à frente**, com o `309a4b1` (a versão
+nova do app assume e recarrega a tela; ver "Versão nova assume na hora"),
+**esperando o ok do Leo para produção**.
 
 ## Os dois ambientes
 
@@ -346,6 +348,43 @@ fica elegível 7 dias depois do envio dela):
 | 04/11 (6ª) | Microsoft | 127 | 11/11 13:40 |
 | 04/11 (6ª) | outros | 141 | 11/11 13:40 |
 
+**Texto novo em 05/11** (`66f35fa`, do pipeline): a frase de reserva virou "Se o
+link não abrir, entre em jornadacomeuanjo.com com o celular ou o e-mail da sua
+compra. Não precisa de senha nem de código." O modelo é embutido no Worker
+(`?raw`), então só vale depois do deploy: **produção publicada às 14:03 UTC**
+(`88e7d149`), antes da 2ª onda.
+
+**Balanço do 1º envio** (05/11, 14:05 UTC, ~23 h), nos 31:
+
+| | 1º envio (31) |
+|---|---|
+| Enviados / falhas | 31 / 0 |
+| Pediram para parar | 0 |
+| **Entraram no app** | **2** (6%), **os dois pelo link** (04/11, 15:12 e 18:41 UTC) |
+| Por celular / por e-mail / por código | 0 / 0 / 0 |
+| Começaram o dia 1 | 2 |
+| Ligaram o lembrete | 1 |
+
+Como se mede: link do lembrete (`access_links` criado no envio) com `used_at`,
+`login_codes` de login usado, `login` em `events` por `metodo` e sessão nova,
+tudo depois do `sent_at`. Os dois links foram usados antes de a entrada nova
+chegar a produção, por isso não há `login` com `metodo: link` (o evento passou a
+sair do `/acesso` em `36e3d11`). Na mesma consulta: fila de revisão vazia,
+nenhum erro de postback desde 04/11, 27 opt-outs no total. Desde a entrada nova
+em produção (13:17 UTC) até 14:05: 1 `login` por e-mail e 2 `login_falhou` por
+celular `nao_encontrado` (um é o teste da sessão).
+
+**2ª onda (05/11, 14:06 UTC): parou sozinha.** Dry-run com 83 elegíveis (um dos
+84 entrou desde 04/11), teto do dia 842, cota ok. No envio, o 1º lote parou em
+**9 enviados e 1 falha**: a trava pede amostra mínima de 10 e 1 em 10 passa de
+5%. A falha é o Cloudflare recusando o destinatário — *"This email address has
+been suppressed due to repeated bounces or because it reported your emails as
+spam"*. É um Gmail que recebeu o anúncio de 29/10 sem erro e não pediu para
+parar: o mais provável é **denúncia de spam do anúncio**. A linha `failed` fica
+em `campaign_sends`, então ele não é tentado de novo. **Restam 73 elegíveis da
+2ª, esperando o Leo decidir** se a onda continua (rodar o mesmo comando manda só
+para quem não tem linha). A 3ª (170) fica elegível em 06/11, 15:25 UTC.
+
 **A trava de onda conta por campanha, e acumulado**: `ondaAnterior` é o total de
 enviados com sucesso daquela campanha, e o teto é o dobro dele. Campanha nova
 começa em 0, e **com 0 não há teto de onda nenhum** — só a cota do dia (700 menos
@@ -469,15 +508,52 @@ BlueStacks (staging) e publicada em produção em 05/11, com o ok dele.**
 de versão quando o app é fechado de vez (`skipWaiting` só por mensagem). Quem
 tem o app instalado **e está deslogado** pode abrir a tela velha, que chama
 `/api/auth/codigo` — e essa rota agora responde `not_found`, com a mensagem de
-erro genérica da tela antiga. Na abertura seguinte o shell novo já vale. Pega
-pouca gente: a sessão dura 365 dias, e o link `/acesso` é servido pelo Worker,
-não pelo cache. Não há mitigação no código.
+erro genérica da tela antiga. Pega pouca gente: a sessão dura 365 dias, e o link
+`/acesso` é servido pelo Worker, não pelo cache. **A correção está em staging
+desde 05/11** (`309a4b1`, ver "Versão nova assume na hora"), ainda não em
+produção.
+
+### Versão nova assume na hora (05/11, `309a4b1`) — só em staging
+
+Pedido do Leo, por causa do risco acima. O `registerSW.js` gerado só registra o
+service worker: não procura versão nova nem recarrega nada, e o SW novo só
+ativava com um `SKIP_WAITING` que ninguém mandava. Agora:
+
+- **O SW ativa ao instalar** (`skipWaiting`), faz `clients.claim()` e, **só
+  quando substitui uma versão anterior** (`registration.active` no `install`),
+  recarrega as abas abertas fora da lição (`WindowClient.navigate`). É isso que
+  alcança a página da versão antiga, que não tem código para se recarregar.
+- **A página nova recarrega no `controllerchange`** (o primeiro, na instalação,
+  é ignorado) e, ao voltar para a frente, pergunta por versão nova
+  (`registration.update()`, no máximo a cada 30 min): o app instalado volta da
+  memória sem navegar, e sem navegação o navegador não procura.
+- **A oração não é interrompida**: com áudio tocando nunca recarrega, nem com a
+  tela apagada; na lição parada, só quando ela sai da vista ou a pessoa sai da
+  lição. O SW não recarrega aba na lição. Regra em `src/shared/atualizacao.ts`,
+  com teste.
+
+**Conferido no staging, no navegador embutido (Chromium), em 05/11:**
+
+1. Aba em `/entrar` com o **código de antes** desta mudança (staging publicado
+   de novo com o `66f35fa`, aba controlada pelo SW antigo) → deploy do código
+   novo → checagem de versão → **a aba recarregou sozinha** para o bundle novo,
+   uma vez, e ficou estável.
+2. **Primeira instalação** (SW removido): uma carga só, sem recarregar.
+3. **Versão nova → mais nova** (um SW com uma linha de teste, publicado e
+   desfeito): o SW e a página pedem a recarga juntos, uma cancela a outra
+   (`ERR_ABORTED`), sobra uma carga e a página fica estável — sem loop.
+
+**Não conferido**: a lição com áudio tocando durante a troca (só pelo teste da
+regra), e o **iPhone e o Android de verdade**. O `WindowClient.navigate` falhando
+num navegador é engolido: a página antiga só pega a versão nova na abertura
+seguinte, como antes. Staging terminou em `49048bd7`, sem a linha de teste.
 
 **Ordem com o `lembrete-app`**: resolvida. O texto dele serve para as duas
 entradas ("Se o link não abrir, entre em jornadacomeuanjo.com/entrar com o
 e-mail da sua compra"), e a entrada sem código chegou a produção antes da 2ª
-onda sair (elegível desde 05/11, 13:02 UTC; **não disparada**, espera o pedido
-do Leo). Quem recebe a próxima onda e não consegue pelo link entra sem código.
+onda sair (05/11, 14:06 UTC, parada pela trava de falha depois de 9 envios;
+ver "Campanha `lembrete-app`"). Quem recebe e não consegue pelo link entra sem
+código, e o texto novo (`66f35fa`) já diz isso.
 
 ---
 
@@ -1156,7 +1232,17 @@ no precache; publicar não troca o que já está no aparelho até o SW atualizar
 teste do push isso custou uma investigação: o onboarding não aparecia porque o
 navegador servia o bundle anterior. Ao conferir mudança de client em aparelho que
 já abriu o app, **feche e reabra** (ou limpe o SW no navegador). Vale para o
-celular do Leo também.
+celular do Leo também. (Com o `309a4b1` em produção, a versão nova passa a
+assumir e recarregar a tela sozinha; ver "Versão nova assume na hora".)
+
+**Esperar a navegação dentro do `activate` trava a aba.** A primeira versão do
+`309a4b1` fazia `await aba.navigate(url)` dentro do `event.waitUntil` da
+ativação. A navegação passa pelo `fetch` do próprio SW, e o navegador segura o
+`fetch` até a ativação terminar: um espera o outro, e a aba fica parada com o
+pedido de `/entrar` pendurado (visto no staging em 05/11; o Chromium se
+recuperou sozinho depois de alguns minutos). A ativação espera só o `claim`; a
+navegação é disparada sem `await`. Pegou no staging porque o teste reproduziu
+a troca de versão de verdade, com a aba aberta — teste de unidade não pegaria.
 
 **Tabela nova = linha nova no `TABELAS` do `test/ajuda.ts`.** Aconteceu de novo
 com `push_envios`: o `DELETE FROM users` passou a falhar com violação de FK, e o
