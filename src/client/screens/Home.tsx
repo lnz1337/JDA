@@ -1,18 +1,23 @@
-import { useEffect, useState } from 'react';
-import type { Oferta, Programa } from '../../shared/types';
-import { primeiroNome } from '../../shared/nome';
-import { Arte } from '../components/Visual';
+import { useEffect, useMemo, useState } from 'react';
+import { horaNoFuso, passosFeitosDoDia, saudacao } from '../../shared/hoje';
+import { minutosDe } from '../../shared/licao';
+import type { LicaoNaLista, Oferta, Programa } from '../../shared/types';
+import { Arte, ChipDuracao } from '../components/Visual';
 import { api, registrarEvento, type Me } from '../lib/api';
-import { permissaoDeNotificacao } from '../lib/dispositivo';
-import { irPara } from '../lib/rota';
 import type { Convite } from '../lib/convite';
+import { permissaoDeNotificacao } from '../lib/dispositivo';
+import { passosFeitos } from '../lib/passos';
+import { irPara } from '../lib/rota';
 import { CHAVES, conviteAtual, dispensar, precisaAssinarDeNovo } from './Onboarding';
 
 /**
- * A primeira tela de quem está dentro: o cartão do dia, grande, com o que fazer
- * hoje. O público é 55+, então o caminho para a oração do dia é **um toque**, e
- * todo botão tem texto — ícone sozinho não diz nada para quem não cresceu com
- * aplicativo.
+ * A Home "Hoje" (docs/estilo-visual.md): o que fazer agora, de cima para baixo.
+ * A saudação, o cartão do dia com o botão de começar, os três passos do dia,
+ * e só depois a oferta (§9) e o resto. O público é 55+, então o caminho para a
+ * oração do dia é **um toque**, e todo botão tem texto.
+ *
+ * A Home **não matricula** (§6): sem matrícula, o servidor devolve o dia 1 como
+ * o de hoje, e o cartão convida para ele.
  */
 export function Home({ me, aoSair }: { me: Me; aoSair: () => void }) {
   const [programas, setProgramas] = useState<Programa[] | null>(null);
@@ -24,20 +29,28 @@ export function Home({ me, aoSair }: { me: Me; aoSair: () => void }) {
       .catch(() => setErro(true));
   }, []);
 
-  // "ELIANA" da Payt aparece como "Eliana"; o que está gravado não muda.
-  const primeiro = primeiroNome(me.usuario.nome);
   const jornada = programas?.find((p) => p.unlock_rule === 'daily');
   const outros = programas?.filter((p) => p.unlock_rule !== 'daily') ?? [];
+  // A hora é lida uma vez por abertura da Home: a saudação não muda com a tela aberta.
+  const ola = useMemo(
+    () => saudacao(horaNoFuso(me.usuario.timezone), me.usuario.nome),
+    [me.usuario.timezone, me.usuario.nome],
+  );
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col">
-      {/* A primeira tela da manhã: a única em que a arte passa na frente do resto. */}
-      <Arte prioridade />
-      <div className="relative -mt-10 flex flex-1 flex-col gap-7 px-5 pb-10">
-        <header>
-          <h1 className="text-4xl font-bold leading-tight text-titulo">
-            {primeiro ? `Olá, ${primeiro}` : 'Olá'}
-          </h1>
+      <FaixaDoConvite />
+
+      <div className="flex flex-1 flex-col gap-7 px-5 pt-6 pb-10">
+        <header className="space-y-1">
+          <h1 className="text-4xl font-bold leading-tight text-titulo">{ola}</h1>
+          {jornada?.atual && (
+            <p className="text-lg text-texto2">
+              {jornada.concluidos >= jornada.total_days
+                ? `Jornada concluída · ${jornada.total_days} de ${jornada.total_days}`
+                : `Dia ${jornada.atual.dia} de ${jornada.total_days}`}
+            </p>
+          )}
         </header>
 
         {erro && (
@@ -48,11 +61,11 @@ export function Home({ me, aoSair }: { me: Me; aoSair: () => void }) {
 
         {programas === null && !erro && <p className="text-lg text-texto2">carregando…</p>}
 
-        <ConviteDoAparelho />
+        {jornada && <CartaoDeHoje programa={jornada} />}
 
-        {jornada && <CartaoDoDia programa={jornada} />}
+        {jornada?.atual && <ListaDoDia dia={jornada.atual} />}
 
-        {/* Abaixo do cartão do dia, nunca acima: a oração vem antes da venda (§9). */}
+        {/* Abaixo da lista do dia, nunca acima: a oração vem antes da venda (§9). */}
         {jornada && <CartaoDeOferta />}
 
         {outros.length > 0 && (
@@ -64,13 +77,20 @@ export function Home({ me, aoSair }: { me: Me; aoSair: () => void }) {
                   <button
                     type="button"
                     onClick={() => irPara(`/programa/${p.id}`)}
-                    className="min-h-[56px] w-full cartao px-5 py-4 text-left"
+                    className="flex min-h-[64px] w-full items-center gap-3 cartao px-5 py-4 text-left"
                   >
-                    <span className="block text-lg font-semibold text-texto">{p.titulo}</span>
-                    <span className="block text-base text-texto2">
-                      {p.concluidos > 0
-                        ? `${p.concluidos} de ${p.total_days} concluídos`
-                        : `${p.total_days} ${p.total_days === 1 ? 'parte' : 'partes'}`}
+                    <span className="flex-1">
+                      <span className="block text-lg font-semibold leading-snug text-texto">
+                        {p.titulo}
+                      </span>
+                      <span className="block text-base text-texto2">
+                        {p.concluidos > 0
+                          ? `${p.concluidos} de ${p.total_days} concluídos`
+                          : `${p.total_days} ${p.total_days === 1 ? 'parte' : 'partes'}`}
+                      </span>
+                    </span>
+                    <span aria-hidden="true" className="text-2xl text-ouro">
+                      ›
                     </span>
                   </button>
                 </li>
@@ -110,19 +130,17 @@ export function Home({ me, aoSair }: { me: Me; aoSair: () => void }) {
 }
 
 /**
- * Um convite por vez, dispensável por 7 dias (§11). É o que resta de onboarding
- * para quem disse "Agora não": lembra sem prender.
+ * O convite do aparelho (instalar ou lembrete), como faixa fina sob o
+ * cabeçalho. Um por vez, dispensável por 7 dias (§11): lembra sem prender.
  */
-function ConviteDoAparelho() {
+function FaixaDoConvite() {
   const [passo, setPasso] = useState<Convite>(() => conviteAtual());
 
   /*
    * O `conviteAtual` é síncrono e não consulta o `pushManager`, então ele não vê
-   * o caso de quem permitiu a notificação e **não conseguiu assinar**. Essas
-   * pessoas não caíam em passo nenhum: a tela de falha mandava tentar de novo
-   * pela tela inicial, e aqui não havia nada. A checagem é assíncrona, por isso
-   * vem depois da primeira renderização. O lembrete passa na frente do de
-   * instalar, como no `conviteAtual`.
+   * o caso de quem permitiu a notificação e **não conseguiu assinar**. A
+   * checagem é assíncrona, por isso vem depois da primeira renderização. O
+   * lembrete passa na frente do de instalar, como no `conviteAtual`.
    */
   useEffect(() => {
     if (passo === 'lembrete') return;
@@ -141,16 +159,14 @@ function ConviteDoAparelho() {
   const instalar = passo === 'instalar';
 
   return (
-    <section className="space-y-3 caixa-destaque px-5 py-4">
-      <p className="text-lg font-semibold leading-snug text-texto">
-        {instalar ? 'Coloque o app na tela inicial' : 'Ligar o lembrete'}
-      </p>
+    <div className="flex items-center gap-1 border-b border-linha bg-cartao pl-5 pr-2">
       <button
         type="button"
         onClick={() => irPara(instalar ? '/instalar' : '/lembrete')}
-        className="botao botao-secundario"
+        className="min-h-[52px] flex-1 py-2 text-left text-base font-bold leading-snug text-ouro-forte"
       >
-        {instalar ? 'Ver como fazer' : 'Quero o lembrete'}
+        <span aria-hidden="true">{instalar ? '📲' : '🔔'}</span>{' '}
+        {instalar ? 'Coloque o app na tela do celular' : 'Ligue o lembrete da oração'} ›
       </button>
       <button
         type="button"
@@ -158,10 +174,166 @@ function ConviteDoAparelho() {
           dispensar(instalar ? CHAVES.instalarDispensado : CHAVES.lembreteDispensado);
           setPasso(conviteAtual());
         }}
-        className="link w-full justify-center text-base"
+        className="min-h-[52px] shrink-0 px-3 text-base font-semibold text-texto2 underline underline-offset-4"
       >
         Agora não
       </button>
+    </div>
+  );
+}
+
+/** Os três passos da lição, como a Home os mostra. */
+const PASSOS_DO_DIA = [
+  { n: 1, icone: '🙏', texto: 'Ouvir a oração' },
+  { n: 2, icone: '✝️', texto: 'A prática de hoje' },
+  { n: 3, icone: '🕯️', texto: 'Entregar a intenção' },
+] as const;
+
+function caminhoDoPasso(licaoId: string, n: number): string {
+  return n > 1 ? `/licao/${licaoId}?passo=${n}` : `/licao/${licaoId}`;
+}
+
+function feitosDe(dia: LicaoNaLista): Set<1 | 2 | 3> {
+  return passosFeitosDoDia(dia.estado === 'concluido', passosFeitos(dia.id));
+}
+
+/**
+ * O cartão do dia, com a arte no topo. O botão dourado é o de começar; quem já
+ * fez parte continua do primeiro passo que falta, e quem concluiu vê o
+ * "✓ Concluído" e pode ouvir de novo.
+ */
+function CartaoDeHoje({ programa }: { programa: Programa }) {
+  const dia = programa.atual;
+  const concluiuTudo = programa.concluidos >= programa.total_days;
+  const feitos = useMemo(() => (dia ? feitosDe(dia) : new Set<number>()), [dia]);
+  const proximo = PASSOS_DO_DIA.find((p) => !feitos.has(p.n))?.n ?? 1;
+
+  return (
+    <section className="cartao overflow-hidden">
+      {/*
+       * Recorte 4:3 cortado embaixo: o rosto fica no alto e o resto sai. Baixo de
+       * propósito: o "Começar" tem que aparecer sem rolar num celular de 812px.
+       */}
+      <Arte recorte="cartao" prioridade desbotar={false} className="max-h-[150px]" />
+      <div className="space-y-4 px-5 pt-5 pb-6">
+        {dia ? (
+          <>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="rotulo">Agora · Dia {dia.dia}</p>
+              <ChipDuracao segundos={dia.duracao_s} />
+            </div>
+            <h2 className="font-serif text-3xl font-bold leading-snug text-titulo">
+              {dia.titulo}
+            </h2>
+            {dia.frase && <p className="text-lg leading-relaxed text-texto2">{dia.frase}</p>}
+
+            {dia.estado === 'concluido' ? (
+              <>
+                <p className="text-lg font-bold text-verde">✓ Concluído</p>
+                <button
+                  type="button"
+                  onClick={() => irPara(`/licao/${dia.id}`)}
+                  className="botao botao-secundario"
+                >
+                  Ouvir de novo
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={() => irPara(caminhoDoPasso(dia.id, proximo))}
+                className="botao botao-dourado"
+              >
+                {feitos.size === 0 ? 'Começar ›' : 'Continuar ›'}
+              </button>
+            )}
+          </>
+        ) : (
+          <p className="text-lg text-texto2">A jornada vai começar.</p>
+        )}
+
+        <button
+          type="button"
+          onClick={() => irPara(`/programa/${programa.id}`)}
+          className="link w-full justify-center text-lg"
+        >
+          Ver os {programa.total_days} dias
+        </button>
+
+        {concluiuTudo && (
+          <p className="text-lg font-medium text-texto">
+            Você concluiu a jornada inteira. Que São Miguel continue à sua frente.
+          </p>
+        )}
+      </div>
+    </section>
+  );
+}
+
+/**
+ * "A sua jornada de hoje · 1 de 3": os três passos numerados, cada um abrindo a
+ * lição naquele passo. O 1 e o 2 marcam pelo que o aparelho guardou; o 3, e os
+ * três de uma vez, quando o servidor diz que a lição está concluída.
+ */
+function ListaDoDia({ dia }: { dia: LicaoNaLista }) {
+  const feitos = useMemo(() => feitosDe(dia), [dia]);
+  const minutos = minutosDe(dia.duracao_s);
+
+  return (
+    <section className="space-y-3">
+      <h2 className="text-xl font-semibold text-titulo">
+        A sua jornada de hoje · {feitos.size} de {PASSOS_DO_DIA.length}
+      </h2>
+      <div
+        role="progressbar"
+        aria-valuemin={0}
+        aria-valuemax={PASSOS_DO_DIA.length}
+        aria-valuenow={feitos.size}
+        aria-label={`${feitos.size} de ${PASSOS_DO_DIA.length} passos feitos`}
+        className="flex gap-2"
+      >
+        {PASSOS_DO_DIA.map((p) => (
+          <span
+            key={p.n}
+            className={`h-2 flex-1 rounded-full ${feitos.has(p.n) ? 'bg-ouro' : 'bg-linha'}`}
+          />
+        ))}
+      </div>
+      <ol className="space-y-3">
+        {PASSOS_DO_DIA.map((p) => {
+          const feito = feitos.has(p.n);
+          return (
+            <li key={p.n}>
+              <button
+                type="button"
+                onClick={() => irPara(caminhoDoPasso(dia.id, p.n))}
+                className={`flex min-h-[64px] w-full items-center gap-3 rounded-2xl border px-4 py-3 text-left ${
+                  feito ? 'border-linha bg-verde-fundo' : 'border-linha bg-cartao'
+                }`}
+              >
+                <span
+                  aria-hidden="true"
+                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-base font-extrabold ${
+                    feito ? 'bg-verde text-cartao' : 'border-2 border-ouro text-ouro-forte'
+                  }`}
+                >
+                  {feito ? '✓' : p.n}
+                </span>
+                <span className="flex-1 text-lg font-semibold leading-snug text-texto">
+                  <span aria-hidden="true">{p.icone}</span> {p.texto}
+                  {p.n === 1 && dia.tem_audio && minutos ? (
+                    <span className="font-normal text-texto2"> · {minutos} min</span>
+                  ) : null}
+                  {feito && <span className="sr-only"> (feito)</span>}
+                </span>
+                <span aria-hidden="true" className="text-2xl text-ouro">
+                  ›
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ol>
     </section>
   );
 }
@@ -187,9 +359,11 @@ function CartaoDeOferta() {
 
   return (
     <section className="space-y-3 cartao px-5 py-5">
-      <h2 className="text-xl font-semibold leading-snug text-titulo">{oferta.titulo}</h2>
+      <h2 className="font-serif text-2xl font-bold leading-snug text-titulo">{oferta.titulo}</h2>
       <p className="text-lg leading-relaxed text-texto2">{oferta.texto}</p>
-      {oferta.aviso && <p className="text-base leading-relaxed text-texto2">{oferta.aviso}</p>}
+      {oferta.aviso && (
+        <p className="caixa-destaque text-base leading-relaxed text-texto">{oferta.aviso}</p>
+      )}
       <button
         type="button"
         onClick={() => {
@@ -239,56 +413,5 @@ function LinhaDoLembrete({ hora }: { hora: number | null }) {
         mudar
       </button>
     </p>
-  );
-}
-
-function CartaoDoDia({ programa }: { programa: Programa }) {
-  const dia = programa.atual;
-  const concluiuTudo = programa.concluidos >= programa.total_days;
-
-  return (
-    <section className="space-y-4 cartao px-5 py-6">
-      {dia ? (
-        <>
-          <p className="rotulo">
-            Agora · Dia {dia.dia} de {programa.total_days}
-          </p>
-          <h2 className="font-serif text-3xl font-bold leading-snug text-titulo">{dia.titulo}</h2>
-          {dia.frase && <p className="text-lg leading-relaxed text-texto2">{dia.frase}</p>}
-
-          {dia.estado === 'concluido' && (
-            <p className="text-lg font-bold text-verde">Concluído ✓</p>
-          )}
-
-          <button
-            type="button"
-            onClick={() => irPara(`/licao/${dia.id}`)}
-            className="botao botao-dourado"
-          >
-            {dia.estado === 'concluido'
-              ? 'Ouvir de novo'
-              : dia.tem_audio
-                ? 'Ouvir a oração de hoje'
-                : 'Abrir a oração de hoje'}
-          </button>
-        </>
-      ) : (
-        <p className="text-lg text-texto2">A jornada vai começar.</p>
-      )}
-
-      <button
-        type="button"
-        onClick={() => irPara(`/programa/${programa.id}`)}
-        className="link w-full justify-center text-lg"
-      >
-        Ver os {programa.total_days} dias
-      </button>
-
-      {concluiuTudo && (
-        <p className="text-lg font-medium text-texto">
-          Você concluiu a jornada inteira. Que São Miguel continue à sua frente.
-        </p>
-      )}
-    </section>
   );
 }
