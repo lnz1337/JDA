@@ -6,9 +6,16 @@ staging, o que depende do Leo e as armadilhas que custaram caro.
 
 `npm run typecheck && npm test` limpo, **541 testes** em 36 arquivos (05/11).
 
-**Staging está à frente de produção com as fases R2 e R3** (05/11, fim da tarde,
-versão de staging `bfc840d6`, carimbo "05/11, 17:52"; ver "Estilo visual"). Elas
-esperam o teste do Leo no iPhone e o ok dele. **Não há migration nelas.**
+**Staging e produção estão de novo no mesmo código** (`c6cd74d`): **R2 e R3 em
+produção desde 05/11, 23:09 UTC** (versão `50a0d54d`), com o ok do Leo ("o meu
+siga já era o ok para publicar"), sem migration. Antes do deploy: typecheck e os
+541 testes, `migrations list` sem pendência, e as 19 lições da jornada no banco
+de produção no formato dos passos. Depois: 100% do tráfego na versão nova
+(`wrangler deployments status`), o cron das 23:10 rodou sem erro, e o banco
+mostra uso real logo em seguida (`lesson_started` às 23:11 e `audio_completed`
+às 23:17 no dia 3; `lesson_started` no dia 8 às 23:19). **Não deu para abrir o
+site desta máquina** naquela hora (ver "Armadilhas": rede local sem rota para
+`104.21.x`/`172.67.x`), então a tela nova em produção não foi vista daqui.
 
 **Produção recebeu só a correção do "dia atual"** (05/11, fim da tarde, versão
 `1788dfac`, com o ok do Leo): o código que já estava lá (`d9f732e`) mais o
@@ -674,8 +681,8 @@ secundário, cabeçalho com o botão de tema, barra de abas com **Tesouros**
 mudar comportamento. A página do `/acesso` e do `/parar`, servida pelo
 Worker, também ganhou as cores novas (sem fonte baixada, tema pelo aparelho).
 
-**R2 e R3 feitas em 05/11 e só em staging** (esperam o teste do Leo no iPhone e
-o ok para produção). **R4 a R6 esperam o pedido do Leo.**
+**R2 e R3 feitas em 05/11, em produção desde as 23:09 UTC do mesmo dia.** **R4 a
+R6 esperam o pedido do Leo.**
 
 - **R2, a lição em passos** (`5c1202d`, `b7c2ab8`, `47f8914`). O `GET
   /api/licoes/:id` devolve `passos` (`src/shared/licao.ts`, testado com o
@@ -1306,6 +1313,17 @@ evita veredito de "sem SPF" em verificador ingênuo.
 ---
 
 ## 7. Armadilhas descobertas (custaram tempo)
+
+**Esta máquina pode perder a rota para os IPs do nosso domínio sem o site cair**
+(05/11, 23:10 UTC, logo depois do deploy de produção). `curl` dava 000 com
+timeout de conexão em `jornadacomeuanjo.com`, `teste.` e no `workers.dev` do
+staging (todos em `104.21.x` e `172.67.x`), enquanto `cloudflare.com`,
+`registry.npmjs.org` e `hono.dev` (`104.16.x`, `104.26.x`) abriam. Timeout de
+TCP não vem do Worker, que só responde depois da conexão: código quebrado dá 500
+ou 1101, não 000. Antes de pensar em reverter um deploy, confirmar por fora:
+`wrangler deployments status`, `wrangler tail` e os `events` recentes no D1. Se
+for bloqueio de faixa de IP por operadora, ele atinge clientes também, e a
+saída é outra (falar com a Cloudflare, IP dedicado), não código.
 
 **`NULL` não conflita com `NULL` no SQLite.** A `UNIQUE (user_id, product_id,
 transaction_id)` **não** protege concessões manuais, que têm `transaction_id`
