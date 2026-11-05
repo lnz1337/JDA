@@ -8,9 +8,17 @@ staging, o que depende do Leo e as armadilhas que custaram caro.
 
 **Staging está à frente de produção com as fases R2 e R3** (05/11, fim da tarde,
 versão de staging `bfc840d6`, carimbo "05/11, 17:52"; ver "Estilo visual"). Elas
-esperam o teste do Leo no iPhone e o ok dele. **Não há migration nelas.** O
-deploy de produção levaria também a correção do "dia atual" (`555017f`), um
-bug que **já está em produção**.
+esperam o teste do Leo no iPhone e o ok dele. **Não há migration nelas.**
+
+**Produção recebeu só a correção do "dia atual"** (05/11, fim da tarde, versão
+`1788dfac`, com o ok do Leo): o código que já estava lá (`d9f732e`) mais o
+`555017f` aplicado por cima (`71b0243`, fora do `main`), num checkout
+separado, para não levar R2 e R3 juntos. Typecheck e os 500 testes daquele
+código passaram antes. Conferido no ar: health 200 na raiz e no `www`, a tela
+continua a de antes (`index-CufflJCb.js`) e o Worker publicado tem o
+`licaoAtual` novo. Na hora da publicação, **15 das 131 matrículas** estavam
+com o dia 19 oferecido na Home. Quando R2 e R3 forem para produção pelo `main`,
+a correção já está nele.
 
 Até a R2, staging e produção estavam no mesmo código (`3e8cdbe`), desde 05/11: produção
 publicada com o ok do Leo (versão `06f9a7a0`), depois do teste dele no iPhone
