@@ -7,6 +7,7 @@
  */
 import { useState } from 'react';
 import { APP_NAME } from '../../shared/constants';
+import { minutosDe } from '../../shared/licao';
 import {
   aplicarLetra,
   indiceDaLetra,
@@ -155,10 +156,91 @@ export function Ornamento() {
 
 /** "🕐 7 min", arredondado para cima. Sem duração, sem chip. */
 export function ChipDuracao({ segundos }: { segundos: number | null | undefined }) {
-  if (!segundos || segundos <= 0) return null;
+  const minutos = minutosDe(segundos);
+  if (!minutos) return null;
   return (
     <span className="inline-flex min-h-[32px] items-center gap-1 rounded-full bg-linha px-3 text-base font-semibold text-texto">
-      <span aria-hidden="true">🕐</span> {Math.ceil(segundos / 60)} min
+      <span aria-hidden="true">🕐</span> {minutos} min
     </span>
+  );
+}
+
+/**
+ * Barra de progresso em segmentos: um por passo, os feitos em `ouro`, o atual
+ * mais escuro. O "Passo 2 de 3" vai escrito para leitor de tela.
+ */
+export function BarraDePassos({ atual, total }: { atual: number; total: number }) {
+  return (
+    <div
+      role="progressbar"
+      aria-valuemin={1}
+      aria-valuemax={total}
+      aria-valuenow={atual}
+      aria-label={`Passo ${atual} de ${total}`}
+      className="flex gap-2"
+    >
+      {Array.from({ length: total }, (_, i) => {
+        const n = i + 1;
+        const cor = n < atual ? 'bg-ouro' : n === atual ? 'bg-ouro-forte' : 'bg-linha';
+        return <span key={n} className={`h-2 flex-1 rounded-full ${cor}`} />;
+      })}
+    </div>
+  );
+}
+
+/**
+ * As velas da jornada (9×14px): acesa em degradê dourado com um brilho leve,
+ * apagada na cor da linha. "N de 19 acesas" ao lado, quando pedido.
+ */
+export function Velas({
+  acesas,
+  total,
+  legenda = true,
+  centro = false,
+}: {
+  /** Os dias concluídos (1 a `total`). */
+  acesas: ReadonlySet<number>;
+  total: number;
+  legenda?: boolean;
+  /** Centraliza as velas e a legenda (tela da vela acesa). */
+  centro?: boolean;
+}) {
+  const n = [...acesas].filter((d) => d >= 1 && d <= total).length;
+  return (
+    <div
+      className={`flex flex-wrap items-center gap-x-3 gap-y-2 ${centro ? 'justify-center' : ''}`}
+    >
+      <div
+        aria-hidden="true"
+        className={`flex flex-wrap items-end gap-[5px] ${centro ? 'justify-center' : ''}`}
+      >
+        {Array.from({ length: total }, (_, i) => {
+          const acesa = acesas.has(i + 1);
+          return (
+            <span
+              key={i}
+              className={`block h-[14px] w-[9px] rounded-t-[5px] rounded-b-[2px] ${acesa ? '' : 'bg-linha'}`}
+              style={
+                acesa
+                  ? {
+                      background: 'linear-gradient(180deg, #f0cd7a 0%, #bd8f34 100%)',
+                      boxShadow: '0 0 6px rgba(240, 205, 122, 0.55)',
+                    }
+                  : undefined
+              }
+            />
+          );
+        })}
+      </div>
+      {legenda ? (
+        <span className="text-base font-semibold text-texto2">
+          {n} de {total} {n === 1 ? 'acesa' : 'acesas'}
+        </span>
+      ) : (
+        <span className="sr-only">
+          {n} de {total} velas acesas
+        </span>
+      )}
+    </div>
   );
 }

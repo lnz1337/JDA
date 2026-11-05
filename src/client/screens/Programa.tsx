@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { textoDeLiberacao } from '../../shared/licao';
 import type { LicaoNaLista, Programa as DadosPrograma } from '../../shared/types';
 import { api, ErroApi } from '../lib/api';
 import { Arte } from '../components/Visual';
@@ -72,12 +73,6 @@ export function Programa({ id }: { id: string }) {
       </div>
     </main>
   );
-}
-
-function textoDeLiberacao(dias: number | undefined): string {
-  if (dias === 1) return 'Libera amanhã';
-  if (dias && dias > 1) return `Libera em ${dias} dias`;
-  return 'Libera em breve';
 }
 
 function ItemDoDia({ licao, diario }: { licao: LicaoNaLista; diario: boolean }) {

@@ -8,12 +8,14 @@
  * contida aqui.
  */
 import { useEffect, useState } from 'react';
+import { passoDaBusca } from '../../shared/licao';
 
 export type Rota =
   | { nome: 'inicio' }
   | { nome: 'entrar' }
   | { nome: 'programa'; id: string }
-  | { nome: 'licao'; id: string }
+  /** `passo` de 1 a 3 (`?passo=2`): a lição em passos. Sem ele, o 1. */
+  | { nome: 'licao'; id: string; passo: number }
   | { nome: 'instalar' }
   | { nome: 'lembrete' }
   | { nome: 'loja' }
@@ -39,7 +41,7 @@ export function rotaDe(caminho: string, busca: string): Rota {
   if (programa?.[1]) return { nome: 'programa', id: programa[1] };
 
   const licao = /^\/licao\/([\w-]+)\/?$/.exec(caminho);
-  if (licao?.[1]) return { nome: 'licao', id: licao[1] };
+  if (licao?.[1]) return { nome: 'licao', id: licao[1], passo: passoDaBusca(busca) };
 
   const produto = /^\/produto\/([\w-]+)\/?$/.exec(caminho);
   if (produto?.[1]) return { nome: 'produto', id: produto[1] };
@@ -51,13 +53,27 @@ export function rotaAtual(): Rota {
   return rotaDe(location.pathname, location.search);
 }
 
-/** Navega sem recarregar a página. */
-export function irPara(caminho: string): void {
+/**
+ * Navega sem recarregar a página. `estado` vai no `history.state` da entrada
+ * nova (a lição marca ali o passo que avançou, para o "Voltar um passo" saber
+ * que a entrada anterior é o passo de antes).
+ */
+export function irPara(caminho: string, estado: Record<string, unknown> = {}): void {
   if (caminho !== `${location.pathname}${location.search}`) {
-    history.pushState({}, '', caminho);
+    history.pushState(estado, '', caminho);
   }
   dispatchEvent(new Event(EVENTO));
   // Tela nova começa do topo; sem isto a lista de dias abre no meio.
+  scrollTo(0, 0);
+}
+
+/**
+ * Troca a entrada atual do histórico em vez de empilhar outra: o "voltar" do
+ * navegador pula esta tela.
+ */
+export function substituirPor(caminho: string): void {
+  history.replaceState({}, '', caminho);
+  dispatchEvent(new Event(EVENTO));
   scrollTo(0, 0);
 }
 

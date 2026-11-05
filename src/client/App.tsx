@@ -194,7 +194,8 @@ export function App() {
 
   function telaLogada() {
     if (rota.nome === 'programa') return <Programa id={rota.id} />;
-    if (rota.nome === 'licao') return <Licao id={rota.id} />;
+    // `key`: cada lição monta a tela (e o áudio) do zero; trocar de passo não.
+    if (rota.nome === 'licao') return <Licao key={rota.id} id={rota.id} passo={rota.passo} />;
     if (rota.nome === 'loja') return <Loja />;
     if (rota.nome === 'produto') return <Produto id={rota.id} />;
 
