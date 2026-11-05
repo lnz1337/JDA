@@ -25,6 +25,20 @@ export interface ResultadoEnvio {
   ok: boolean;
   provedor: string;
   erro?: string;
+  /**
+   * O provedor recusou o destinatário antes de enviar: ele está na lista de
+   * supressão (devolução repetida ou denúncia de spam). Não é falha de entrega.
+   */
+  suprimido?: boolean;
+}
+
+/**
+ * Recusa por supressão. O Cloudflare diz "This email address has been
+ * suppressed due to repeated bounces or because it reported your emails as
+ * spam" (visto em 05/11). Lido pelo texto porque o binding não dá código.
+ */
+export function ehSupressao(erro: string | undefined): boolean {
+  return /has been suppressed/i.test(erro ?? '');
 }
 
 export interface ProvedorEmail {
@@ -125,7 +139,23 @@ export async function enviarEmail(
   userId?: string | null,
 ): Promise<ResultadoEnvio> {
   const provedor = provedorDeEmail(env);
-  const resultado = await provedor.enviar(msg);
+  const enviado = await provedor.enviar(msg);
+  const resultado: ResultadoEnvio =
+    !enviado.ok && ehSupressao(enviado.erro) ? { ...enviado, suprimido: true } : enviado;
+
+  /*
+   * Endereço suprimido sai de toda campanha (`users.email_suprimido_at`). Vale
+   * para qualquer envio que descubra a supressão, mas só a campanha deixa de
+   * tentar: o transacional não olha a marca, porque boas-vindas e código de
+   * ação sensível são o que a pessoa pediu.
+   */
+  if (resultado.suprimido && userId) {
+    await env.DB.prepare(
+      'UPDATE users SET email_suprimido_at = COALESCE(email_suprimido_at, ?) WHERE id = ?',
+    )
+      .bind(agoraIso(), userId)
+      .run();
+  }
 
   if (!resultado.ok) {
     // Desde a entrada sem código, nenhum e-mail tranca alguém fora do app; o
@@ -143,7 +173,12 @@ export async function enviarEmail(
       userId ?? null,
       resultado.ok ? 'email_enviado' : 'email_falhou',
       // Sem o código e sem o corpo: só o suficiente para diagnosticar.
-      JSON.stringify({ tipo, provedor: resultado.provedor, erro: resultado.erro ?? null }),
+      JSON.stringify({
+        tipo,
+        provedor: resultado.provedor,
+        erro: resultado.erro ?? null,
+        ...(resultado.suprimido ? { suprimido: true } : {}),
+      }),
       agoraIso(),
     )
     .run();

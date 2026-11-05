@@ -69,7 +69,11 @@ export async function trocarEmail(
 
   if (ocupado) return { ok: false, motivo: 'email_em_uso' };
 
-  await db.prepare('UPDATE users SET email = ? WHERE id = ?').bind(email, userId).run();
+  // A marca de supressão é do endereço antigo: o novo começa limpo.
+  await db
+    .prepare('UPDATE users SET email = ?, email_suprimido_at = NULL WHERE id = ?')
+    .bind(email, userId)
+    .run();
   // Sem o endereço, nem antigo nem novo: o evento é para auditoria, não cadastro.
   await registrar(db, userId, 'conta_email_trocado');
 

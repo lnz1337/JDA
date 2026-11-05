@@ -3,6 +3,8 @@ import { env } from 'cloudflare:workers';
 import { beforeEach, describe, expect, it } from 'vitest';
 import app from '../src/worker/index';
 import { destinatarios, linkParar } from '../src/worker/services/campanhas';
+import { trocarEmail } from '../src/worker/services/conta';
+import { enviarEmail } from '../src/worker/services/mail';
 import { prepararBanco } from './ajuda';
 import { envTeste } from './env-de-teste';
 
@@ -707,5 +709,120 @@ describe('campanha lembrete-app', () => {
       n: number;
     }>();
     expect(n?.n).toBe(0);
+  });
+});
+
+describe('destinatário suprimido pelo Cloudflare', () => {
+  /*
+   * 05/11: a 2ª onda do lembrete parou em 9 enviados porque um endereço
+   * suprimido contou como falha (1 em 10 passa de 5%). O Cloudflare recusa
+   * antes de enviar: não é falha de entrega, e o endereço sai das campanhas.
+   */
+  const SUPRIMIDO =
+    'Cannot send emails to this recipient. This email address has been suppressed due to repeated bounces or because it reported your emails as spam';
+
+  /** Binding de e-mail falso: recusa os endereços dados, com o erro dado. */
+  function emailFalso(recusas: Record<string, string>) {
+    const tentativas: string[] = [];
+    return {
+      tentativas,
+      EMAIL: {
+        async send(m: { to: string }) {
+          tentativas.push(m.to);
+          const erro = recusas[m.to];
+          if (erro) throw new Error(erro);
+          return { messageId: 'x' };
+        },
+      },
+    };
+  }
+
+  async function disparar(ambiente: Record<string, unknown>, limite = 10) {
+    const res = await chamar(
+      '/api/campanha/enviar',
+      { method: 'POST', headers: comChave(), body: JSON.stringify({ campanha: CAMPANHA, limite }) },
+      ambiente,
+    );
+    return (await res.json()) as {
+      enviados: number;
+      falhas: number;
+      suprimidos: number;
+      parouPorFalha: boolean;
+    };
+  }
+
+  it('não conta na taxa de falha: 1 suprimido em 10 não para a onda', async () => {
+    for (let n = 1; n <= 10; n++) await criarComprador(n);
+    const falso = emailFalso({ 'c3@exemplo.com.br': SUPRIMIDO });
+
+    const r = await disparar({ EMAIL: falso.EMAIL });
+
+    expect(r).toMatchObject({ enviados: 9, falhas: 0, suprimidos: 1, parouPorFalha: false });
+    const linha = await env.DB.prepare(
+      "SELECT status FROM campaign_sends WHERE campaign = ? AND user_id = 'comprador-3'",
+    )
+      .bind(CAMPANHA)
+      .first<{ status: string }>();
+    expect(linha?.status).toBe('suppressed');
+  });
+
+  it('marca o endereço e tira de toda campanha futura, inclusive do dry-run', async () => {
+    for (let n = 1; n <= 3; n++) await criarComprador(n);
+    await disparar({ EMAIL: emailFalso({ 'c2@exemplo.com.br': SUPRIMIDO }).EMAIL });
+
+    const u = await env.DB.prepare("SELECT email_suprimido_at FROM users WHERE id = 'comprador-2'").first<{
+      email_suprimido_at: string | null;
+    }>();
+    expect(u?.email_suprimido_at).toBeTruthy();
+
+    // Uma campanha nova (aqui, a mesma com o histórico limpo) não o seleciona.
+    await env.DB.prepare('DELETE FROM campaign_sends').run();
+    const lista = await destinatarios(env.DB, CAMPANHA, 10);
+    expect(lista.map((d) => d.user_id).sort()).toEqual(['comprador-1', 'comprador-3']);
+  });
+
+  it('qualquer outra falha continua contando e para a onda', async () => {
+    for (let n = 1; n <= 10; n++) await criarComprador(n);
+    const falso = emailFalso({ 'c3@exemplo.com.br': 'destination address is not a verified address' });
+
+    const r = await disparar({ EMAIL: falso.EMAIL });
+
+    expect(r).toMatchObject({ falhas: 1, suprimidos: 0, parouPorFalha: true });
+    const u = await env.DB.prepare("SELECT email_suprimido_at FROM users WHERE id = 'comprador-3'").first<{
+      email_suprimido_at: string | null;
+    }>();
+    expect(u?.email_suprimido_at).toBeNull();
+  });
+
+  it('o transacional continua tentando o endereço marcado', async () => {
+    const id = await criarComprador(1);
+    await env.DB.prepare('UPDATE users SET email_suprimido_at = ? WHERE id = ?')
+      .bind(new Date().toISOString(), id)
+      .run();
+    const falso = emailFalso({});
+
+    const r = await enviarEmail(
+      { ...ambienteBase(), EMAIL: falso.EMAIL } as unknown as Parameters<typeof enviarEmail>[0],
+      'boas_vindas',
+      { para: 'c1@exemplo.com.br', assunto: 'Olá', texto: 'Olá' },
+      id,
+    );
+
+    expect(r.ok).toBe(true);
+    expect(falso.tentativas).toEqual(['c1@exemplo.com.br']);
+  });
+
+  it('trocar o e-mail tira a marca: ela é do endereço, não da pessoa', async () => {
+    const id = await criarComprador(1);
+    await env.DB.prepare('UPDATE users SET email_suprimido_at = ? WHERE id = ?')
+      .bind(new Date().toISOString(), id)
+      .run();
+
+    await trocarEmail(env.DB, id, 'novo@exemplo.com.br');
+
+    const u = await env.DB.prepare('SELECT email_suprimido_at FROM users WHERE id = ?')
+      .bind(id)
+      .first<{ email_suprimido_at: string | null }>();
+    expect(u?.email_suprimido_at).toBeNull();
   });
 });

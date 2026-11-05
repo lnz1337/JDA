@@ -28,6 +28,8 @@ export type RespostaCampanha = {
   error?: string;
   enviados?: number;
   falhas?: number;
+  /** Recusados pelo provedor por supressão: contam como feitos, não como falha. */
+  suprimidos?: number;
   parouPorFalha?: boolean;
   enviadosHoje?: number;
   cotaRestante?: number;
@@ -49,6 +51,8 @@ export type ResultadoLotes = {
   selecionados: number;
   enviados: number;
   falhas: number;
+  /** À parte da taxa de falha: o provedor recusa antes de enviar. */
+  suprimidos: number;
   lotes: number;
   erros: string[];
   /** Mensagem do Worker (recusa) ou da rede (timeout), quando houver. */
@@ -78,6 +82,7 @@ export async function enviarEmLotes(
     selecionados: 0,
     enviados: 0,
     falhas: 0,
+    suprimidos: 0,
     lotes: 0,
     erros: [],
   };
@@ -95,8 +100,10 @@ export async function enviarEmLotes(
   res.selecionados = Math.min(total, conferencia.enviados ?? 0);
   if (res.selecionados === 0) return { ...res, motivo: 'fila_vazia', ultima: conferencia };
 
-  while (res.enviados + res.falhas < res.selecionados) {
-    const lote = Math.min(tamanho, res.selecionados - res.enviados - res.falhas);
+  // Suprimido sai da fila (ganha linha em `campaign_sends`) e conta como feito.
+  const feitos = () => res.enviados + res.falhas + res.suprimidos;
+  while (feitos() < res.selecionados) {
+    const lote = Math.min(tamanho, res.selecionados - feitos());
 
     let r: RespostaCampanha;
     try {
@@ -110,16 +117,20 @@ export async function enviarEmLotes(
     res.lotes += 1;
     res.enviados += r.enviados ?? 0;
     res.falhas += r.falhas ?? 0;
+    res.suprimidos += r.suprimidos ?? 0;
     res.erros.push(...(r.erros ?? []));
     aoTerminarLote(res.lotes, r);
 
-    const feitos = res.enviados + res.falhas;
-    if (r.parouPorFalha === true || (feitos >= AMOSTRA_MINIMA && res.falhas / feitos > TETO_FALHA)) {
+    // A taxa é só de entrega: suprimido fica fora do numerador e do denominador.
+    const tentados = res.enviados + res.falhas;
+    if (r.parouPorFalha === true || (tentados >= AMOSTRA_MINIMA && res.falhas / tentados > TETO_FALHA)) {
       return { ...res, motivo: 'taxa_de_falha' };
     }
     // Lote que não fez nada: a fila acabou antes do previsto (alguém optou por
     // sair, ou outra chamada levou os mesmos). Insistir seria laço infinito.
-    if ((r.enviados ?? 0) + (r.falhas ?? 0) === 0) return { ...res, motivo: 'fila_vazia' };
+    if ((r.enviados ?? 0) + (r.falhas ?? 0) + (r.suprimidos ?? 0) === 0) {
+      return { ...res, motivo: 'fila_vazia' };
+    }
   }
 
   return res;

@@ -31,6 +31,56 @@ function falsoWorker(fila: number, opcoes: { falhaACada?: number; teto?: number 
   return { chamar, chamadas };
 }
 
+describe('enviarEmLotes com destinatário suprimido', () => {
+  /*
+   * 05/11: a 2ª onda do lembrete parou em 9 enviados porque um endereço
+   * suprimido pelo Cloudflare contou como falha (1 em 10 > 5%). Suprimido é
+   * recusa antes do envio, não falha de entrega: conta à parte.
+   */
+  it('suprimido não entra na taxa de falha, mas conta como feito', async () => {
+    const respostas: RespostaCampanha[] = [
+      { ok: true, enviados: 38, falhas: 0, suprimidos: 2 },
+      { ok: true, enviados: 1, falhas: 0, suprimidos: 1 },
+    ];
+    const chamadas: number[] = [];
+    const chamar: Chamar = async (limite, dryRun) => {
+      if (dryRun) return { ok: true, enviados: 42 };
+      chamadas.push(limite);
+      return respostas.shift() ?? { ok: true, enviados: 0, falhas: 0, suprimidos: 0 };
+    };
+
+    const r = await enviarEmLotes(42, chamar);
+
+    expect(r).toMatchObject({ motivo: 'completa', enviados: 39, falhas: 0, suprimidos: 3 });
+    // O segundo lote pede só o que falta: 42 - (38 + 2).
+    expect(chamadas).toEqual([40, 2]);
+  });
+
+  it('falha de verdade continua parando a onda', async () => {
+    const chamar: Chamar = async (limite, dryRun) =>
+      dryRun ? { ok: true, enviados: limite } : { ok: true, enviados: 8, falhas: 1, suprimidos: 1 };
+
+    const r = await enviarEmLotes(40, chamar, () => undefined, 10);
+
+    // O 1º lote tem 9 tentativas, abaixo da amostra mínima; no 2º, 2 falhas em
+    // 18 (11%) param. Os 2 suprimidos não entram na conta.
+    expect(r).toMatchObject({ motivo: 'taxa_de_falha', enviados: 16, falhas: 2, suprimidos: 2 });
+  });
+
+  it('lote só de suprimidos não é fila vazia', async () => {
+    const respostas: RespostaCampanha[] = [
+      { ok: true, enviados: 0, falhas: 0, suprimidos: 2 },
+      { ok: true, enviados: 3, falhas: 0, suprimidos: 0 },
+    ];
+    const chamar: Chamar = async (_limite, dryRun) =>
+      dryRun ? { ok: true, enviados: 5 } : (respostas.shift() ?? { ok: true });
+
+    const r = await enviarEmLotes(5, chamar, () => undefined, 2);
+
+    expect(r).toMatchObject({ motivo: 'completa', enviados: 3, suprimidos: 2 });
+  });
+});
+
 describe('enviarEmLotes', () => {
   it('confere o total com dry-run antes e manda em lotes de até 40', async () => {
     const w = falsoWorker(1000);

@@ -47,7 +47,10 @@ export interface RelatorioCampanha {
   enviadosHoje: number;
   cotaRestante: number;
   enviados: number;
+  /** Falha de envio de verdade: é a que conta na trava de 5%. */
   falhas: number;
+  /** Recusados pelo provedor por supressão: à parte, fora da trava. */
+  suprimidos: number;
   pulados: number;
   taxaFalha: number;
   parouPorFalha: boolean;
@@ -152,8 +155,9 @@ function ordemPorProvedor(provedores: string[]): { sql: string; valores: string[
 }
 
 /**
- * Quem ainda não recebeu: tem e-mail, não optou por sair, tem pelo menos um
- * produto ativo e não está em `campaign_sends`.
+ * Quem ainda não recebeu: tem e-mail, não optou por sair, o endereço não foi
+ * suprimido pelo provedor (`email_suprimido_at`), tem pelo menos um produto
+ * ativo e não está em `campaign_sends`.
  *
  * A ordem é **compra mais recente primeiro** — quem comprou ontem lembra da
  * marca e reclama menos de receber — e, se vier `provedores`, o provedor manda
@@ -249,6 +253,7 @@ export async function destinatarios(
         WHERE u.deleted_at IS NULL
           AND u.email IS NOT NULL
           AND u.marketing_opt_out_at IS NULL
+          AND u.email_suprimido_at IS NULL
           AND EXISTS (SELECT 1 FROM entitlements e WHERE e.user_id = u.id AND e.status = 'active')
           AND NOT EXISTS (SELECT 1 FROM campaign_sends c WHERE c.campaign = ? AND c.user_id = u.id)
           ${filtro.sql}
@@ -265,7 +270,7 @@ async function registrar(
   db: D1Database,
   campanha: string,
   userId: string,
-  status: 'sent' | 'failed',
+  status: 'sent' | 'failed' | 'suppressed',
   erro: string | null,
   modelo: ModeloAnuncio,
 ): Promise<void> {
@@ -381,6 +386,7 @@ export async function enviarCampanha(
 
   let enviados = 0;
   let falhas = 0;
+  let suprimidos = 0;
   let parouPorFalha = false;
 
   for (const d of lista) {
@@ -422,8 +428,13 @@ export async function enviarCampanha(
       opcoes.testePara ? null : d.user_id,
     );
 
+    // Suprimido é recusa do provedor antes de enviar, não falha de entrega:
+    // fica fora da trava (05/11, a 2ª onda do lembrete parou por um só).
     if (r.ok) enviados += 1;
-    else {
+    else if (r.suprimido) {
+      suprimidos += 1;
+      erros.push(`${d.user_id}: suprimido`);
+    } else {
       falhas += 1;
       erros.push(`${d.user_id}: ${r.erro ?? 'falha'}`);
     }
@@ -433,7 +444,7 @@ export async function enviarCampanha(
         env.DB,
         campanha,
         d.user_id,
-        r.ok ? 'sent' : 'failed',
+        r.ok ? 'sent' : r.suprimido ? 'suppressed' : 'failed',
         r.erro ?? null,
         modelo,
       );
@@ -455,7 +466,8 @@ export async function enviarCampanha(
     cotaRestante: Math.max(COTA_DIARIA - jaHoje - (dryRun ? 0 : enviados), 0),
     enviados,
     falhas,
-    pulados: lista.length - feitos,
+    suprimidos,
+    pulados: lista.length - feitos - suprimidos,
     taxaFalha: feitos === 0 ? 0 : falhas / feitos,
     parouPorFalha,
     limite,

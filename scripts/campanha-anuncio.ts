@@ -88,7 +88,7 @@ if (dryRun || testePara) {
 
 const r = await enviarEmLotes(limite, chamar, (n, lote) => {
   console.log(
-    `lote ${n}: ${lote.enviados ?? 0} enviados, ${lote.falhas ?? 0} falhas` +
+    `lote ${n}: ${lote.enviados ?? 0} enviados, ${lote.falhas ?? 0} falhas, ${lote.suprimidos ?? 0} suprimidos` +
       ` (hoje: ${lote.enviadosHoje ?? '?'}, cota restante: ${lote.cotaRestante ?? '?'})`,
   );
 });
@@ -101,6 +101,9 @@ console.log(
       selecionados: r.selecionados,
       enviados: r.enviados,
       falhas: r.falhas,
+      // Recusados pelo provedor antes de enviar: fora da taxa de falha, e o
+      // endereço sai das próximas campanhas.
+      suprimidos: r.suprimidos,
       lotes: r.lotes,
       enviadosHoje: r.ultima?.enviadosHoje,
       cotaRestante: r.ultima?.cotaRestante,
@@ -115,7 +118,7 @@ switch (r.motivo) {
   case 'completa':
     break;
   case 'fila_vazia':
-    console.log(`\nA fila acabou: ${r.enviados + r.falhas} de ${limite} pedidos.`);
+    console.log(`\nA fila acabou: ${r.enviados + r.falhas + r.suprimidos} de ${limite} pedidos.`);
     break;
   case 'recusada':
     console.error(`\nRECUSADA pelo Worker: ${r.detalhe ?? 'sem mensagem'}`);
