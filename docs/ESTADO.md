@@ -9,8 +9,8 @@ staging, o que depende do Leo e as armadilhas que custaram caro.
 **Produção** está no `66f35fa` (deploy de 05/11, 14:03 UTC, versão `88e7d149`):
 a fase R1 do estilo visual, a **entrada sem código** e o texto novo do
 `lembrete-app`. **Staging está à frente** (`79fc54c`, versão `ec8bf32c`, com a
-migration `0010`), com três coisas **esperando o teste do Leo no iPhone e o ok
-dele para produção**:
+migration `0010`), com três coisas **testadas pelo Leo no iPhone em 05/11
+("tudo funcionou") e esperando o ok dele para produção**:
 
 1. a versão nova do app assume e recarrega a tela (`309a4b1`; ver "Versão nova
    assume na hora");
@@ -574,12 +574,20 @@ ativava com um `SKIP_WAITING` que ninguém mandava. Agora:
 4. Com o `79fc54c` (05/11): a mesma aba, aberta na versão anterior, trocou
    sozinha para a nova e passou a mostrar "versão 05/11, 11:51" no cabeçalho.
 
-**Não conferido**: a lição com áudio tocando durante a troca (só pelo teste da
-regra), e o **iPhone e o Android de verdade**. O `WindowClient.navigate` falhando
-num navegador é engolido: a página antiga só pega a versão nova na abertura
-seguinte, como antes. **Roteiro do iPhone passado ao Leo em 05/11**, com um
-deploy de staging por teste (versão antiga → nova ao reabrir; app aberto fora da
-lição; sem loop; lição com áudio tocando).
+**Testado pelo Leo no iPhone em 05/11 (staging), com um deploy por teste:**
+
+| Teste | Deploy de staging | O que o Leo relatou |
+|---|---|---|
+| E. Versão antiga → nova ao reabrir | `6f856ea2` (o código de produção, `66f35fa`), depois `cc2dd62c` ("05/11, 12:10") | "abriu na nova versão" |
+| A. App aberto fora da lição, volta depois de 5 min | `654fd20f` ("05/11, 12:14") | "tudo funcionou" |
+| B. Sem loop depois da troca | — | "tudo funcionou" |
+| C. Lição com áudio tocando durante a troca | `39b6f05a` ("05/11, 12:15") | "tudo funcionou" |
+
+O relato veio num resumo só, sem o detalhe de cada passo: no E, não se sabe se
+a tela recarregou na frente dele ou se já abriu direto na versão nova (os dois
+servem). **O Android de verdade não foi testado.** O `WindowClient.navigate`
+falhando num navegador é engolido: a página antiga só pega a versão nova na
+abertura seguinte, como antes. Staging terminou no `f2624fe` (`39b6f05a`).
 
 **A página da versão antiga não procura versão nova.** Ela não tem o código da
 procura ao voltar para a frente: o app que volta da memória com o código antigo
