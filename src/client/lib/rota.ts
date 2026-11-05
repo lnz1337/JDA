@@ -19,7 +19,8 @@ export type Rota =
   | { nome: 'loja' }
   | { nome: 'produto'; id: string };
 
-const EVENTO = 'jda:rota';
+/** Disparado a cada `irPara`; `lib/atualizacao.ts` escuta para recarregar ao sair da lição. */
+export const EVENTO = 'jda:rota';
 
 export function rotaDe(caminho: string, busca: string): Rota {
   const parametros = new URLSearchParams(busca);

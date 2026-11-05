@@ -1,7 +1,10 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App';
+import { cuidarDaAtualizacao } from './lib/atualizacao';
 import './index.css';
+
+cuidarDaAtualizacao();
 
 const container = document.getElementById('root');
 if (!container) {

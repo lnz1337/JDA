@@ -1,5 +1,6 @@
 /// <reference lib="webworker" />
 import { cleanupOutdatedCaches, precacheAndRoute } from 'workbox-precaching';
+import { abaPodeRecarregar } from '../../shared/atualizacao';
 
 /**
  * Shadow do `self` global com o tipo de service worker. `self.__WB_MANIFEST`
@@ -13,10 +14,47 @@ declare let self: ServiceWorkerGlobalScope & {
 cleanupOutdatedCaches();
 precacheAndRoute(self.__WB_MANIFEST);
 
-self.addEventListener('message', (event: ExtendableMessageEvent) => {
-  if ((event.data as { type?: string } | null)?.type === 'SKIP_WAITING') {
-    void self.skipWaiting();
-  }
+/*
+ * Versão nova assume na hora (src/shared/atualizacao.ts).
+ *
+ * Antes de 05/11 o service worker novo esperava todas as abas fecharem, e o app
+ * instalado no iPhone quase nunca fecha de verdade: volta da memória com o
+ * JavaScript de antes. Agora ele ativa assim que instala, toma conta das abas
+ * abertas e recarrega as que estão fora da lição. Quem recarrega é ele, e não
+ * só a página no `controllerchange`, porque a página da versão antiga não sabe
+ * se recarregar — e é ela que mostrava a tela do código que não existe mais.
+ *
+ * Só quando substitui uma versão anterior: na primeira instalação a página já é
+ * a nova, e recarregar atrapalharia quem está digitando o celular.
+ */
+let substituiVersaoAnterior = false;
+
+self.addEventListener('install', () => {
+  substituiVersaoAnterior = self.registration.active !== null;
+  void self.skipWaiting();
+});
+
+/*
+ * O recarregamento é disparado e **não esperado** dentro do `waitUntil`. A
+ * navegação passa pelo `fetch` deste service worker, e o navegador segura o
+ * `fetch` até a ativação terminar; esperar a navegação dentro da ativação é um
+ * travamento mútuo — a aba fica parada, em branco (visto no staging em 05/11).
+ */
+self.addEventListener('activate', (event: ExtendableEvent) => {
+  event.waitUntil(
+    (async () => {
+      await self.clients.claim();
+      if (!substituiVersaoAnterior) return;
+
+      const abas = await self.clients.matchAll({ type: 'window' });
+      for (const aba of abas) {
+        if (!abaPodeRecarregar(new URL(aba.url).pathname)) continue;
+        // Navegador sem `navigate` ou aba já saindo: a próxima abertura pega a
+        // versão nova do mesmo jeito.
+        aba.navigate(aba.url).catch(() => undefined);
+      }
+    })(),
+  );
 });
 
 interface Lembrete {
