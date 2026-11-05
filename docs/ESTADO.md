@@ -1,4 +1,4 @@
-# Estado do projeto — 04/11/2026
+# Estado do projeto — 05/11/2026
 
 Retrato para uma sessão nova continuar daqui. A spec é o [CLAUDE.md](../CLAUDE.md);
 este arquivo registra o que **não** cabe lá: o que já rodou, o que está só em
@@ -6,9 +6,9 @@ staging, o que depende do Leo e as armadilhas que custaram caro.
 
 `npm run typecheck && npm test` limpo, **482 testes** em 33 arquivos (04/11).
 
-**Staging está à frente de produção** desde 04/11: tem a fase R1 do estilo visual
-e a **entrada sem código** (ver as duas seções abaixo). Produção está no
-`36519d6` (trava de volume pelo domínio, deploy de 04/11 às 14:39 UTC).
+**Staging e produção estão no mesmo código** desde 05/11, 13:17 UTC: a fase R1
+do estilo visual e a **entrada sem código** foram juntas para produção, com o ok
+do Leo depois do teste no iPhone e no BlueStacks (ver as duas seções abaixo).
 
 ## Os dois ambientes
 
@@ -389,11 +389,11 @@ No staging o UP2 **não aparece**: o seed de lá não rodou depois de 27/10 e o 
 
 ---
 
-## Entrada sem código (04/11, `36e3d11`) — só em staging
+## Entrada sem código (04/11, `36e3d11`) — em produção desde 05/11
 
 Pedido do Leo, com a justificativa em `docs/entrada-sem-codigo.md` e a regra no
-§8 do CLAUDE.md (reescrito no mesmo commit). **Em staging, esperando o teste do
-Leo no iPhone e no BlueStacks; produção só com o ok dele.**
+§8 do CLAUDE.md (reescrito no mesmo commit). **Testada pelo Leo no iPhone e no
+BlueStacks (staging) e publicada em produção em 05/11, com o ok dele.**
 
 ### O que mudou
 
@@ -448,18 +448,22 @@ Leo no iPhone e no BlueStacks; produção só com o ok dele.**
   entram só por e-mail. Para testar `varios`, é gravar o mesmo celular numa
   segunda conta e tirar depois.
 
-### O que falta para produção
+### Em produção (05/11)
 
-1. **Teste do Leo** no iPhone e no BlueStacks (roteiro passado em 04/11).
-2. Com o ok: `npm run db:migrate:production` (**só a `0009` está pendente**,
-   conferido em 04/11) **antes** do deploy — sem a tabela, todo `/api/entrar`
-   quebra.
-3. `npm run deploy:production`. **Publica o `main` inteiro**: a fase R1 (visual
-   novo) vai junto, porque está no `main` desde 15:50 de 04/11.
-4. Conferir `/api/entrar` em produção com um número inexistente (404
-   `nao_encontrado`) e uma entrada de verdade da conta do Leo.
-5. Avisar o pipeline de conteúdo: o PDF da área de membros da Payt ensina o
-   passo do código, e precisa mudar.
+- Teste do Leo no iPhone e no BlueStacks (staging) em 04/11 e 05/11; ok dele
+  em 05/11.
+- Migration `0009` aplicada no D1 de produção (`jda-pwa-prod`) **antes** do
+  deploy; deploy às **13:17 UTC** (`c1c9da71`), do `main` em `d054094`. **A fase
+  R1 (visual novo) foi junto.**
+- Conferido logo depois, em `jornadacomeuanjo.com`: `/api/health` 200 (raiz e
+  `www`); `/api/entrar` com celular inexistente → 404 `nao_encontrado` e um
+  `login_falhou` com só `metodo` e `motivo`; a rota antiga `/api/auth/codigo` →
+  `not_found`; bundle com a tela nova, a pergunta do nome e "Tesouros"; tela do
+  `/acesso` de sempre; `robots.txt` de produção (indexável, menos as telas de
+  acesso).
+- **Falta**: a primeira entrada real por celular em produção (o `events` de
+  `login` com `metodo` mostra), e avisar o pipeline de conteúdo que o PDF da
+  área de membros da Payt ensina o passo do código e precisa mudar.
 
 **Risco conhecido do deploy: app antigo no cache.** O service worker só troca
 de versão quando o app é fechado de vez (`skipWaiting` só por mensagem). Quem
@@ -469,17 +473,18 @@ erro genérica da tela antiga. Na abertura seguinte o shell novo já vale. Pega
 pouca gente: a sessão dura 365 dias, e o link `/acesso` é servido pelo Worker,
 não pelo cache. Não há mitigação no código.
 
-**Ordem com o `lembrete-app`**: o texto dele serve para as duas entradas ("Se o
-link não abrir, entre em jornadacomeuanjo.com/entrar com o e-mail da sua
-compra"). Mas o reserva é exatamente o caminho que perde gente com o código, e a
-2ª onda fica elegível em 05/11 às 13:02 UTC: publicada a entrada antes, quem
-recebe essa onda e não consegue pelo link entra sem código.
+**Ordem com o `lembrete-app`**: resolvida. O texto dele serve para as duas
+entradas ("Se o link não abrir, entre em jornadacomeuanjo.com/entrar com o
+e-mail da sua compra"), e a entrada sem código chegou a produção antes da 2ª
+onda sair (elegível desde 05/11, 13:02 UTC; **não disparada**, espera o pedido
+do Leo). Quem recebe a próxima onda e não consegue pelo link entra sem código.
 
 ---
 
 ## Estilo visual (docs/estilo-visual.md)
 
-**Fase R1 feita em 04/11, só em staging**: tokens dos dois temas (claro de
+**Fase R1 feita em 04/11 e em produção desde 05/11** (foi junto com a entrada
+sem código): tokens dos dois temas (claro de
 padrão, escuro), fontes servidas pelo app (Inter 400/600/700/800 e Cormorant
 Garamond 600/700, `@fontsource`, só o subconjunto latino), letra regulável
 (quatro tamanhos; A− / A+ por enquanto só na lição), botões dourado, verde e
@@ -664,7 +669,7 @@ O que essa decisão muda na prática, conferido em 26/10:
 | 1 — Scaffold | **concluída** |
 | 2 — Banco | **concluída** |
 | 3 — Postback Payt | **concluída e validada com a Payt de verdade** |
-| 4 — Auth | **concluída**, com e-mail entregando. Revisada 22/10 para o público 55+: link de acesso direto (com tela de confirmação, para pré-visualizador de link não gastar o token), sessão de 1 ano, código em ação sensível, tela de código mais fácil. **Revisada de novo em 04/11: entrada sem código**, pelo celular ou e-mail da compra (só em staging; ver "Entrada sem código") |
+| 4 — Auth | **concluída**, com e-mail entregando. Revisada 22/10 para o público 55+: link de acesso direto (com tela de confirmação, para pré-visualizador de link não gastar o token), sessão de 1 ano, código em ação sensível, tela de código mais fácil. **Revisada de novo em 04/11: entrada sem código**, pelo celular ou e-mail da compra (em produção desde 05/11; ver "Entrada sem código") |
 | 5 — Jornada | **concluída em 23/10**: Home com o cartão do dia, lista de dias com estado, player com Range/Media Session/retomada, conclusão e os eventos do funil |
 | 6 — Loja | **concluída e testada com compra real em 26/10** (staging): barra de abas, lista, página do produto, volta da compra, aviso por push e e-mail, funil completo. Falta só os dados comerciais do Leo para valer em produção |
 | 8 — Push | **concluída em 23/10** (fora de ordem, a pedido): instalação na tela inicial, lembrete diário e escolha do horário. **Testada no iPhone em 26/10**, com três correções: etapa da falha registrada, ordem do toque no Safari e o BOM do segredo VAPID. Android ainda não |
@@ -1255,7 +1260,7 @@ Em ordem de dependência. O que está pronto não aparece aqui.
 
 | # | Falta | Depende de | Por quê trava |
 |---|---|---|---|
-| 1 | **Entrada sem código em produção** (migration `0009` antes do deploy; a R1 vai junto) | Leo (teste no iPhone e no BlueStacks) | O código era o que mais barrava a entrada: das 1.427 pessoas do anúncio, perto de 100 entraram. A campanha `anuncio-app` já foi para a base inteira (04/11) |
+| 1 | **Próximas ondas do `lembrete-app`**, agora com a entrada sem código em produção (05/11) | Leo (pedido de cada onda) | É o que traz de volta quem recebeu o anúncio e nunca entrou; o código era o que mais barrava a entrada |
 | 2 | **Testar as fases 5 e 8 no Android** | Leo | No Android só o BlueStacks foi visto, e é a maioria do público |
 | 3 | **Identidade visual** (ícones ainda são placeholder) | Leo | A raiz já é pública: o ícone aparece |
 
