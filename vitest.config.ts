@@ -49,6 +49,9 @@ export default defineConfig({
           name: 'workers',
           include: ['test/*.test.ts'],
           setupFiles: ['./test/setup-migrations.ts'],
+          // Testes que fazem 10+ pedidos em sequência (limite da entrada,
+          // trava da campanha) passavam de 5 s com os 34 arquivos em paralelo.
+          testTimeout: 15_000,
         },
       },
     ],
