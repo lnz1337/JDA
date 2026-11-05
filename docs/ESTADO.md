@@ -4,9 +4,15 @@ Retrato para uma sessão nova continuar daqui. A spec é o [CLAUDE.md](../CLAUDE
 este arquivo registra o que **não** cabe lá: o que já rodou, o que está só em
 staging, o que depende do Leo e as armadilhas que custaram caro.
 
-`npm run typecheck && npm test` limpo, **498 testes** em 34 arquivos (05/11).
+`npm run typecheck && npm test` limpo, **541 testes** em 36 arquivos (05/11).
 
-**Staging e produção estão no mesmo código** (`3e8cdbe`) desde 05/11: produção
+**Staging está à frente de produção com as fases R2 e R3** (05/11, fim da tarde,
+versão de staging `bfc840d6`, carimbo "05/11, 17:52"; ver "Estilo visual"). Elas
+esperam o teste do Leo no iPhone e o ok dele. **Não há migration nelas.** O
+deploy de produção levaria também a correção do "dia atual" (`555017f`), um
+bug que **já está em produção**.
+
+Até a R2, staging e produção estavam no mesmo código (`3e8cdbe`), desde 05/11: produção
 publicada com o ok do Leo (versão `06f9a7a0`), depois do teste dele no iPhone
 ("tudo funcionou"), com a migration `0010` aplicada **antes** do deploy. Foram
 juntos:
@@ -659,7 +665,40 @@ secundário, cabeçalho com o botão de tema, barra de abas com **Tesouros**
 (antiga Loja, só o texto muda) e a arte, aplicados às telas que existiam, sem
 mudar comportamento. A página do `/acesso` e do `/parar`, servida pelo
 Worker, também ganhou as cores novas (sem fonte baixada, tema pelo aparelho).
-**R2 a R6 esperam o ok do Leo.**
+
+**R2 e R3 feitas em 05/11 e só em staging** (esperam o teste do Leo no iPhone e
+o ok para produção). **R4 a R6 esperam o pedido do Leo.**
+
+- **R2, a lição em passos** (`5c1202d`, `b7c2ab8`, `47f8914`). O `GET
+  /api/licoes/:id` devolve `passos` (`src/shared/licao.ts`, testado com o
+  `body_md` real dos 19 dias; Presentes e pacotes vêm com `null` e ficam numa
+  tela só). O `<audio>` mora na tela da lição, fora dos passos (`useTocador`
+  em `Player.tsx`), e os controles grande e mini só mandam nele. Os efeitos do
+  player dependem do `src`, não do objeto da faixa: com o objeto, cada troca de
+  passo zerava o tempo e soltava o `audio_completed` de novo. "Voltar um
+  passo" usa `history.back()` quando a entrada foi empilhada pela lição (marca
+  `passoDaLicao` no `history.state`); quem entrou direto num passo (pela
+  Home) troca a entrada em vez de empilhar. Os passos 1 e 2 feitos ficam no
+  aparelho (`passos:<lição>`, `lib/passos.ts`), para a Home.
+  **Correção de funil junto**: reabrir uma lição parada depois dos 90% soltava
+  outro `audio_completed` sem tocar (o pulo para a posição guardada dispara
+  `timeupdate`). O player antigo fazia o mesmo. Agora só conta com o áudio
+  tocando (§6). Conferido no `vite dev`: cinco trocas de passo, dois "voltar"
+  do navegador e a lição reaberta deram um `lesson_started` e um
+  `audio_completed`, com o mesmo elemento `<audio>` tocando o tempo todo.
+  **O rótulo do passo 1 é "DIA 3 DE 19", sem o nome da etapa** ("· O CHAMADO"):
+  as etapas só chegam ao banco na R4 (`programs.stages_json`).
+- **R3, a Home "Hoje"** (`e5b129e`). Saudação pelo fuso da conta
+  (`src/shared/hoje.ts`), o cartão do dia com a arte (recorte cartão cortado em
+  150px, para o "Começar" aparecer sem rolar num celular de 812px), a lista dos
+  três passos e o convite como faixa sob o cabeçalho. O botão do cartão continua
+  do primeiro passo que falta ("Continuar ›"). A arte de faixa saiu do alto da
+  Home: a do cartão faz esse papel.
+- **Bug achado nos prints da R3, já em produção** (`555017f`): com o dia de
+  hoje concluído e nenhum atrasado, o "dia atual" do servidor caía no último da
+  lista, o dia 19 bloqueado. A Home oferecia o dia 19 e o toque abria "Este dia
+  ainda não abriu". Na tela antiga o botão dizia "Ouvir a oração de hoje" e
+  levava ao mesmo erro. Agora o último recurso é o último dia aberto.
 
 O cabeçalho fica em **px**, não em rem: é moldura e não cresce com o A+ —
 crescendo, tomava um terço da tela na letra maior. O resto do app escala com
@@ -685,11 +724,18 @@ os recortes em `public/img/` (faixa 3:1 e cartão 4:3, WebP em 480 e 960, de 7 a
 cima, porque a metade de baixo desbota para o fundo. O service worker guarda a
 arte no cache do shell (`webp` no `globPatterns`).
 
-**Prints de conferência** em `prints/r1/` (fora do git): Início, Entrar, Home,
+**Prints de conferência** em `prints/r1/`, `prints/r2/` e `prints/r3/` (fora do git). Na R1: Início, Entrar, Home,
 lista de dias, lição e Tesouros a 390px, claro, escuro e letra maior. Tirados do
 `vite dev` com o banco local e uma conta de teste local, pelo Edge headless, com
 a janela do tamanho da página — senão a barra de abas, que é fixa, aparece no
-meio do print.
+meio do print. Na R2 e na R3, pelo DevTools Protocol do Edge (script fora do
+repositório): `Network.setCookie` com a sessão `s-local-prints`, tema e letra
+no `localStorage`, `--autoplay-policy=no-user-gesture-required` para o mini
+player aparecer tocando, user agent de Android para a faixa do convite, e
+`DELETE FROM progress` no D1 local entre as variantes. **Esperar as imagens**
+(`img.complete`) antes de capturar, senão a arte sai em branco. O `audio/saida`
+local foi posto no R2 local (`jda-pwa-media-dev`, d03 e d04) para o player
+ter o que tocar.
 
 ## O que está aberto
 
