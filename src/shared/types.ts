@@ -1,5 +1,7 @@
 /** Tipos compartilhados entre o Worker e o client. */
 
+import type { Passos } from './licao';
+
 export type AppEnvName = 'development' | 'production';
 
 /** Resposta de `GET /api/health`. Liveness: não toca no banco. */
@@ -62,6 +64,12 @@ export interface LicaoCompleta extends LicaoNaLista {
   audio_url: string | null;
   bonus_audio_url: string | null;
   bonus_title: string | null;
+  /**
+   * O corpo separado em leitura, reflexão, prática e intenção, para a lição em
+   * três telas. `null` quando o corpo não segue o formato da jornada (Presentes,
+   * pacotes): a lição fica numa tela só.
+   */
+  passos: Passos | null;
 }
 
 /* ------------------------------------------------------------ loja (fase 6) */

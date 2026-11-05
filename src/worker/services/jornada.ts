@@ -5,6 +5,7 @@
  * Quem decide acesso continua sendo `hasAccess` — aqui só se decide **qual dia**
  * está liberado dentro de um programa que a pessoa já pode ver.
  */
+import { separarPassos } from '../../shared/licao';
 import type { LicaoCompleta, LicaoNaLista, Programa } from '../../shared/types';
 import { agoraIso, diasDesde } from '../lib/datas';
 import { novoId } from '../lib/ids';
@@ -372,6 +373,8 @@ export async function abrirLicao(
     };
   }
 
+  const body = semAvisoRepetido(licao.body_md, licao.notice);
+
   return {
     ok: true,
     licao: {
@@ -381,11 +384,12 @@ export async function abrirLicao(
       unlock_rule: licao.unlock_rule,
       total_days: licao.total_days,
       notice: licao.notice,
-      body_md: semAvisoRepetido(licao.body_md, licao.notice),
+      body_md: body,
       // A chave do R2 nunca vai para o client: o caminho é sempre pelo Worker.
       audio_url: licao.audio_key ? `/media/${licao.audio_key}` : null,
       bonus_audio_url: licao.bonus_audio_key ? `/media/${licao.bonus_audio_key}` : null,
       bonus_title: licao.bonus_title,
+      passos: separarPassos(body),
     },
   };
 }

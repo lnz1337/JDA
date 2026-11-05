@@ -237,6 +237,38 @@ describe('abrir e concluir lição', () => {
     expect(licao.frase).toBeTruthy();
   });
 
+  it('a lição da jornada vem separada em passos', async () => {
+    await prepararUsuario({ inicio: inicioNoDia(3) });
+
+    const { licao } = (await (
+      await chamar('/api/licoes/jornada-19-d03', { headers: { cookie: COOKIE } })
+    ).json()) as { licao: { passos: Record<string, string> | null; body_md: string } };
+
+    expect(licao.passos).toMatchObject({
+      leitura: 'Salmo 91 (90)',
+      intencao: 'Proteção para mim, para minha casa e para minha família.',
+    });
+    // O corpo inteiro continua indo: é o que a tela única usa.
+    expect(licao.body_md).toContain('**Prática de hoje:**');
+  });
+
+  it('lição fora do formato da jornada vem com passos null', async () => {
+    await prepararUsuario();
+    await env.DB.prepare(
+      `INSERT INTO entitlements (id, user_id, product_id, source, status, granted_at)
+       VALUES ('e-presentes', ?, 'presentes-sao-miguel', 'manual', 'active', ?)`,
+    )
+      .bind(USER, new Date().toISOString())
+      .run();
+
+    const res = await chamar('/api/licoes/presentes-sao-miguel-l01', { headers: { cookie: COOKIE } });
+    const { licao } = (await res.json()) as { licao: { passos: unknown; body_md: string } };
+
+    expect(res.status).toBe(200);
+    expect(licao.body_md).toBeTruthy();
+    expect(licao.passos).toBeNull();
+  });
+
   it('dia que ainda não liberou não abre, nem adivinhando a URL', async () => {
     await prepararUsuario({ inicio: inicioNoDia(1) });
 
