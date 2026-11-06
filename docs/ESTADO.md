@@ -422,6 +422,17 @@ enviados, 2 suprimidos, 0 falhas de entrega**, todos Gmail. Hoje saíram 106
 e-mails. Balanço da 2ª em 06/11. A 3ª (170) fica elegível em 06/11, 15:25 UTC,
 **depois** do ajuste dos suprimidos em produção.
 
+**Balanço da 2ª onda** (06/11, 20:40 UTC, ~31 h), nos 81 enviados: **5 entraram
+no app (6%), os 5 pelo link** (um deles também entrou pelo e-mail depois), 0 pelo
+celular, 3 começaram uma lição, 0 pediram para parar. A mesma taxa do 1º envio
+(2 de 31), que na mesma conta hoje continua em 2.
+
+**3ª onda (06/11, 20:31 UTC), a pedido do Leo.** Dry-run com **166** elegíveis
+(4 dos 170 entraram desde 04/11), todos Gmail, teto do dia 842. Envio em 5 lotes:
+**162 enviados, 0 falhas, 4 suprimidos**, sem parar: os suprimidos ficaram fora
+da trava e ganharam `email_suprimido_at`, como previsto no ajuste de 05/11.
+Saíram 168 e-mails no dia. A 4ª (366) fica elegível em 07/11, 15:31 UTC.
+
 **A trava de onda conta por campanha, e acumulado**: `ondaAnterior` é o total de
 enviados com sucesso daquela campanha, e o teto é o dobro dele. Campanha nova
 começa em 0, e **com 0 não há teto de onda nenhum** — só a cota do dia (700 menos
