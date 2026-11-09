@@ -433,6 +433,26 @@ celular, 3 começaram uma lição, 0 pediram para parar. A mesma taxa do 1º env
 da trava e ganharam `email_suprimido_at`, como previsto no ajuste de 05/11.
 Saíram 168 e-mails no dia. A 4ª (366) fica elegível em 07/11, 15:31 UTC.
 
+**4ª onda (09/11, 12:51 UTC), a pedido do Leo.** Dry-run com **361** elegíveis
+(5 dos 366 entraram desde 04/11), todos Gmail, teto do dia 842. Envio em 10
+lotes: **350 enviados, 0 falhas, 11 suprimidos** (3%, acima das ondas antes:
+2 de 83 e 4 de 166). Saíram 359 e-mails no dia. Com isso são **17 contas com
+`email_suprimido_at`**, todas Gmail. A 5ª (379, Gmail) fica elegível em 10/11,
+14:15 UTC.
+
+**Balanço acumulado** (09/11, 12:55 UTC), contando entrada depois do envio
+(link usado, `login` em `events` ou sessão nova; uma pessoa pode ter mais de um
+método):
+
+| Envio | Enviados | Entraram | Link / celular / e-mail | Começaram lição | Pediram para parar |
+|---|---|---|---|---|---|
+| 1º (04/11) | 31 | 3 (10%) | 2 / 1 / 1 | 3 | 0 |
+| 2ª (05/11) | 81 | 9 (11%) | 8 / 0 / 3 | 8 | 0 |
+| 3ª (06/11) | 162 | 12 (7%, ~64 h) | 8 / 4 / 4 | 8 | 3 |
+
+A entrada continua crescendo dias depois do envio (a 2ª foi de 5 para 9 entre
+06/11 e 09/11), então a taxa de cada onda só fecha uns dias depois.
+
 **A trava de onda conta por campanha, e acumulado**: `ondaAnterior` é o total de
 enviados com sucesso daquela campanha, e o teto é o dobro dele. Campanha nova
 começa em 0, e **com 0 não há teto de onda nenhum** — só a cota do dia (700 menos
